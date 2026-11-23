@@ -6,13 +6,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Finanças">
+<meta name="apple-mobile-web-app-title" content="Cofrivo">
+<meta name="application-name" content="Cofrivo">
 <meta name="theme-color" content="#fbf7f5">
-<meta name="color-scheme" content="light only">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="icon" href="icon-512.png">
-<title>Finanças</title>
+<meta name="color-scheme" content="light">
+<link rel="manifest" id="lnkManifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" id="lnkApple" href="icon-light-180.png">
+<link rel="icon" href="icon-light-64.png" media="(prefers-color-scheme: light)">
+<link rel="icon" href="icon-dark-64.png" media="(prefers-color-scheme: dark)">
+<title>Cofrivo</title>
 <style>
 :root{
   color-scheme:light;
@@ -22,9 +24,42 @@
   --bar:#e0789f; --bar-dim:#f7cddc;
   --pos:#2c8560; --neg:#c8435a; --warn:#a86a00;
   --radius:20px; --shadow:0 2px 10px rgba(120,70,100,.07);
+  --g1:#f39bbb; --g2:#c94f7c; --g0:#9edcbf; --glow:rgba(201,79,124,.3); --wave:#fdf3f7;
 }
-/* sempre claro, mesmo com o celular no modo escuro */
-html{color-scheme:light only}
+/* tema azul (homem) */
+body[data-theme="m"]{--bg:#f5f8fc; --line:#e3eaf3; --ink:#1f2a37; --ink2:#5d6b7c; --ink3:#97a3b2; --accent:#2f6fb5; --accent-soft:#e1eefb;
+  --mint:#d8f0ea; --pink:#dbe9fb; --lilac:#e3e7fb; --butter:#fff3cf; --peach:#e6f0fa; --bar:#5b9bd8; --bar-dim:#c8ddf3;
+  --g1:#8fc1f0; --g2:#2f6fb5; --g0:#9fd8cf; --glow:rgba(47,111,181,.3); --wave:#eef5fd; --shadow:0 2px 10px rgba(40,80,130,.08)}
+/* tema neutro (prefiro não responder) */
+body[data-theme="n"]{--bg:#f8f7f4; --line:#e8e5de; --ink:#2b2b28; --ink2:#66645d; --ink3:#a09d94; --accent:#5b6b5e; --accent-soft:#e9ede6;
+  --mint:#e3ebdd; --pink:#ece6dc; --lilac:#e9e6e1; --butter:#f3ecdb; --peach:#efe7dc; --bar:#8a9a7f; --bar-dim:#d7dccf;
+  --g1:#b7c2a9; --g2:#5b6b5e; --g0:#cfd8c3; --glow:rgba(91,107,94,.28); --wave:#f3f4ef; --shadow:0 2px 10px rgba(60,60,50,.07)}
+/* tema escuro (opção dentro do app; por padrão o app é claro) */
+body[data-mode="dark"]{color-scheme:dark;
+  --bg:#17151c; --card:#221f29; --line:#332f3b; --ink:#f4eff5; --ink2:#c9c0cc; --ink3:#8e8594;
+  --accent:#f29ab9; --on-accent:#2b1720; --accent-soft:#3a2431;
+  --mint:#1f3a30; --pink:#3d2532; --lilac:#2e2842; --butter:#3a3320; --peach:#3d2c22;
+  --bar:#f29ab9; --bar-dim:#5a3445; --pos:#7fd6ad; --neg:#ff8fa3; --warn:#f0c060;
+  --g1:#f39bbb; --g2:#c94f7c; --g0:#2f6b55; --glow:rgba(242,154,185,.22); --wave:#2a1f27; --shadow:none}
+body[data-mode="dark"][data-theme="m"]{
+  --bg:#12171e; --card:#1b222c; --line:#2a3441; --ink:#eef3f9; --ink2:#b8c4d2; --ink3:#7f8c9b;
+  --accent:#7fb6ec; --on-accent:#0f2236; --accent-soft:#1d2f45;
+  --mint:#1a3a35; --pink:#1e2d42; --lilac:#232a40; --butter:#3a3423; --peach:#1f2c3a;
+  --bar:#7fb6ec; --bar-dim:#2b4566; --pos:#7fd6c0; --neg:#ff9aa5;
+  --g1:#8fc1f0; --g2:#2f6fb5; --g0:#2a5b54; --glow:rgba(127,182,236,.22); --wave:#18222e}
+body[data-mode="dark"][data-theme="n"]{
+  --bg:#151614; --card:#1f211e; --line:#30332e; --ink:#f0f0ec; --ink2:#c4c5bd; --ink3:#8b8d84;
+  --accent:#b7c7a8; --on-accent:#1f2a1c; --accent-soft:#2a3227;
+  --mint:#24301f; --pink:#2e2b25; --lilac:#2a2a28; --butter:#35311f; --peach:#2d2a24;
+  --bar:#a8b89a; --bar-dim:#3d4637; --pos:#a9d6a0; --neg:#f0a09a;
+  --g1:#b7c2a9; --g2:#5b6b5e; --g0:#3d5040; --glow:rgba(183,199,168,.2); --wave:#1e211d}
+body[data-mode="dark"] .xp .prog{background:var(--line)}
+body[data-mode="dark"] .garden rect:first-child{fill:#1f2a24}
+body[data-mode="dark"] .seg button.on{color:var(--ink)}
+.appicon{width:96px;height:96px;border-radius:22px;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.modeopts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 10px}
+.introbox .steps{text-align:left;margin:0 6px 14px;color:var(--ink2)}
+.kbd{display:inline-block;min-width:22px;padding:0 6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);text-align:center;font-weight:700}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
 .action{display:flex;gap:10px;align-items:center;text-align:left;background:var(--card);border-radius:18px;padding:14px 12px;box-shadow:var(--shadow);transition:transform .12s}
 .action:active{transform:scale(.97)}
@@ -34,7 +69,7 @@ html{color-scheme:light only}
 .action b{display:block;font-size:14px;line-height:1.2}
 /* ---- Freio ---- */
 .bigbtn{display:block;width:100%;margin:12px 0;padding:20px 16px;border-radius:22px;font-size:19px;font-weight:700;color:#fff;
-  background:linear-gradient(135deg,#f39bbb,#c94f7c);box-shadow:0 8px 22px rgba(201,79,124,.3);font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;transition:transform .12s}
+  background:linear-gradient(135deg,var(--g1),var(--g2));box-shadow:0 8px 22px var(--glow);font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;transition:transform .12s}
 .bigbtn:active{transform:scale(.97)}
 .bigbtn.small{padding:14px;font-size:16px;margin-top:12px}
 .actions.three{grid-template-columns:1fr 1fr 1fr}
@@ -44,7 +79,7 @@ html{color-scheme:light only}
 .chip{padding:8px 12px;border-radius:999px;background:var(--bg);border:1px solid var(--line);font-size:14px}
 .chip.on{background:var(--pink);border-color:var(--bar);color:var(--ink);font-weight:600}
 .slider{display:flex;align-items:center;gap:10px}
-.slider input{flex:1;padding:0;border:0;background:none;accent-color:#c94f7c;height:28px}
+.slider input{flex:1;padding:0;border:0;background:none;accent-color:var(--accent);height:28px}
 .slider b{font-size:22px;font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;min-width:26px;text-align:right}
 .slider span{color:var(--ink3);font-size:13px}
 .surfcta{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,var(--mint),var(--lilac));border-radius:16px;padding:14px;margin-top:12px;cursor:pointer}
@@ -54,7 +89,7 @@ html{color-scheme:light only}
 .plancard .m{font-size:12px;color:var(--ink2);margin-top:4px}
 .plancard .btn{margin-top:8px;padding:9px}
 h4.mini{margin:14px 0 4px;font-size:14px}
-.wave{height:200px;border-radius:20px;overflow:hidden;background:#fdf3f7;margin:4px 0 12px}
+.wave{height:200px;border-radius:20px;overflow:hidden;background:var(--wave);margin:4px 0 12px}
 .wave svg{width:100%;height:100%;display:block}
 .surfphrase{text-align:center;font-size:18px;min-height:54px;font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;margin:6px 4px}
 .surfphrase.fade{animation:up .8s ease both}
@@ -67,7 +102,7 @@ h4.mini{margin:14px 0 4px;font-size:14px}
 .metahead b{display:block}.metahead small{color:var(--ink2)}
 .seg.scroll{overflow-x:auto;scrollbar-width:none}
 .seg.scroll button{flex:none;padding:8px 12px;font-size:13.5px}
-.sheet-bg.intro{align-items:center;background:linear-gradient(160deg,#d4f1e2,#fcdde8 55%,#e8e0fb)}
+.sheet-bg.intro{align-items:center;background:linear-gradient(160deg,var(--mint),var(--pink) 55%,var(--lilac))}
 .sheet-bg.intro .sheet{border-radius:28px;margin:16px;width:calc(100% - 32px);animation:up .35s ease both}
 .introbox{text-align:center;padding:10px 6px 4px;position:relative}
 .introico{font-size:64px;line-height:1;margin:10px 0 8px}
@@ -82,6 +117,11 @@ h4.mini{margin:14px 0 4px;font-size:14px}
 .manual .mtext li{margin:4px 0}
 .manual .mtext p{margin:6px 0}
 .manual .mtext b{color:var(--ink)}
+.idopts{display:grid;gap:10px;margin:4px 0 14px}
+.idopt{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;background:var(--bg);border:2px solid var(--line);font-size:16px;font-weight:600;text-align:left}
+.idopt span{font-size:26px}
+.idopt.on{border-color:var(--bar);background:var(--accent-soft)}
+details.adv summary{color:var(--accent);font-size:14px;padding:10px 0}
 .foot{font-size:11.5px;color:var(--ink3);text-align:center;margin:18px 10px 8px;line-height:1.5}
 .action small{display:block;font-size:11.5px;color:var(--ink2);margin-top:2px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -176,13 +216,13 @@ h1,h2,h3,.big,.val{font-family:ui-rounded,"SF Pro Rounded",-apple-system,"Segoe 
 .btn{background:var(--accent);color:var(--on-accent);transition:transform .12s}
 .btn:active,.fab:active,.list li.tap:active{transform:scale(.97)}
 .btn.sec{background:var(--accent-soft);color:var(--accent)}
-.fab{background:linear-gradient(135deg,#f39bbb,#c94f7c);box-shadow:0 6px 18px rgba(201,79,124,.35);transition:transform .12s}
+.fab{background:linear-gradient(135deg,var(--g1),var(--g2));box-shadow:0 6px 18px var(--glow);transition:transform .12s}
 .badge{background:var(--mint);color:var(--pos)}
 .badge.pink{background:var(--pink);color:var(--accent)}
 .badge.butter{background:var(--butter);color:var(--warn)}
 .prog{height:8px;border-radius:4px}
-.prog i{background:linear-gradient(90deg,#9edcbf,#f39bbb);border-radius:4px;transition:width .6s ease}
-.catrow .bar i{background:linear-gradient(90deg,#f7cddc,var(--bar))}
+.prog i{background:linear-gradient(90deg,var(--g0),var(--g1));border-radius:4px;transition:width .6s ease}
+.catrow .bar i{background:linear-gradient(90deg,var(--bar-dim),var(--bar))}
 nav.tabs{background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 nav.tabs button.on svg{background:var(--accent-soft);border-radius:12px;padding:3px 10px;width:44px;box-sizing:content-box;margin:-3px -10px}
 .sheet-bg{backdrop-filter:blur(2px)}
@@ -327,6 +367,14 @@ function dLabel(d){const [y,m,dd]=d.split('-');return `${dd}/${m}`}
 function blank(){return {tx:[],fixed:[],debts:[]}}
 function load(){try{return Object.assign(blank(),JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){return blank()}}
 let db = load();
+// versão antiga (só existia para a primeira usuária): mantém o comportamento que ela já tinha
+function migrate(d){
+  if(d.salary && d.salary.diaA===undefined && !d.salary.tipo){
+    Object.assign(d.salary,{tipo:'clt',diaA:5,diaB:20,irNoAdiant:true,folhaFecha:12,feriasSaldo:45});
+  }
+  return d;
+}
+migrate(db);
 function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
 
 const instNo = (d,M) => diffM(d.firstMonth,M)+1;
@@ -352,32 +400,43 @@ function payDate(M,day){ // dia útil anterior se cair em fim de semana/feriado 
   while(d.getDay()===0||d.getDay()===6||FERIADOS.includes(`${pad(d.getMonth()+1)}-${pad(d.getDate())}`)) d.setDate(d.getDate()-1);
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }
+/* dias de pagamento: A = principal, B = adiantamento/2ª parte (null = recebe uma vez por mês) */
+function PAY(){ const s = db.salary||{}; return {A:s.diaA||5, B:s.diaB===null?null:(s.diaB||20)}; }
 function salaryFor(M){
   const s = db.salary; if(!s) return null;
   const act = (s.actual||{})[M];
   if(M<s.since && !act) return null;
-  const S=s.gross, inss=calcINSS(S), adv=r2(S*s.advPct/100);
-  const vt = s.vtValue>0 ? Math.min(r2(S*0.06),s.vtValue) : 0;
-  const consig = db.debts.filter(d=>d.kind==='consignado'&&debtActive(d,M));
-  const consigSum = r2(consig.reduce((t,d)=>t+d.value,0));
-  const others = (s.others||[]).filter(o=>o.value>0);
-  const p5raw = r2(S-inss-adv-vt-(s.vr||0)-others.reduce((t,o)=>t+o.value,0)-consigSum);
-  const irc = calcIR(S, inss+(s.deps||0)*TAX.dependente); // regime de caixa: saldo (dia 5) + adiantamento (dia 20) = salário do mês
-  const p20raw = r2(adv-irc.ir);
-  const lines5 = [['Salário base',S],['INSS',-inss],[`Adiantamento (já recebido dia 20)`,-adv]];
-  if(vt) lines5.push(['Vale-transporte (6%)',-vt]);
-  if(s.vr) lines5.push(['Desconto VR',-s.vr]);
-  others.forEach(o=>lines5.push([o.desc,-o.value]));
-  consig.forEach(d=>lines5.push([`Consignado ${d.desc} (${instNo(d,M)}/${d.total})`,-d.value]));
-  const lines20 =[[`Adiantamento (${s.advPct}%)`,adv],[`IR do mês (${pctTxt(irc.aliq)}${irc.red?', com redutor':''})`,-irc.ir]];
+  const {A,B} = PAY();
   const mk = (key,label,date,raw,lines,note) => {
     const real = act?.[key]!=null;
     return {key,label,date,lines,note,real,raw,value:real?act[key]:Math.max(0,Math.floor(raw))};
   };
-  const pays = [
-    mk('p5','Saldo do salário',payDate(M,5),p5raw,lines5,'Referente ao mês anterior'),
-    mk('p20','Adiantamento',payDate(M,20),p20raw,lines20,'O IR do mês inteiro é descontado aqui')
-  ];
+  if(s.tipo==='fixo'){ // autônoma, PJ, outro: valor líquido informado
+    const pays = [mk('p5','Pagamento',payDate(M,A),s.valorA||0,[['Valor líquido informado',s.valorA||0]],'Valor fixo informado por você')];
+    if(B && s.valorB>0) pays.push(mk('p20','Pagamento',payDate(M,B),s.valorB,[['Valor líquido informado',s.valorB]],'Valor fixo informado por você'));
+    return {M,pays,irc:{ir:0,aliq:0,red:0},inss:0,consigSum:0,total:r2(pays.reduce((t,p)=>t+p.value,0))};
+  }
+  const S=s.gross, inss=calcINSS(S), adv = B ? r2(S*(s.advPct||0)/100) : 0;
+  const vt = s.vtValue>0 ? Math.min(r2(S*0.06),s.vtValue) : 0;
+  const consig = db.debts.filter(d=>d.kind==='consignado'&&debtActive(d,M));
+  const consigSum = r2(consig.reduce((t,d)=>t+d.value,0));
+  const others = (s.others||[]).filter(o=>o.value>0);
+  const irc = calcIR(S, inss+(s.deps||0)*TAX.dependente);
+  const irNoAdv = adv>0 && s.irNoAdiant; // algumas empresas descontam o IR do mês inteiro no adiantamento
+  const p5raw = r2(S-inss-adv-vt-(s.vr||0)-others.reduce((t,o)=>t+o.value,0)-consigSum-(irNoAdv?0:irc.ir));
+  const irLine = [`IR do mês (${pctTxt(irc.aliq)}${irc.red?', com redutor':''})`,-irc.ir];
+  const lines5 = [['Salário base',S],['INSS',-inss]];
+  if(adv) lines5.push([`Adiantamento (já recebido dia ${B})`,-adv]);
+  if(!irNoAdv && irc.ir) lines5.push(irLine);
+  if(vt) lines5.push(['Vale-transporte (6%)',-vt]);
+  if(s.vr) lines5.push(['Desconto VR/VA',-s.vr]);
+  others.forEach(o=>lines5.push([o.desc,-o.value]));
+  consig.forEach(d=>lines5.push([`Consignado ${d.desc} (${instNo(d,M)}/${d.total})`,-d.value]));
+  const pays = [mk('p5', adv?'Saldo do salário':'Salário', payDate(M,A), p5raw, lines5, adv?'Restante do salário':'Salário do mês')];
+  if(adv){
+    const lines20 = [[`Adiantamento (${s.advPct}%)`,adv]]; if(irNoAdv) lines20.push(irLine);
+    pays.push(mk('p20','Adiantamento',payDate(M,B),r2(adv-(irNoAdv?irc.ir:0)),lines20, irNoAdv?'O IR do mês inteiro é descontado aqui':'Parte do salário paga antes'));
+  }
   // 13º salário: 1ª parcela (50%, sem descontos) até 30/11; 2ª até 20/12 com INSS e IR exclusivos
   if(s.decimo!==false){
     const mm = M.slice(5);
@@ -423,6 +482,7 @@ function render(){
   $('#gotoday').hidden = st.month===THIS_MONTH;
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.view));
   if(!VIEWS[st.view]) st.view = 'resumo';
+  applyTheme();
   document.querySelector('header').style.display = (st.view==='resumo'||st.view==='contas') ? '' : 'none';
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.view));
   $('#view').innerHTML = VIEWS[st.view]();
@@ -434,10 +494,11 @@ resumo(){
   const m = month(st.month);
   if(!db.tx.length && !db.fixed.length && !db.debts.length && !db.salary) return `
     <div class="card"><h2>Boas-vindas! 👋</h2>
-    <p class="sub" style="margin-top:6px">Para começar, cole os dados que o Claude preparou para você em <b>Mais → Backup e dados → Colar dados</b>.</p>
-    <p class="sub">Ou cadastre aos poucos pela aba <b>Lançar</b>.</p>
-    <button class="btn" onclick="st.view='mais';st.maisTab='dados';render()">Colar meus dados</button>
-    <button class="btn sec" onclick="st.view='lancar';render()">Lançar manualmente</button></div>`;
+    <p class="sub" style="margin-top:6px">O jeito mais rápido de começar é subir seu <b>holerite em PDF</b>: o app lê, você confere e ele calcula seu salário e as projeções.</p>
+    <button class="btn" onclick="openHolerite()">📄 Subir meu holerite</button>
+    <button class="btn sec" onclick="openSalary()">Preencher meu salário à mão</button>
+    <button class="btn sec" onclick="st.view='mais';st.maisTab='dados';render()">Colar dados que recebi</button>
+    <button class="btn sec" style="background:none" onclick="showIntro(0)">Ver a introdução</button></div>`;
   return `${st.month===THIS_MONTH?freioBanner():''}${monthHero(st.month)}${irBanner()}${cycleCard(st.month+'A')}${cycleCard(st.month+'B')}${gastosCard(st.month)}`;
   const instAll = m.outInst+m.outFolha;
   const pct = m.inc ? Math.round(m.outInst/m.inc*100) : null;
@@ -738,7 +799,7 @@ function delDebt(id){if(!confirm('Excluir esta dívida?'))return;db.debts=db.deb
    Fase de obra: paga juros sobre o que a Caixa já liberou à construtora + seguros (MIP/DFI) + tarifa.
    Conforme a obra avança, a liberação cresce e a parcela sobe. Depois das chaves começa a amortização (SAC).
    Tudo estimado PARA CIMA: juros padrão 13,5% a.a. (SBPE até 11,49% + TR, arredondado para cima). */
-const IMOVEL_DEFAULT = {nome:'Apartamento (Caixa)',day:20,ref:'2026-11',parcelaRef:726.14,taxas:85,juros:13.5,tr:2,obraPct:50,fimObra:'2027-11',prazo:420,financiado:0,actual:{}};
+const IMOVEL_DEFAULT = {nome:'Imóvel financiado',day:20,ref:THIS_MONTH,parcelaRef:0,taxas:85,juros:12,tr:2,obraPct:50,fimObra:addM(THIS_MONTH,24),prazo:420,financiado:0,actual:{}};
 function imovelCalc(){
   const im = {...IMOVEL_DEFAULT,...db.imovel};
   // juros nominais ao ano ÷ 12 + TR estimada (para cima)
@@ -816,11 +877,16 @@ function imovelCard(){
    Bloco "A" do mês M: recebe o pagamento do dia 5 e paga o que vence de 05 a 19.
    Bloco "B" do mês M: recebe o pagamento do dia 20 e paga o que vence de 20 até 04 do mês seguinte. */
 const DAY_DEFAULT = 10;
-const cycleOf = date => {const d=+date.slice(8), M=date.slice(0,7); return d<5 ? addM(M,-1)+'B' : d<20 ? M+'A' : M+'B'};
-const nextCycle = id => id.endsWith('A') ? id.slice(0,7)+'B' : addM(id.slice(0,7),1)+'A';
+const lastDay = M => `${M}-${pad(new Date(+M.slice(0,4),+M.slice(5),0).getDate())}`;
+const cycleOf = date => {const {A,B}=PAY(), d=+date.slice(8), M=date.slice(0,7);
+  if(!B) return d<A ? addM(M,-1)+'A' : M+'A';
+  return d<A ? addM(M,-1)+'B' : d<B ? M+'A' : M+'B'};
+const nextCycle = id => (id.endsWith('A') && PAY().B) ? id.slice(0,7)+'B' : addM(id.slice(0,7),1)+'A';
 function cycleInfo(id){
   const M=id.slice(0,7), A=id.endsWith('A');
-  return {id,M,A,pay:A?`${M}-05`:`${M}-20`,from:A?`${M}-05`:`${M}-20`,to:A?`${M}-19`:`${addM(M,1)}-04`};
+  const P = PAY(), N = addM(M,1), endNext = P.A>1 ? `${N}-${pad(P.A-1)}` : lastDay(M);
+  const pay = A ? `${M}-${pad(P.A)}` : `${M}-${pad(P.B)}`;
+  return {id,M,A,pay,from:pay,to: A ? (P.B ? `${M}-${pad(P.B-1)}` : endNext) : endNext};
 }
 let EV_CACHE = null; // acelera o plano de ação (muitos cálculos seguidos)
 function events(M){
@@ -835,13 +901,13 @@ function eventsRaw(M){ // tudo que entra e sai no mês M, com data e chave
   const dim = new Date(+M.slice(0,4), +M.slice(5), 0).getDate();
   const dt = day => `${M}-${pad(Math.min(day||DAY_DEFAULT,dim))}`;
   if(m.sal) m.sal.pays.forEach(p=>ev.push({key:`sal:${p.key}:${M}`,date:p.date,
-    nominal:p.key==='p5'?`${M}-05`:(p.key==='p20'||p.key==='d2')?`${M}-20`:p.date,
+    nominal:p.key==='p5'?`${M}-${pad(PAY().A)}`:(p.key==='p20'||(p.key==='d2'&&PAY().B))?`${M}-${pad(PAY().B)}`:p.date,
     label:p.label,v:p.value,icon:'💰',tap:`st.month='${M}';openPay('${p.key}')`,tag:p.real?'valor real':'previsto'}));
   (db.ferias||[]).forEach(f=>{const c=feriasCalc(f); if(c && c.payDate.slice(0,7)===M) ev.push({key:`fer:${f.id}`,date:c.payDate,
     label:`Férias (${f.dias} dias${f.abono?` + venda de ${f.abono}`:''})`,v:c.liquido,icon:'🏖️',tap:"st.view='simular';st.simTab='ferias';render()",tag:'previsto'});
     // os dias de férias já foram pagos antes: o salário do dia 5 seguinte vem menor
-    if(c) c.descontos.filter(x=>x.mes===M).forEach(x=>ev.push({key:`ferdesc:${f.id}:${M}`,date:payDate(M,5),nominal:`${M}-05`,
-      label:`Desconto no salário: ${x.dias} dias de férias já pagos`,sub:'sai do salário do dia 5',v:-x.valor,icon:'🏖️',tap:"st.view='simular';st.simTab='ferias';render()",auto:true}))});
+    if(c) c.descontos.filter(x=>x.mes===M).forEach(x=>ev.push({key:`ferdesc:${f.id}:${M}`,date:payDate(M,PAY().A),nominal:`${M}-${pad(PAY().A)}`,
+      label:`Desconto no salário: ${x.dias} dias de férias já pagos`,sub:'sai do próximo salário',v:-x.valor,icon:'🏖️',tap:"st.view='simular';st.simTab='ferias';render()",auto:true}))});
   if(m.imv) ev.push({key:`imovel:${M}`,date:dt(db.imovel.day||20),label:db.imovel.nome||'Apartamento (Caixa)',
     sub:m.imv.real?'valor real':m.imv.fase==='obra'?`fase de obra · ~${Math.round(m.imv.pct)}% da obra · estimativa`:`após as chaves (SAC) · estimativa`,
     v:-m.imv.value,icon:'🏢',tap:'openImovel()'});
@@ -1066,7 +1132,7 @@ VIEWS.sim = function(){
     ${active?`<div class="result ${diff<0?'bad':'good'}"><span>Em ${dLabel(lastB.c.to)}, a simulação deixa você com</span><b>${diff<0?'−':'+'} ${brl(Math.abs(diff))}</b></div>
       <button class="btn sec" onclick="simClear()">Limpar simulação</button>`:''}
   </div>
-  ${groups.map(g=>`<div class="card"><h2>📌 Contas até ${dLabel(g.s.c.to)}</h2><p class="sub">Pagamento do dia ${g.s.c.A?'5':'20'} · vencem de ${dLabel(g.s.c.from)} a ${dLabel(g.s.c.to)}</p>${g.bills.map(billRow).join('')}</div>`).join('')
+  ${groups.map(g=>`<div class="card"><h2>📌 Contas até ${dLabel(g.s.c.to)}</h2><p class="sub">Pagamento do dia ${+g.s.c.pay.slice(8)} · vencem de ${dLabel(g.s.c.from)} a ${dLabel(g.s.c.to)}</p>${g.bills.map(billRow).join('')}</div>`).join('')
     || '<div class="card"><div class="empty">Nenhuma conta em aberto nos próximos meses.</div></div>'}`;
 };
 
@@ -1182,8 +1248,8 @@ function setRate(creditor,type,val){
    Recebe até 2 dias antes: dias de férias + 1/3. Se vender dias (abono pecuniário, até 1/3), recebe esses dias + 1/3, sem INSS e sem IR.
    INSS: a parte das férias no INSS do mês. IR: calculado à parte, sem o redutor (para menos).
    Depois, o salário do dia 5 seguinte vem menor, porque os dias de férias já foram pagos. */
-const FERIAS_SALDO = 45;
-const FOLHA_FECHA = 12; // dia em que a folha da empresa fecha
+const feriasSaldo = () => db.salary?.feriasSaldo ?? 30;
+const folhaFecha = () => db.salary?.folhaFecha || 31; // dia em que a folha fecha (31 = fim do mês)
 function feriasCalc(f){
   const s = db.salary; if(!s) return null;
   const S = s.gross, dia = S/30;
@@ -1200,7 +1266,7 @@ function feriasCalc(f){
   const porDia = desconto/f.dias, comp = {};
   for(let k=0;k<f.dias;k++){
     const dt = addDays(f.start,k), dd = +dt.slice(8), M = dt.slice(0,7);
-    const C = dd<=FOLHA_FECHA ? M : addM(M,1);
+    const C = dd<=folhaFecha() ? M : addM(M,1);
     comp[C] = (comp[C]||0)+1;
   }
   const descontos = Object.entries(comp).sort().map(([C,n])=>({comp:C, mes:addM(C,1), dias:n, valor:ceil2(porDia*n)}));
@@ -1211,7 +1277,7 @@ const ferDraft = {start:`${addM(THIS_MONTH,1)}-07`, dias:30, abono:0};
 function ferSet(k,v){ ferDraft[k] = k==='start' ? v : Math.max(0,parseInt(v)||0); render(); }
 function ferAdd(){
   const used = (db.ferias||[]).reduce((t,f)=>t+f.dias+(f.abono||0),0);
-  if(ferDraft.dias+ferDraft.abono+used > FERIAS_SALDO && !confirm('Isso passa dos 45 dias que você tem. Incluir mesmo assim?')) return;
+  if(ferDraft.dias+ferDraft.abono+used > feriasSaldo() && !confirm(`Isso passa dos ${feriasSaldo()} dias que você tem.`+' Incluir mesmo assim?')) return;
   db.ferias = [...(db.ferias||[]), {id:uid(), ...ferDraft}]; save();
 }
 function ferDel(id){ db.ferias = (db.ferias||[]).filter(f=>f.id!==id); save(); }
@@ -1235,7 +1301,7 @@ function feriasCard(){
   const sel = (k,opts) => `<select onchange="ferSet('${k}',this.value)">${opts.map(o=>`<option ${ferDraft[k]===o?'selected':''}>${o}</option>`).join('')}</select>`;
   const line = (l,v,cls='') => `<div class="line"><span>${l}</span><b class="${cls}">${v}</b></div>`;
   return `<div class="card"><h2>🏖️ Suas férias</h2>
-    <p class="sub">Você tem <b>${FERIAS_SALDO-used} dias</b> para usar${used?` (${used} já planejados)`:''}. Nas férias você recebe os dias + 1/3 adiantado, e o salário seguinte vem menor. O ganho real é o 1/3.</p>
+    <p class="sub">Você tem <b>${feriasSaldo()-used} dias</b> para usar${used?` (${used} já planejados)`:''}. Nas férias você recebe os dias + 1/3 adiantado, e o salário seguinte vem menor. O ganho real é o 1/3.</p>
     <div class="row">
       <label class="f"><span>Início</span><input type="date" value="${ferDraft.start}" onchange="ferSet('start',this.value)"></label>
       <label class="f"><span>Dias de folga</span>${sel('dias',[5,10,14,15,20,25,30])}</label>
@@ -1247,7 +1313,7 @@ function feriasCard(){
       ${line('INSS','− '+brl(c.inss))}
       ${line('IR','− '+brl(c.ir))}
       <div class="line big2"><span>Cai na conta até <b>${dLabel(c.payDate)}</b></span><b class="pos">${brl(c.liquido)}</b></div>
-      <div class="parts">Você volta em ${dLabel(c.volta)}. Como a folha fecha dia ${FOLHA_FECHA}, os dias de férias saem do salário assim:<br>
+      <div class="parts">Você volta em ${dLabel(c.volta)}. ${folhaFecha()<31?`Como a folha fecha dia ${folhaFecha()}, os`:'Os'} dias de férias saem do salário assim:<br>
         ${c.descontos.map(x=>`• dia 5 de ${mLabel(x.mes,{month:'long'})}: <b class="neg">− ${brl(x.valor)}</b> (${x.dias} dias da folha de ${mLabel(x.comp,{month:'long'})})`).join('<br>')}</div>
     </div>
     <div class="result ${c.ganho<0?'bad':'good'}"><span>Dinheiro a mais, no total</span><b>${brl(c.ganho)}</b></div>
@@ -1375,34 +1441,82 @@ function savePayReal(key){
   closeSheet(); save();
 }
 function openSalary(){
-  const s = db.salary || {gross:'',deps:0,advPct:40,vtValue:0,vr:0,others:[],since:THIS_MONTH,decimo:true};
+  const s = {gross:'',deps:0,advPct:40,vtValue:0,vr:0,others:[],since:THIS_MONTH,decimo:true,tipo:'clt',diaA:5,diaB:null,
+    folhaFecha:31,feriasSaldo:30,irNoAdiant:false,valorA:'',valorB:'',...(db.salary||{})};
+  const br = v => v===''||v==null ? '' : String(v).replace('.',',');
+  const duas = s.diaB!==null && s.diaB!==undefined;
   openSheet(`
-    <h3>Salário (CLT) <button onclick="closeSheet()">Fechar</button></h3>
+    <h3>💼 Seu salário <button onclick="closeSheet()">Fechar</button></h3>
+    <div class="seg" id="stipo"><button data-t="clt" class="${s.tipo!=='fixo'?'on':''}" onclick="segPick(this);salTipo()">CLT (carteira)</button><button data-t="fixo" class="${s.tipo==='fixo'?'on':''}" onclick="segPick(this);salTipo()">Valor fixo</button></div>
+    <div class="hint" id="stipoHint"></div>
     <div class="row">
-      <label class="f"><span>Salário bruto (R$)</span><input id="sgross" inputmode="decimal" value="${s.gross!==''?String(s.gross).replace('.',','):''}"></label>
-      <label class="f"><span>Dependentes no IR</span><input id="sdeps" inputmode="numeric" value="${s.deps||0}"></label>
+      <label class="f"><span>Dia do pagamento principal</span><input id="sdiaA" inputmode="numeric" value="${s.diaA||5}"></label>
+      <label class="f"><span>&nbsp;</span><label class="check" style="margin:8px 0"><input type="checkbox" id="sduas" ${duas?'checked':''} onchange="salTipo()"> Recebo em 2 partes</label></label>
     </div>
-    <div class="row">
-      <label class="f"><span>Adiantamento dia 20 (%)</span><input id="sadv" inputmode="decimal" value="${s.advPct}"></label>
-      <label class="f"><span>Valor do VT recebido (R$)</span><input id="svt" inputmode="decimal" value="${String(s.vtValue||0).replace('.',',')}"></label>
+    <div id="sduasBox" class="row">
+      <label class="f"><span>Dia da 2ª parte (adiantamento)</span><input id="sdiaB" inputmode="numeric" value="${duas?s.diaB:20}"></label>
+      <label class="f" id="sadvBox"><span>Adiantamento (% do bruto)</span><input id="sadv" inputmode="decimal" value="${br(s.advPct)}"></label>
     </div>
-    <div class="hint">VT: desconto de 6% do salário, limitado ao valor do benefício. Use 0 se não usa VT.</div>
-    <label class="f"><span>Desconto de VR/VA (R$)</span><input id="svr" inputmode="decimal" value="${String(s.vr||0).replace('.',',')}"></label>
-    <label class="f"><span>Outros descontos fixos — um por linha (Descrição: valor)</span><textarea id="sothers" style="min-height:70px" placeholder="Plano de saúde: 120,00">${(s.others||[]).map(o=>`${o.desc}: ${String(o.value).replace('.',',')}`).join('\n')}</textarea></label>
-    <div class="hint">Consignados não entram aqui: cadastre em Dívidas com o tipo “Consignado”, assim o app sabe quando cada um acaba.</div>
+    <div id="sclt">
+      <div class="row">
+        <label class="f"><span>Salário bruto (R$)</span><input id="sgross" inputmode="decimal" value="${br(s.gross)}"></label>
+        <label class="f"><span>Dependentes no IR</span><input id="sdeps" inputmode="numeric" value="${s.deps||0}"></label>
+      </div>
+      <div class="row">
+        <label class="f"><span>Vale-transporte recebido (R$)</span><input id="svt" inputmode="decimal" value="${br(s.vtValue||0)}"></label>
+        <label class="f"><span>Desconto VR/VA (R$)</span><input id="svr" inputmode="decimal" value="${br(s.vr||0)}"></label>
+      </div>
+      <div class="hint">VT: desconto de 6% do salário, limitado ao valor do benefício. Use 0 se não usa.</div>
+      <label class="f"><span>Outros descontos fixos (um por linha: Descrição: valor)</span><textarea id="sothers" style="min-height:64px" placeholder="Plano de saúde: 120,00">${(s.others||[]).map(o=>`${o.desc}: ${br(o.value)}`).join('\n')}</textarea></label>
+      <label class="check"><input type="checkbox" id="sdec" ${s.decimo!==false?'checked':''}> Projetar 13º salário (30/11 e 20/12)</label>
+      <details class="adv"><summary>Mais opções (férias, folha, IR)</summary>
+        <div class="row">
+          <label class="f"><span>Dias de férias disponíveis</span><input id="sfer" inputmode="numeric" value="${s.feriasSaldo??30}"></label>
+          <label class="f"><span>Dia em que a folha fecha</span><input id="sfolha" inputmode="numeric" value="${s.folhaFecha||31}"></label>
+        </div>
+        <div class="hint">Folha: use 31 se ela fecha no fim do mês. Isso muda em qual salário os dias de férias são descontados.</div>
+        <label class="check"><input type="checkbox" id="sirAdv" ${s.irNoAdiant?'checked':''}> A empresa desconta o IR do mês no adiantamento</label>
+      </details>
+    </div>
+    <div id="sfixo">
+      <div class="row">
+        <label class="f"><span>Valor líquido no dia principal (R$)</span><input id="svalA" inputmode="decimal" value="${br(s.valorA)}"></label>
+        <label class="f" id="svalBBox"><span>Valor líquido da 2ª parte (R$)</span><input id="svalB" inputmode="decimal" value="${br(s.valorB)}"></label>
+      </div>
+    </div>
     <label class="f"><span>Projetar a partir de</span><input id="ssince" type="month" value="${s.since}"></label>
-    <label class="check"><input type="checkbox" id="sdec" ${s.decimo!==false?'checked':''}> Projetar 13º salário (30/11 e até 20/12)</label>
+    <div class="hint">Os valores são sempre projetados para menos (arredondados para baixo).</div>
     <button class="btn" onclick="saveSalary()">Salvar</button>
     ${db.salary?`<button class="btn danger" onclick="if(confirm('Remover a configuração de salário?')){db.salary=null;closeSheet();save()}">Remover salário</button>`:''}`);
+  salTipo();
+}
+function salTipo(){
+  const fixo = $('#stipo .on').dataset.t==='fixo', duas = $('#sduas').checked;
+  $('#sclt').style.display = fixo?'none':''; $('#sfixo').style.display = fixo?'':'none';
+  $('#sduasBox').style.display = duas?'':'none'; $('#sadvBox').style.display = fixo?'none':'';
+  $('#svalBBox').style.display = duas?'':'none';
+  $('#stipoHint').textContent = fixo ? 'Para quem é autônoma(o), PJ ou recebe um valor líquido fixo: o app não calcula descontos.' : 'O app calcula INSS e IR pelas tabelas de 2026.';
 }
 function saveSalary(){
-  const gross=r2(parseMoney($('#sgross').value)), advPct=parseMoney($('#sadv').value);
-  if(!(gross>0)) return alert('Informe o salário bruto.');
-  if(!(advPct>=0&&advPct<=100)) return alert('Percentual de adiantamento inválido.');
-  const others = $('#sothers').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.lastIndexOf(':');return {desc:(i>0?l.slice(0,i):'Desconto').trim(),value:r2(parseMoney(i>0?l.slice(i+1):l))}}).filter(o=>o.value>0);
-  db.salary = {...(db.salary||{}), gross, advPct, deps:parseInt($('#sdeps').value)||0,
-    vtValue:r2(parseMoney($('#svt').value))||0, vr:r2(parseMoney($('#svr').value))||0, others,
-    since:$('#ssince').value||THIS_MONTH, decimo:$('#sdec').checked};
+  const fixo = $('#stipo .on').dataset.t==='fixo', duas = $('#sduas').checked;
+  const dia = id => Math.min(31,Math.max(1,parseInt($('#'+id).value)||0));
+  const diaA = dia('sdiaA'), diaB = duas ? dia('sdiaB') : null;
+  if(!(diaA>=1)) return alert('Informe o dia do pagamento.');
+  if(duas && (!(diaB>=1) || diaB===diaA)) return alert('Confira o dia da 2ª parte.');
+  const base = {...(db.salary||{}), tipo:fixo?'fixo':'clt', diaA:duas?Math.min(diaA,diaB):diaA, diaB:duas?Math.max(diaA,diaB):null, since:$('#ssince').value||THIS_MONTH};
+  if(fixo){
+    const valorA = r2(parseMoney($('#svalA').value)||0), valorB = duas ? r2(parseMoney($('#svalB').value)||0) : 0;
+    if(!(valorA>0)) return alert('Informe o valor que você recebe.');
+    db.salary = {...base, valorA, valorB, gross:base.gross||valorA+valorB, decimo:false};
+  } else {
+    const gross=r2(parseMoney($('#sgross').value)), advPct = duas ? parseMoney($('#sadv').value) : 0;
+    if(!(gross>0)) return alert('Informe o salário bruto.');
+    if(!(advPct>=0&&advPct<=100)) return alert('Percentual de adiantamento inválido.');
+    const others = $('#sothers').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.lastIndexOf(':');return {desc:(i>0?l.slice(0,i):'Desconto').trim(),value:r2(parseMoney(i>0?l.slice(i+1):l))}}).filter(o=>o.value>0);
+    db.salary = {...base, gross, advPct, deps:parseInt($('#sdeps').value)||0,
+      vtValue:r2(parseMoney($('#svt').value))||0, vr:r2(parseMoney($('#svr').value))||0, others, decimo:$('#sdec').checked,
+      feriasSaldo:parseInt($('#sfer').value)||0, folhaFecha:Math.min(31,Math.max(1,parseInt($('#sfolha').value)||31)), irNoAdiant:$('#sirAdv').checked};
+  }
   closeSheet(); save();
 }
 
@@ -1477,7 +1591,7 @@ function downloadICS(){
     [i.end,'IR: último dia para declarar','O prazo termina às 23h59 de hoje.']
   ].filter(([d])=>d>=TODAY);
   const stamp = new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
-  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Financas//IR//PT','CALSCALE:GREGORIAN'];
+  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Cofrivo//IR//PT','CALSCALE:GREGORIAN'];
   evs.forEach(([d,t,desc])=>lines.push('BEGIN:VEVENT',`UID:${uid()}-${dt(d)}@financas`,`DTSTAMP:${stamp}`,
     `DTSTART;VALUE=DATE:${dt(d)}`,`DTEND;VALUE=DATE:${dt(addDays(d,1))}`,`SUMMARY:${t}`,`DESCRIPTION:${desc}`,
     'BEGIN:VALARM','ACTION:DISPLAY',`DESCRIPTION:${t}`,'TRIGGER:PT9H','END:VALARM','END:VEVENT'));
@@ -1518,12 +1632,15 @@ function normalize(data){
   if(data.rates && typeof data.rates==='object') out.rates = data.rates;
   if(data.imovel && parseMoney(data.imovel.parcelaRef)>0) out.imovel = {...IMOVEL_DEFAULT,...data.imovel};
   if(data.freio && typeof data.freio==='object') out.freio = data.freio;
+  if(data.perfil && ['f','m','n'].includes(data.perfil.genero)) out.perfil = {genero:data.perfil.genero};
   if(Array.isArray(data.ferias)) out.ferias = data.ferias.filter(f=>/^\d{4}-\d{2}-\d{2}$/.test(f.start||'')&&f.dias>0).map(f=>({id:f.id||uid(),start:f.start,dias:+f.dias,abono:+f.abono||0}));
   if(data.salary && parseMoney(data.salary.gross)>0){
     const s = data.salary;
     out.salary = {gross:num(s.gross), advPct:s.advPct!=null?Number(s.advPct):40, deps:parseInt(s.deps)||0,
       vtValue:num(s.vtValue||0), vr:num(s.vr||0), others:(s.others||[]).map(o=>({desc:o.desc,value:num(o.value)})),
       since:s.since||THIS_MONTH, decimo:s.decimo!==false, actual:s.actual||{}};
+    ['tipo','diaA','diaB','irNoAdiant','folhaFecha','feriasSaldo','valorA','valorB'].forEach(k=>{ if(s[k]!==undefined) out.salary[k]=s[k]; });
+    if(out.salary.diaA===undefined) migrate({salary:out.salary});
   }
   return {out,errs};
 }
@@ -1538,6 +1655,7 @@ function merge(data,replace){
   if(out.imovel) db.imovel = out.imovel;
   if(out.ferias) db.ferias = out.ferias;
   if(out.freio) db.freio = out.freio;
+  if(out.perfil) db.perfil = out.perfil;
   if(!n) return alert('Nada válido para importar.'+(errs.length?'\nIgnorados: '+errs.join(', '):''));
   if(replace) db = out;
   else ['tx','fixed','debts'].forEach(k=>out[k].forEach(it=>{const i=db[k].findIndex(x=>x.id===it.id);i>=0?db[k][i]=it:db[k].push(it)}));
@@ -1555,7 +1673,7 @@ function importFile(inp){
 }
 async function exportData(){
   const json = JSON.stringify({app:'financas',version:1,exportedAt:new Date().toISOString(),...db},null,2);
-  const name = `financas-backup-${TODAY}.json`;
+  const name = `cofrivo-backup-${TODAY}.json`;
   const file = new File([json],name,{type:'application/json'});
   if(navigator.canShare && navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:name});return}catch(e){if(e.name==='AbortError')return}}
   const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
@@ -1629,7 +1747,8 @@ VIEWS.lancar = function(){
     <p class="sub" style="margin:0">Aqui você registra o que é real. Previsões e testes ficam na aba <b>Simular</b>.</p>
   </div>
   <div class="actions">
-    ${action('💰','Recebi meu salário','valor do holerite','openRealPay()')}
+    ${action('📄','Subir holerite (PDF)','o app calcula sozinho','openHolerite()')}
+    ${action('💰','Recebi meu salário','valor que caiu na conta','openRealPay()')}
     ${action('➕','Recebi outro dinheiro','extra, Pix, reembolso',"openTx(null,false,'in')")}
     ${action('🛒','Gastei com algo','iFood, Uber, roupa…',"openTx(null,false,'out')")}
     ${action('🧾','Chegou fatura ou dívida','cartão, empréstimo','openDebt()')}
@@ -1680,11 +1799,12 @@ VIEWS.mais = function(){
   st.maisTab = st.maisTab||'salario';
   const s = db.salary;
   const salario = `<div class="card"><h2>💼 Seu salário</h2>
-      ${s?`<p class="sub">Bruto ${brl(s.gross)} · adiantamento ${s.advPct}% no dia 20 · ${s.deps||0} dependente(s)</p>
+      ${s?`<p class="sub">Bruto ${brl(s.gross)} · ${s.tipo==='fixo'?'valor fixo':`pagamento dia ${s.diaA||5}${s.diaB?` + adiantamento ${s.advPct}% dia ${s.diaB}`:''}`} · ${s.deps||0} dependente(s)</p>
         <p class="sub">O app calcula INSS, IR e descontos e projeta o líquido de cada pagamento, sempre para menos.</p>`
         :'<p class="sub">Ainda não configurado.</p>'}
       <button class="btn" onclick="openSalary()">${s?'Editar salário':'Configurar salário'}</button>
-      ${s?`<button class="btn sec" onclick="openRealPay()">Informar valor real do holerite</button>`:''}
+      <button class="btn sec" onclick="openHolerite()">📄 Subir holerite em PDF</button>
+      ${s?`<button class="btn sec" onclick="openRealPay()">Informar valor que caiu na conta</button>`:''}
     </div>`;
   return segTabs(st.maisTab,'maisTab',[['salario','💼 Salário'],['ir','🧾 Imposto'],['dados','💾 Dados'],['ajuda','📖 Ajuda']])
     + (st.maisTab==='salario' ? salario : st.maisTab==='ir' ? VIEWS.ir() : st.maisTab==='ajuda' ? manualView() : VIEWS.dados());
@@ -1696,14 +1816,16 @@ VIEWS.mais = function(){
    Tudo fica salvo só neste aparelho. Sem punição, sem streak que zera, sem sorteios. */
 const EMO = [['entediada','😐','entediada'],['ansiosa','😰','ansiosa'],['triste','😢','triste'],['cansada','😴','cansada'],
   ['sozinha','🫂','sozinha'],['feliz','🥳','feliz/comemorando'],['fome','🍔','com fome'],['outro','💭','outro']];
-const emoLabel = k => (EMO.find(x=>x[0]===k)||[,,k])[2];
+const EMO_G = {entediada:['entediada','entediado','com tédio'],ansiosa:['ansiosa','ansioso','com ansiedade'],triste:['triste','triste','triste'],
+  cansada:['cansada','cansado','com cansaço'],sozinha:['sozinha','sozinho','com solidão'],feliz:['feliz/comemorando','feliz/comemorando','feliz/comemorando'],fome:['com fome','com fome','com fome'],outro:['outro','outro','outro']};
+const emoLabel = k => { const g = EMO_G[k]; return g ? g[{f:0,m:1,n:2}[GEN()]] : k; };
 const emoIcon  = k => (EMO.find(x=>x[0]===k)||[,'💭'])[1];
-const PLANOS_SUG = [
-  {se:'estiver cansada à noite e abrir um app de compras', entao:'coloco o item no Cofre e vou dormir', gatilho:'cansada'},
-  {se:'estiver ansiosa', entao:'faço o Surfar a Onda antes de qualquer compra', gatilho:'ansiosa'},
-  {se:'estiver entediada', entao:'saio para caminhar 10 minutos ou ligo para alguém', gatilho:'entediada'},
+const planosSug = () => [
+  {se:`estiver ${emoLabel('cansada')} à noite e abrir um app de compras`, entao:'coloco o item no Cofre e vou dormir', gatilho:'cansada'},
+  {se:`estiver ${emoLabel('ansiosa')}`, entao:'faço o Surfar a Onda antes de qualquer compra', gatilho:'ansiosa'},
+  {se:`estiver ${emoLabel('entediada')}`, entao:'saio para caminhar 10 minutos ou ligo para alguém', gatilho:'entediada'},
   {se:'estiver triste', entao:'escrevo o que estou sentindo e chamo minha pessoa de apoio', gatilho:'triste'},
-  {se:'estiver me sentindo sozinha', entao:'mando mensagem para alguém que gosto', gatilho:'sozinha'},
+  {se:`estiver me sentindo ${gw('sozinha','sozinho','só')}`, entao:'mando mensagem para alguém que gosto', gatilho:'sozinha'},
   {se:'quiser comemorar algo', entao:'comemoro sem gastar: um banho demorado, uma série, uma ligação', gatilho:'feliz'},
   {se:'estiver com fome', entao:'como algo antes de abrir qualquer loja', gatilho:'fome'},
   {se:'chegar e-mail ou notificação de promoção', entao:'apago sem abrir', gatilho:''},
@@ -1729,7 +1851,7 @@ function FR(){
   f.cfg = f.cfg || {horas:48};
   ['desejos','ondas','impulsos','checkins'].forEach(k=>f[k]=f[k]||[]);
   f.missoes = f.missoes || {};
-  if(!f.planos) f.planos = PLANOS_SUG.map(p=>({id:uid(),...p,usos:0}));
+  if(!f.planos) f.planos = planosSug().map(p=>({id:uid(),...p,usos:0}));
   return f;
 }
 function freioStats(){
@@ -1754,7 +1876,7 @@ const abertos = () => FR().desejos.filter(d=>d.status==='cofre' && new Date(d.li
 
 /* ---------- chips de emoção ---------- */
 function emoChips(id, sel=[]){
-  return `<div class="chips" id="${id}">${EMO.map(([k,i,l])=>`<button type="button" class="chip ${sel.includes(k)?'on':''}" data-k="${k}" onclick="this.classList.toggle('on')">${i} ${l}</button>`).join('')}</div>`;
+  return `<div class="chips" id="${id}">${EMO.map(([k,i,l])=>`<button type="button" class="chip ${sel.includes(k)?'on':''}" data-k="${k}" onclick="this.classList.toggle('on')">${i} ${emoLabel(k)}</button>`).join('')}</div>`;
 }
 const chipsSel = id => [...document.querySelectorAll(`#${id} .chip.on`)].map(b=>b.dataset.k);
 const slider = (id,val=5) => `<div class="slider"><input type="range" id="${id}" min="0" max="10" value="${val}" oninput="document.getElementById('${id}_v').textContent=this.value"><b id="${id}_v">${val}</b><span>/10</span></div>`;
@@ -1805,9 +1927,9 @@ function lembrarCofre(id){
   const t = new Date(d.liberaEm), z = n=>String(n).padStart(2,'0');
   const loc = `${t.getFullYear()}${z(t.getMonth()+1)}${z(t.getDate())}T${z(t.getHours())}${z(t.getMinutes())}00`;
   const end = new Date(t.getTime()+15*60000), loc2 = `${end.getFullYear()}${z(end.getMonth()+1)}${z(end.getDate())}T${z(end.getHours())}${z(end.getMinutes())}00`;
-  const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Financas//Freio//PT','BEGIN:VEVENT',`UID:${uid()}@freio`,
+  const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Cofrivo//Freio//PT','BEGIN:VEVENT',`UID:${uid()}@freio`,
     `DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').slice(0,15)}Z`,`DTSTART:${loc}`,`DTEND:${loc2}`,
-    `SUMMARY:🔓 O cadeado abriu. Ainda quer isso?`,`DESCRIPTION:Abra o app Finanças → Freio para decidir com calma.`,
+    `SUMMARY:🔓 O cadeado abriu. Ainda quer isso?`,`DESCRIPTION:Abra o Cofrivo → Freio para decidir com calma.`,
     'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:O cadeado abriu. Ainda quer isso?','TRIGGER:PT0M','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ics],{type:'text/calendar'})); a.download='cadeado.ics'; a.click();
 }
@@ -1820,7 +1942,7 @@ function openDecidir(id){
     <p class="sub" style="margin:12px 0 0">Ainda quer isso? Pense com carinho:</p>
     ${q('r1','Eu precisava disso antes de ver o anúncio?',['Sim','Não','Não sei'])}
     <label class="f"><span>Onde vou guardar ou usar?</span><input id="r2" placeholder="Ex.: no armário, já tenho um parecido…"></label>
-    ${q('r3','Como vou me sentir daqui a 1 semana?',['Feliz com a compra','Indiferente','Arrependida','Não sei'])}
+    ${q('r3','Como vou me sentir daqui a 1 semana?',['Feliz com a compra','Indiferente',gw('Arrependida','Arrependido','Com arrependimento'),'Não sei'])}
     <button class="btn" onclick="decidir('${id}','desisti')">💚 Desisti</button>
     <button class="btn sec" onclick="decidir('${id}','comprei')">🛍️ Comprei conscientemente</button>
     <button class="btn sec" onclick="decidir('${id}','adiar')">⏳ Adiar mais</button>
@@ -1868,7 +1990,7 @@ function startSurf(desejoId){
   const antes = +$('#sAntes').value, mins = +document.querySelector('#sheet .seg .on').dataset.m, dur = mins*60e3, t0 = performance.now();
   openSheet(`<h3>🌊 Respire e observe <button onclick="stopSurf();closeSheet()">Fechar</button></h3>
     <div class="wave"><svg viewBox="0 0 300 170" preserveAspectRatio="none"><defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f39bbb"/><stop offset="1" stop-color="#bfe6d3"/></linearGradient></defs>
+      <stop offset="0" style="stop-color:var(--g1)"/><stop offset="1" style="stop-color:var(--g0)"/></linearGradient></defs>
       <path id="wpath" fill="url(#wg)"/></svg></div>
     <p class="surfphrase" id="sFrase">${SURF_FRASES[0]}</p>
     <div class="prog"><i id="sProg" style="width:0%"></i></div>
@@ -1982,7 +2104,7 @@ function openPlano(id){
     <label class="f"><span>Se eu…</span><input id="pSe" value="${esc(p.se)}" placeholder="Ex.: estiver ansiosa"></label>
     <label class="f"><span>…então eu</span><input id="pEntao" value="${esc(p.entao)}" placeholder="Ex.: faço o Surfar a Onda"></label>
     <label class="f"><span>Mostrar esse plano quando eu estiver</span><select id="pGat"><option value="">— só quando eu abrir —</option>
-      ${EMO.map(([k,i,l])=>`<option value="${k}" ${p.gatilho===k?'selected':''}>${i} ${l}</option>`).join('')}</select></label>
+      ${EMO.map(([k,i,l])=>`<option value="${k}" ${p.gatilho===k?'selected':''}>${i} ${emoLabel(k)}</option>`).join('')}</select></label>
     <button class="btn" onclick="savePlano('${id||''}')">Salvar</button>
     ${id?`<button class="btn danger" onclick="if(confirm('Apagar esse plano?')){db.freio.planos=db.freio.planos.filter(x=>x.id!=='${id}');closeSheet();save()}">Apagar</button>`:''}`);
 }
@@ -2079,7 +2201,7 @@ function saveMeta(){
 /* ---------- 7. Recaída sem culpa ---------- */
 function openImpulso(){
   openSheet(`<h3>Comprei por impulso <button onclick="closeSheet()">Fechar</button></h3>
-    <p class="sub" style="color:var(--ink2);font-size:13px;margin-top:-4px">Obrigada por registrar. Isso é coragem, não fracasso. 💗</p>
+    <p class="sub" style="color:var(--ink2);font-size:13px;margin-top:-4px">Que bom que você registrou. Isso é coragem, não fracasso. 💗</p>
     <div class="row"><label class="f"><span>O que foi?</span><input id="iItem"></label>
       <label class="f"><span>Valor (R$)</span><input id="iVal" inputmode="decimal" placeholder="0,00"></label></div>
     <label class="f"><span>Loja ou app</span><input id="iLoja"></label>
@@ -2168,7 +2290,7 @@ VIEWS.freio = function(){
     <button class="action" onclick="openImpulso()"><span class="ai">🛍️</span><span><b>Comprei por impulso</b></span></button>
   </div>
   ${!fezCheckin?`<div class="card"><h2>☀️ Check-in de hoje</h2><p class="sub">Como você está agora? (+5 XP)</p>
-    <div class="chips"><button class="chip" onclick="checkin('bem')">😊 bem</button>${EMO.filter(e=>e[0]!=='outro').map(([k,i,l])=>`<button class="chip" onclick="checkin('${k}')">${i} ${l}</button>`).join('')}</div></div>`:''}
+    <div class="chips"><button class="chip" onclick="checkin('bem')">😊 bem</button>${EMO.filter(e=>e[0]!=='outro').map(([k,i,l])=>`<button class="chip" onclick="checkin('${k}')">${i} ${emoLabel(k)}</button>`).join('')}</div></div>`:''}
   <div class="seg scroll">${[['cofre','🔒 Cofre'],['jardim','🌱 Jardim'],['gatilhos','🗺️ Gatilhos'],['planos','🃏 Planos'],['missoes','🧹 Missões']].map(([v,l])=>`<button class="${st.freioTab===v?'on':''}" onclick="st.freioTab='${v}';render()">${l}</button>`).join('')}</div>
   ${body}
   <p class="foot">Se a compra compulsiva está afetando muito sua vida, procure apoio profissional (ex.: TCC, PRO-AMITI/IPq-USP).</p>`;
@@ -2178,26 +2300,284 @@ function freioBanner(){
   return `<button class="bigbtn small" onclick="openVontade()">🛑 Tô com vontade de comprar</button>
     ${n?`<div class="alert" style="background:var(--mint)" onclick="st.view='freio';st.freioTab='cofre';render()"><span class="ico">🔓</span><div><b>O cadeado abriu${n>1?` para ${n} itens`:''}</b><span>Ainda quer? Toque para decidir com calma.</span></div></div>`:''}`;
 }
+/* ---------- holerite em PDF: ler, conferir e aplicar ----------
+   O PDF é lido aqui no aparelho com a biblioteca pdf.js (baixada uma vez). Nada é enviado para servidor nenhum. */
+const PDFJS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs';
+let pdfjsLib = null;
+async function loadPdfJs(){
+  if(pdfjsLib) return pdfjsLib;
+  pdfjsLib = await import(PDFJS_URL);
+  pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_URL.replace('pdf.min.mjs','pdf.worker.min.mjs');
+  return pdfjsLib;
+}
+async function pdfLines(buf){
+  const lib = await loadPdfJs(), doc = await lib.getDocument({data:buf}).promise, out = [];
+  for(let p=1; p<=doc.numPages; p++){
+    const page = await doc.getPage(p), tc = await page.getTextContent(), rows = [];
+    tc.items.forEach(it=>{
+      const s = (it.str||'').trim(); if(!s) return;
+      const x = it.transform[4], y = it.transform[5], w = it.width||0;
+      let r = rows.find(r=>Math.abs(r.y-y)<2.5); if(!r){ r={y,items:[]}; rows.push(r); }
+      r.items.push({s,x,end:x+w});
+    });
+    rows.sort((a,b)=>b.y-a.y).forEach(r=>{ r.items.sort((a,b)=>a.x-b.x); r.text = r.items.map(i=>i.s).join(' '); out.push(r); });
+  }
+  return out;
+}
+const MONEY = /^-?\d{1,3}(\.\d{3})*,\d{2}$/;
+const pm = s => parseMoney(s);
+const MESES_N = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function parseHolerite(lines){
+  const all = lines.map(l=>l.text).join('\n'), r = {rubricas:[], consignados:[], outros:[], extras:[]};
+  // valor abaixo (ou ao lado) de um rótulo: primeiro valor à direita do início do rótulo
+  const below = re => {
+    const i = lines.findIndex(l=>re.test(l.text)); if(i<0) return null;
+    const lab = lines[i].items.find(it=>re.test(it.s)) || lines[i].items.find(it=>re.test(it.s+' '));
+    const lx = lab ? lab.x-4 : 0;
+    const same = lines[i].items.filter(it=>MONEY.test(it.s) && it.x>=lx);
+    if(same.length) return pm(same[0].s);
+    for(const l of lines.slice(i+1,i+3)){
+      const ms = l.items.filter(it=>MONEY.test(it.s));
+      const right = ms.filter(it=>it.end>=lx+10);
+      if(right.length) return pm(right[0].s);
+    }
+    return null;
+  };
+  const dateBelow = re => {
+    const i = lines.findIndex(l=>re.test(l.text)); if(i<0) return null;
+    for(const l of lines.slice(i,i+3)){ const m = l.text.match(/(\d{2})\/(\d{2})\/(\d{4})/); if(m) return `${m[3]}-${m[2]}-${m[1]}`; }
+    return null;
+  };
+  r.dataPag = dateBelow(/Data\s*(de\s*)?Pag/i);
+  const cm = all.match(/(janeiro|fevereiro|mar[cç]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\s*\/\s*(\d{4})/i);
+  if(cm){ const mi = MESES_N.indexOf(cm[1].toLowerCase().replace('marco','março')); r.competencia = `${cm[2]}-${pad(mi+1)}`; }
+  r.liquido = below(/L[íi]quido\s*a\s*Receber|L[íi]quido\s*a\s*Pagar|Valor\s*L[íi]quido/i);
+  if(r.liquido==null){ const m = all.match(/L[íi]quido[^\d]{0,40}([\d.]+,\d{2})/i); if(m) r.liquido = pm(m[1]); }
+  r.salCalculo = below(/Sal\.?\s*do\s*C[áa]lculo|Sal[áa]rio\s*Contratual/i);
+  // colunas Referência / Provento / Desconto
+  const hdr = lines.find(l=>/Provento|Vencimento/i.test(l.text) && /Desconto/i.test(l.text));
+  const col = k => hdr?.items.find(it=>k.test(it.s));
+  const cR = col(/Refer/i), cP = col(/Provento|Vencimento/i), cD = col(/Desconto/i);
+  lines.forEach(l=>{
+    const first = l.items[0]; if(!first || !/^\d{2,4}$/.test(first.s)) return;
+    const money = l.items.filter(it=>MONEY.test(it.s));
+    const desc = l.items.filter(it=>!MONEY.test(it.s) && it!==first).map(it=>it.s).join(' ').trim();
+    if(!desc || !money.length) return;
+    let prov = 0, dsc = 0;
+    money.forEach(it=>{
+      const cands = [['r',cR],['p',cP],['d',cD]].filter(c=>c[1]);
+      if(!cands.length){ dsc = pm(it.s); return; }
+      const best = cands.sort((a,b)=>Math.abs(a[1].end-it.end)-Math.abs(b[1].end-it.end))[0][0];
+      if(best==='p') prov = pm(it.s); else if(best==='d') dsc = pm(it.s);
+    });
+    if(!prov && !dsc) return;
+    r.rubricas.push({cod:first.s, desc, prov, dsc});
+  });
+  // classificação
+  r.rubricas.forEach(x=>{
+    const d = x.desc.toUpperCase();
+    if(/SAL[AÁ]RIO\s*(BASE|MENSAL)|^SAL[AÁ]RIO$|HORAS\s*NORMAIS/.test(d) && x.prov){ r.bruto = x.prov; return; }
+    if(/13/.test(d) && /SAL|ADIANT|PARC|GRATIF/.test(d)){ if(x.prov) r.decimo = (r.decimo||0)+x.prov; if(x.dsc) r.descontos13 = (r.descontos13||0)+x.dsc; return; }
+    if(/ADIANT/.test(d)){ if(x.prov) r.adiantProv = x.prov; if(x.dsc) r.adiantDesc = x.dsc; return; }
+    if(/I\.?\s*N\.?\s*S\.?\s*S|PREVID/.test(d) && x.dsc){ r.inss = (r.inss||0)+x.dsc; return; }
+    if((/^I\.?\s*R\.?$|IRRF|IMPOSTO\s*DE\s*RENDA|^I\.R\./.test(d)) && x.dsc){ r.ir = (r.ir||0)+x.dsc; return; }
+    if(/VTRANSP\s*MES|VLR\s*PG\s*VTRANSP|PG\s*VALE\s*TRANSP/.test(d)){ if(x.prov) r.vtBeneficio = x.prov; return; }
+    if(/VALE\s*TRANSP|^V\.?T\.?\b|DESC\.?\s*VT/.test(d) && x.dsc){ r.vt = x.dsc; return; }
+    if(/\bVR\b|\bVA\b|REFEI|ALIMENT/.test(d) && x.dsc){ r.vr = (r.vr||0)+x.dsc; return; }
+    if(/CONSIG|EMPR[EÉ]ST|CR[EÉ]DITO\s*TRABALHADOR/.test(d) && x.dsc){ r.consignados.push({desc:x.desc, value:x.dsc}); return; }
+    if(/F[EÉ]RIAS/.test(d)){ if(x.prov) r.ferias = (r.ferias||0)+x.prov; return; }
+    if(x.dsc) r.outros.push({desc:x.desc, value:x.dsc});
+    else if(x.prov) r.extras.push({desc:x.desc, value:x.prov});
+  });
+  r.tipo = r.bruto ? 'salario' : r.decimo ? '13' : r.adiantProv ? 'adiantamento' : r.ferias ? 'ferias' : 'outro';
+  r.irNoAdiant = r.tipo==='adiantamento' && r.ir>0;
+  return r;
+}
+async function lerHolerites(files){
+  const res = [];
+  for(const f of files){
+    try{
+      const buf = f.buf || await f.arrayBuffer();
+      const lines = await pdfLines(buf);
+      if(lines.length<3){ res.push({nome:f.name, erro:'Este PDF parece ser uma imagem (escaneado). Não consigo ler o texto dele.'}); continue; }
+      res.push({nome:f.name, ...parseHolerite(lines)});
+    }catch(e){ res.push({nome:f.name, erro: /import|fetch|network|Failed/i.test(e.message) ? 'Não consegui baixar o leitor de PDF. Verifique a internet e tente de novo.' : 'Não consegui ler este arquivo.'}); }
+  }
+  return res;
+}
+function openHolerite(){
+  openSheet(`<h3>📄 Subir holerite <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub" style="color:var(--ink2);font-size:14px">Escolha um ou mais holerites em <b>PDF</b>. O app lê os arquivos <b>aqui no celular</b>, mostra o que encontrou e você confere antes de salvar.</p>
+    <ul class="tips" style="font-size:13px">
+      <li>💡 Suba os mais recentes: o do salário e, se recebe em duas partes, o do adiantamento.</li>
+      <li>🔒 O arquivo não é enviado para ninguém. Só o leitor de PDF é baixado da internet, uma vez.</li>
+      <li>📷 Foto ou print do holerite não funciona aqui. Use o PDF que o RH ou o app da empresa disponibiliza.</li>
+    </ul>
+    <input type="file" id="hFiles" accept="application/pdf,.pdf" multiple hidden onchange="processarHolerites(this.files)">
+    <button class="btn" onclick="$('#hFiles').click()">Escolher PDF(s)</button>
+    <div id="hStatus" class="hint" style="text-align:center;margin-top:10px"></div>`);
+}
+let HOL = [];
+async function processarHolerites(files){
+  if(!files || !files.length) return;
+  $('#hStatus').textContent = 'Lendo… isso leva alguns segundos.';
+  HOL = await lerHolerites([...files]);
+  revisarHolerites();
+}
+function revisarHolerites(){
+  const ok = HOL.filter(h=>!h.erro), sal = ok.filter(h=>h.tipo==='salario').sort((a,b)=>(b.dataPag||'').localeCompare(a.dataPag||''))[0];
+  const adi = ok.filter(h=>h.tipo==='adiantamento').sort((a,b)=>(b.dataPag||'').localeCompare(a.dataPag||''))[0];
+  const s = db.salary || {};
+  const bruto = sal?.bruto || sal?.salCalculo || adi?.salCalculo || s.gross || '';
+  const advVal = adi?.adiantProv || sal?.adiantDesc || 0;
+  const advPct = bruto && advVal ? Math.round(advVal/bruto*100) : (s.advPct||0);
+  // se o pagamento foi antecipado por fim de semana/feriado, volta para o dia "redondo" (ex.: 19/11 → dia 20)
+  const guessDay = dt => { const d=+dt.slice(8), M=dt.slice(0,7); for(const N of [5,10,15,20,25,30,1]) if(N-d>=0 && N-d<=3 && payDate(M,N)===dt) return N; return d; };
+  const diaA = sal?.dataPag ? guessDay(sal.dataPag) : (s.diaA||5);
+  const diaB = adi?.dataPag ? guessDay(adi.dataPag) : (advVal ? (s.diaB||20) : null);
+  const vtBen = sal?.vtBeneficio || (sal?.vt ? r2(sal.vt/0.06) : (s.vtValue||0));
+  const jaTem = v => db.debts.some(d=>d.kind==='consignado' && Math.abs(d.value-v)<0.02);
+  const consigNovos = (sal?.consignados||[]).filter(c=>!jaTem(c.value));
+  const br = v => v===''||v==null ? '' : String(v).replace('.',',');
+  const card = h => h.erro ? `<div class="need"><div class="line"><span>⚠️ ${esc(h.nome)}</span></div><div class="parts">${h.erro}</div></div>`
+    : `<div class="need"><div class="line"><span><b>${{salario:'Salário',adiantamento:'Adiantamento','13':'13º salário',ferias:'Férias',outro:'Holerite'}[h.tipo]}</b>${h.competencia?' · '+mLabel(h.competencia,{month:'long',year:'numeric'}):''}</span><b class="pos">${h.liquido!=null?brl(h.liquido):''}</b></div>
+      <div class="parts">${h.dataPag?`Pago em ${dLabel(h.dataPag)}/${h.dataPag.slice(0,4)} · `:''}${[h.bruto&&`salário ${brl(h.bruto)}`, h.adiantProv&&`adiantamento ${brl(h.adiantProv)}`, h.inss&&`INSS ${brl(h.inss)}`, h.ir&&`IR ${brl(h.ir)}`, h.vt&&`VT ${brl(h.vt)}`, h.vr&&`VR ${brl(h.vr)}`, h.consignados.length&&`${h.consignados.length} consignado(s)`, h.outros.length&&`${h.outros.length} outro(s) desconto(s)`].filter(Boolean).join(' · ')}</div></div>`;
+  openSheet(`<h3>📄 Confira o que eu encontrei <button onclick="closeSheet()">Fechar</button></h3>
+    ${HOL.map(card).join('')}
+    ${ok.length?`<h4 class="mini">O que vou atualizar no seu salário</h4>
+    <div class="row"><label class="f"><span>Salário bruto (R$)</span><input id="hvBruto" inputmode="decimal" value="${br(bruto)}"></label>
+      <label class="f"><span>Dia do pagamento principal</span><input id="hvDiaA" inputmode="numeric" value="${diaA}"></label></div>
+    <label class="check"><input type="checkbox" id="hvDuas" ${diaB?'checked':''}> Recebo em 2 partes (adiantamento)</label>
+    <div class="row"><label class="f"><span>Dia do adiantamento</span><input id="hvDiaB" inputmode="numeric" value="${diaB||20}"></label>
+      <label class="f"><span>Adiantamento (%)</span><input id="hvAdv" inputmode="decimal" value="${br(advPct)}"></label></div>
+    <div class="hint">Se o pagamento caiu antes por causa de feriado ou fim de semana, coloque o dia normal (ex.: 20).</div>
+    <label class="check"><input type="checkbox" id="hvIrAdv" ${adi?.irNoAdiant||s.irNoAdiant?'checked':''}> O IR do mês é descontado no adiantamento</label>
+    <div class="row"><label class="f"><span>Vale-transporte recebido (R$)</span><input id="hvVt" inputmode="decimal" value="${br(vtBen)}"></label>
+      <label class="f"><span>Desconto VR/VA (R$)</span><input id="hvVr" inputmode="decimal" value="${br(sal?.vr??s.vr??0)}"></label></div>
+    <label class="f"><span>Outros descontos fixos (um por linha: Descrição: valor)</span><textarea id="hvOutros" style="min-height:60px">${[...(sal?.outros||s.others||[]), ...consigNovos.map(c=>({desc:c.desc,value:c.value}))].map(o=>`${o.desc}: ${br(o.value)}`).join('\n')}</textarea></label>
+    ${consigNovos.length?`<div class="hint">Encontrei ${consigNovos.length} consignado(s) que ainda não estão em <b>Contas</b>. Coloquei como descontos fixos. Se você cadastrar as parcelas em Contas, o app sabe quando cada um acaba (aí apague daqui).</div>`:''}
+    <label class="check"><input type="checkbox" id="hvReais" checked> Registrar o líquido destes holerites como valor <b>real</b> recebido</label>
+    <button class="btn" onclick="aplicarHolerites()">Salvar e recalcular</button>`
+    :`<button class="btn sec" onclick="openHolerite()">Tentar outro arquivo</button><button class="btn sec" onclick="openSalary()">Preencher à mão</button>`}`);
+}
+function aplicarHolerites(){
+  const g = id => parseMoney($('#'+id).value);
+  const bruto = r2(g('hvBruto')||0); if(!(bruto>0)) return alert('Confira o salário bruto.');
+  const duas = $('#hvDuas').checked, dA = Math.min(31,Math.max(1,parseInt($('#hvDiaA').value)||5)), dB = duas ? Math.min(31,Math.max(1,parseInt($('#hvDiaB').value)||20)) : null;
+  const others = $('#hvOutros').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.lastIndexOf(':');return {desc:(i>0?l.slice(0,i):'Desconto').trim(),value:r2(parseMoney(i>0?l.slice(i+1):l))}}).filter(o=>o.value>0);
+  const ok = HOL.filter(h=>!h.erro);
+  const firstPay = ok.map(h=>h.dataPag).filter(Boolean).sort()[0];
+  const s = {deps:0, decimo:true, folhaFecha:31, feriasSaldo:30, since:firstPay?firstPay.slice(0,7):THIS_MONTH, ...(db.salary||{})};
+  db.salary = {...s, tipo:'clt', gross:bruto, diaA:duas?Math.min(dA,dB):dA, diaB:duas?Math.max(dA,dB):null, advPct:duas?(g('hvAdv')||0):0,
+    irNoAdiant:duas && $('#hvIrAdv').checked, vtValue:r2(g('hvVt')||0), vr:r2(g('hvVr')||0), others};
+  if(firstPay && firstPay.slice(0,7) < (db.salary.since||'9999')) db.salary.since = firstPay.slice(0,7);
+  if($('#hvReais').checked){
+    db.salary.actual = db.salary.actual||{};
+    ok.forEach(h=>{
+      if(!h.dataPag || h.liquido==null) return;
+      const M = h.dataPag.slice(0,7), d = +h.dataPag.slice(8);
+      const key = h.tipo==='13' ? (M.slice(5)==='11'?'d1':'d2') : h.tipo==='adiantamento' ? 'p20' : h.tipo==='salario' ? 'p5' : null;
+      if(!key) return;
+      (db.salary.actual[M] = db.salary.actual[M]||{})[key] = h.liquido;
+    });
+  }
+  closeSheet(); save();
+  openSheet(`<h3>✅ Pronto <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub">Seu salário foi atualizado e as projeções já usam esses valores (sempre para menos).</p>
+    <button class="btn" onclick="closeSheet();st.view='resumo';render()">Ver minhas próximas datas</button>
+    <button class="btn sec" onclick="closeSheet();openSalary()">Revisar o salário</button>`);
+}
+/* ---------- identificação e tema ---------- */
+const GEN = () => db.perfil?.genero || 'n';
+const gw = (f,m,n) => ({f,m,n})[GEN()] ?? n;
+const isDark = () => db.perfil?.modo === 'escuro';
+function applyTheme(){
+  const g = db.perfil?.genero, dark = isDark();
+  document.body.dataset.theme = g==='m' ? 'm' : g==='n' ? 'n' : '';
+  document.body.dataset.mode = dark ? 'dark' : '';
+  const bgc = dark ? ({m:'#12171e',n:'#151614'}[g]||'#17151c') : ({m:'#f5f8fc',n:'#f8f7f4'}[g]||'#fbf7f5');
+  const mc = document.querySelector('meta[name="theme-color"]'); if(mc) mc.content = bgc;
+  const cs = document.querySelector('meta[name="color-scheme"]'); if(cs) cs.content = dark ? 'dark' : 'light';
+  // ícone e manifesto acompanham o tema escolhido (vale para quando a pessoa adicionar à tela inicial)
+  const ap = $('#lnkApple'); if(ap) ap.href = dark ? 'icon-dark-180.png' : 'icon-light-180.png';
+  const mf = $('#lnkManifest'); if(mf){ const want = dark ? 'manifest-dark.webmanifest' : 'manifest.webmanifest'; if(!mf.href.endsWith(want)) mf.href = want; }
+}
+function setModo(m){ db.perfil = {...(db.perfil||{}), modo:m}; localStorage.setItem(KEY,JSON.stringify(db)); applyTheme(); }
+const appIcon = () => `<img class="appicon" src="${isDark()?'icon-dark-180.png':'icon-light-180.png'}" alt="Cofrivo">`;
+const modeButtons = next => `<div class="modeopts">${[['claro','☀️','Claro'],['escuro','🌙','Escuro']].map(([m,i,l])=>`<button class="idopt ${(db.perfil?.modo||'claro')===m?'on':''}" onclick="setModo('${m}');${next}"><span>${i}</span>${l}</button>`).join('')}</div>`;
+function setGenero(g){ db.perfil = {...(db.perfil||{}), genero:g}; localStorage.setItem(KEY,JSON.stringify(db)); applyTheme(); }
+const ID_OPTS = [['f','👩','Mulher'],['m','👨','Homem'],['n','🙂','Prefiro não responder']];
+const idButtons = next => `<div class="idopts">${ID_OPTS.map(([g,i,l])=>`<button class="idopt ${db.perfil?.genero===g?'on':''}" onclick="setGenero('${g}');${next}"><span>${i}</span>${l}</button>`).join('')}</div>`;
+function showIdOnly(){
+  $('#sheetbg').classList.add('open','intro');
+  $('#sheet').innerHTML = `<div class="introbox"><div class="introico">✨</div><h2>Novidade: deixe o app com a sua cara</h2>
+    <p>Como você se identifica? Isso muda as cores e o jeito como o app fala com você.</p>
+    ${idButtons("endIntro()")}</div>`;
+}
+
+/* ---------- instalar na tela inicial ----------
+   Android/Chrome/Edge: o navegador permite mostrar o pedido de instalação (beforeinstallprompt).
+   iPhone/iPad: a Apple não permite pedir por código; mostramos o passo a passo do Safari. */
+const INSTALL_KEY = 'cofrivo.install';
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+window.addEventListener('appinstalled', () => { localStorage.setItem(INSTALL_KEY,'instalado'); installEvt = null; });
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+const isIOSSafari = () => isIOS() && !/crios|fxios|edgios|gsa\//i.test(navigator.userAgent);
+function maybeInstall(force){
+  if(isStandalone()) return;
+  const v = localStorage.getItem(INSTALL_KEY);
+  if(!force && v && (v==='instalado' || Date.now()-(+v) < 7*864e5)) return; // pergunta de novo só depois de 7 dias
+  if(!force && $('#sheetbg').classList.contains('open')) return;
+  const passos = isIOS()
+    ? (isIOSSafari()
+      ? `<ol class="steps"><li>Toque em <b>Compartilhar</b> <span class="kbd">⬆︎</span> na barra do Safari.</li><li>Role e toque em <b>Adicionar à Tela de Início</b>.</li><li>Toque em <b>Adicionar</b>.</li></ol>`
+      : `<p class="sub">No iPhone, abra este link no <b>Safari</b> (o app da bússola) e depois toque em <b>Compartilhar → Adicionar à Tela de Início</b>.</p>`)
+    : installEvt ? '' :
+      `<ol class="steps"><li>Abra o menu do navegador <span class="kbd">⋮</span>.</li><li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li></ol>`;
+  $('#sheetbg').classList.add('open','intro');
+  $('#sheet').innerHTML = `<div class="introbox"><div class="introico">${appIcon()}</div>
+    <h2>Colocar o Cofrivo na tela inicial?</h2>
+    <p>Assim ele abre como um app, em tela cheia, e funciona até sem internet.</p>
+    ${passos}
+    ${installEvt?`<button class="btn" onclick="instalarAgora()">📲 Instalar agora</button>`:`<button class="btn" onclick="fecharInstall()">Entendi</button>`}
+    <button class="btn sec" style="background:none" onclick="fecharInstall()">Agora não</button></div>`;
+}
+async function instalarAgora(){
+  if(!installEvt) return fecharInstall();
+  installEvt.prompt(); const r = await installEvt.userChoice; installEvt = null;
+  localStorage.setItem(INSTALL_KEY, r.outcome==='accepted' ? 'instalado' : String(Date.now()));
+  $('#sheetbg').classList.remove('open','intro');
+}
+function fecharInstall(){ localStorage.setItem(INSTALL_KEY, localStorage.getItem(INSTALL_KEY)==='instalado'?'instalado':String(Date.now())); $('#sheetbg').classList.remove('open','intro'); }
+
 /* ---------- introdução (primeiro acesso) ---------- */
 const INTRO_KEY = 'financas.intro.v1';
 const INTRO = [
-  ['👋','Oi! Que bom ter você aqui','Este app ajuda você a saber <b>quando o dinheiro entra</b>, <b>quanto precisa ter</b> para pagar as contas e a <b>frear compras por impulso</b>.<br><br>🔒 Tudo fica salvo <b>só neste celular</b>. Ninguém mais vê.'],
-  ['🏠','Início','Mostra as próximas datas: quando cai o salário e quanto você precisa ter em cada <b>dia 5</b> e <b>dia 20</b>.<br><br>Verde = vai sobrar. Rosa = vai faltar.'],
-  ['➕','Lançar','Aqui entra <b>o que é real</b>: o salário que caiu, um gasto, uma fatura nova, uma conta que você pagou.<br><br>O que não foi lançado aparece como <b>previsto</b>, sempre calculado para menos nos ganhos e para mais nas dívidas.'],
+  ['ICON','Oi! Este é o Cofrivo','O Cofrivo ajuda você a saber <b>quando o dinheiro entra</b>, <b>quanto precisa ter</b> para pagar as contas e a <b>frear compras por impulso</b>.<br><br>🔒 Tudo fica salvo <b>só neste celular</b>. Ninguém mais vê.'],
+  ['✨','Como você se identifica?','Isso muda as cores do app e o jeito como ele fala com você. Dá para trocar depois em <b>Mais → 📖 Ajuda</b>.','id'],
+  ['📄','Seu holerite faz as contas por você','Tem o holerite em <b>PDF</b>? Suba o arquivo em <b>Lançar → 📄 Subir holerite</b>.<br><br>O app lê o PDF <b>aqui no celular</b> (o arquivo não é enviado para ninguém), encontra salário, INSS, IR, descontos e o líquido, e <b>mostra tudo para você conferir</b> antes de salvar.<br><br>Com isso ele projeta seus próximos pagamentos sozinho. Dica: suba os dois últimos (o salário e o adiantamento, se você recebe em duas partes).'],
+  ['🏠','Início','Mostra as próximas datas: quando cai o seu dinheiro e <b>quanto você precisa ter</b> em cada dia de pagamento.<br><br>Verde = vai sobrar. Rosado = vai faltar.'],
+  ['➕','Lançar','Aqui entra <b>o que é real</b>: o salário que caiu, um gasto, uma fatura nova, uma conta que você pagou.<br><br>O que não foi lançado aparece como <b>previsto</b>: ganhos sempre calculados para menos, dívidas para mais.'],
   ['🛑','Freio','Bateu vontade de comprar? Toque em <b>“Tô com vontade de comprar”</b>. O item vai para o Cofre com um cadeado, e você decide com calma depois.<br><br>Sem culpa, sem punição: cada passo conta como vitória. 💗'],
   ['🧪','Simular','Teste sem medo: e se eu parcelar essa fatura? E se eu tirar férias em dezembro?<br><br><b>Nada do que você testa muda seus dados reais.</b>'],
-  ['🚀','Vamos começar?','Se o Claude preparou seus dados, cole tudo de uma vez. Se não, comece do zero pela aba Lançar.<br><br>O manual completo fica em <b>Mais → 📖 Ajuda</b>.'],
+  ['🚀','Vamos começar?','Escolha como quer começar. Você pode fazer os outros depois.<br><br>O manual completo fica em <b>Mais → 📖 Ajuda</b>.'],
 ];
 let introStep = 0;
 function showIntro(step=0){
   introStep = step;
-  const [ico,t,txt] = INTRO[step], last = step===INTRO.length-1;
+  const [ico,t,txt,kind] = INTRO[step], last = step===INTRO.length-1;
   $('#sheetbg').classList.add('open','intro');
   $('#sheet').innerHTML = `<div class="introbox">
-    <div class="introico">${ico}</div><h2>${t}</h2><p>${txt}</p>
+    <div class="introico">${ico==='ICON'?appIcon():ico}</div><h2>${t}</h2><p>${txt}</p>
+    ${kind==='id'?idButtons(`showIntro(${step})`)+`<p style="margin:4px 0 6px;font-size:14px">E o tema do app?</p>`+modeButtons(`showIntro(${step})`)+`<button class="btn" onclick="showIntro(${step+1})">Continuar</button>`:''}
     <div class="dots">${INTRO.map((_,i)=>`<i class="${i===step?'on':''}"></i>`).join('')}</div>
-    ${last?`<button class="btn" onclick="endIntro('dados')">Colar meus dados</button>
-      <button class="btn sec" onclick="endIntro('lancar')">Começar do zero</button>`
+    ${last?`<button class="btn" onclick="endIntro('holerite')">📄 Subir meu holerite</button>
+      <button class="btn sec" onclick="endIntro('salario')">Preencher meu salário à mão</button>
+      <button class="btn sec" onclick="endIntro('dados')">Colar dados que recebi</button>
+      <button class="btn sec" style="background:none" onclick="endIntro('lancar')">Só explorar o app</button>`
+      : kind==='id' ? `<button class="btn sec" style="background:none" onclick="showIntro(${step+1})">Pular</button>`
       :`<button class="btn" onclick="showIntro(${step+1})">Próximo</button>
       <button class="btn sec" style="background:none" onclick="endIntro()">Pular introdução</button>`}
     ${step>0&&!last?`<button class="back" onclick="showIntro(${step-1})">‹ voltar</button>`:''}
@@ -2205,22 +2585,26 @@ function showIntro(step=0){
 }
 function endIntro(go){
   localStorage.setItem(INTRO_KEY,'1');
+  if(!db.perfil) setGenero('n');
   $('#sheetbg').classList.remove('open','intro');
   if(go==='dados'){ st.view='mais'; st.maisTab='dados'; }
   if(go==='lancar'){ st.view='lancar'; }
   window.scrollTo(0,0); render();
+  if(go==='holerite') setTimeout(openHolerite,50);
+  if(!go || go==='lancar' || go==='dados') setTimeout(()=>maybeInstall(),1200);
+  if(go==='salario') setTimeout(openSalary,50);
 }
 
 /* ---------- manual ---------- */
 const MANUAL = [
   ['🚀','Primeiros passos',`<ol>
-    <li>Instale no iPhone: abra o endereço no <b>Safari</b>, toque em <b>Compartilhar → Adicionar à Tela de Início</b>.</li>
+    <li>Instale: no <b>iPhone</b>, abra o endereço no <b>Safari</b> e toque em <b>Compartilhar → Adicionar à Tela de Início</b>. No <b>Android</b>, toque em <b>Instalar</b> quando o Cofrivo perguntar (ou menu ⋮ → Instalar app). Também funciona no computador.</li>
     <li>Coloque seus dados: <b>Mais → 💾 Dados → Colar dados</b> (o bloco que o Claude preparou) ou cadastre pela aba <b>Lançar</b>.</li>
     <li>Informe quanto tem na conta: <b>Lançar → 👛 Saldo da conta</b>. Faça isso sempre que quiser “acertar” a previsão.</li>
     <li>Configure o Freio: no ⚙️ da aba <b>Freio</b>, coloque o valor da sua hora e, se quiser, uma pessoa de apoio.</li></ol>`],
   ['🏠','Início',`<p><b>Próximas datas</b> mostra, em ordem, quando cai dinheiro (💰) e quando você precisa ter dinheiro para as contas (📌).</p>
-    <p>Abaixo vêm os dois blocos do mês:</p><ul><li><b>🌱 Dia 5</b>: salário do dia 5 paga as contas que vencem de 05 a 19.</li>
-    <li><b>🌸 Dia 20</b>: adiantamento (e 13º) paga as contas de 20 até o dia 4 do mês seguinte.</li></ul>
+    <p>Abaixo vêm os blocos do mês:</p><ul><li><b>🌱 Pagamento principal</b>: o que cai no seu dia de pagamento paga as contas que vencem até o próximo pagamento.</li>
+    <li><b>🌸 2ª parte</b> (se você recebe em duas partes): o adiantamento (e o 13º) paga as contas seguintes.</li></ul>
     <p>O que sobra (ou falta) num bloco passa para o próximo. Use ‹ › no topo para ver outros meses.</p>
     <p><b>📊 Para onde vai seu dinheiro</b> mostra seus gastos do mês por categoria.</p>`],
   ['➕','Lançar (o que é real)',`<ul>
@@ -2238,7 +2622,7 @@ const MANUAL = [
     <li>Quando o cadeado abrir, responda 3 perguntas e escolha: <b>Desisti</b>, <b>Comprei conscientemente</b> ou <b>Adiar mais</b>. Nenhuma escolha é erro.</li>
     <li><b>🌊 Surfar a onda</b>: 3 a 5 minutos respirando enquanto a vontade sobe e desce.</li>
     <li><b>🗺️ Gatilhos</b>: mostra em que horários, dias e emoções a vontade aparece mais.</li>
-    <li><b>🃏 Planos “Se… então…”</b>: combinados com você mesma que aparecem na hora certa.</li>
+    <li><b>🃏 Planos “Se… então…”</b>: combinados com {mesma} que aparecem na hora certa.</li>
     <li><b>🧹 Missões</b>: pequenas mudanças que deixam a compra por impulso mais difícil.</li>
     <li><b>🌱 Jardim</b>: o valor do que você desistiu vira água para a planta e soma na sua meta.</li>
     <li><b>Comprei por impulso</b>: registre sem culpa. Suas vitórias continuam lá.</li></ul>
@@ -2259,8 +2643,12 @@ const MANUAL = [
 function manualView(){
   return `<div class="card"><h2>📖 Como usar o app</h2>
     <p class="sub">Toque em um tema para abrir.</p>
-    ${MANUAL.map(([i,t,h],k)=>`<details class="tip-item manual" ${k===0?'open':''}><summary><span class="e">${i}</span>${t}</summary><div class="mtext">${h}</div></details>`).join('')}
-    <button class="btn sec" onclick="showIntro(0)">Ver a introdução de novo</button></div>`;
+    ${MANUAL.map(([i,t,h],k)=>`<details class="tip-item manual" ${k===0?'open':''}><summary><span class="e">${i}</span>${t}</summary><div class="mtext">${h.replace('{mesma}',gw('você mesma','você mesmo','você'))}</div></details>`).join('')}
+    <button class="btn sec" onclick="showIntro(0)">Ver a introdução de novo</button>
+    <button class="btn sec" onclick="maybeInstall(true)">📲 Instalar na tela inicial</button></div>
+    <div class="card"><h2>🎨 Aparência</h2><p class="sub">Como você se identifica? Muda as cores e o jeito como o app fala com você.</p>
+    ${idButtons('render()')}<p class="sub" style="margin:10px 0 4px">Tema do app</p>${modeButtons('render()')}
+    <p class="hint">O ícone na tela inicial segue o tema escolhido no momento em que você adiciona o app. Para trocar o ícone depois, remova o atalho e adicione de novo.</p></div>`;
 }
 
 /* ---------- navegação ---------- */
@@ -2270,7 +2658,8 @@ $('#next').onclick=()=>{st.month=addM(st.month,1);render()};
 $('#gotoday').onclick=()=>{st.month=THIS_MONTH;render()};
 
 render();
-if(!localStorage.getItem(INTRO_KEY)) showIntro(0);
+applyTheme();
+if(!localStorage.getItem(INTRO_KEY)) showIntro(0); else if(!db.perfil) showIdOnly(); else setTimeout(()=>maybeInstall(),2500);
 
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js');
 </script>

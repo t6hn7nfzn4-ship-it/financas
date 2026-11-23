@@ -33,7 +33,7 @@
   --shadow:none;
 }}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
+html,body{overflow-x:hidden;margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
 body{padding:env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom))}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .wrap{max-width:560px;margin:0 auto;padding:0 16px}
@@ -166,6 +166,27 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--bar-dim);border-
 .result.good{background:var(--mint);color:var(--pos)}
 .result.bad{background:var(--pink);color:var(--neg)}
 .result span{color:var(--ink)}
+.need{background:var(--bg);border-radius:14px;padding:12px 14px;margin-top:10px}
+.need .line{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:3px 0}
+.need .line b:last-child{font-size:17px;font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;white-space:nowrap}
+.need .parts{font-size:12.5px;color:var(--ink2);margin-top:6px;line-height:1.6}
+.cal .list li{border-top-color:rgba(0,0,0,.06)}
+.cal .list li.payrow .t{font-weight:650}
+.cal .list .t{white-space:normal}
+.list .amt small{display:block}
+.noanim .card,.noanim .tile,.noanim .alert{animation:none!important}
+.simbill{border-top:1px solid var(--line);padding:12px 0}
+.simbill:first-of-type{border-top:0}
+.simbill.on{background:var(--accent-soft);margin:4px 0;padding:12px;border-radius:14px;border-top-color:transparent}
+.simbill .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.simbill .t{font-weight:600}.simbill .m{font-size:12px;color:var(--ink2)}
+.seg.small button{font-size:13px;padding:7px 2px}
+.simtab{width:100%;border-collapse:collapse;font-size:13.5px}
+.simtab th{text-align:left;font-size:11px;color:var(--ink3);font-weight:600;padding:4px 4px 6px;text-transform:uppercase;letter-spacing:.3px}
+.simtab td{padding:8px 4px;border-top:1px solid var(--line);vertical-align:top}
+.simtab td small{display:block;font-size:11px;color:var(--ink3)}
+.simtab tr.chg td{background:var(--butter)}
+.simtab tr.chg td:first-child{border-radius:10px 0 0 10px}.simtab tr.chg td:last-child{border-radius:0 10px 10px 0}
 .dday{width:36px;flex:none;text-align:center;font:700 18px/1.1 ui-rounded,"SF Pro Rounded",-apple-system,sans-serif}
 .dday small{display:block;font-size:10px;font-weight:500;color:var(--ink3);text-transform:uppercase}
 .list .m b.neg,.sub.neg{color:var(--neg)}
@@ -328,6 +349,7 @@ const $ = s => document.querySelector(s);
 
 function render(){
   const t = mLabel(st.month); $('#mtitle').textContent = t[0].toUpperCase()+t.slice(1);
+  const sig = st.view+st.month; document.body.classList.toggle('noanim', render.last===sig); render.last = sig;
   $('#gotoday').hidden = st.month===THIS_MONTH;
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.view));
   $('#fab').style.display = (st.view==='lanc'||st.view==='dividas'||st.view==='resumo'||st.view==='ir') ? '' : 'none';
@@ -426,6 +448,7 @@ dividas(){
   const total = active.reduce((s,d)=>s+d.value,0);
   const rest = db.debts.reduce((s,d)=>s+debtRemaining(d,M),0);
   return `
+  <button class="btn sec" style="margin:12px 0 0" onclick="st.view='sim';window.scrollTo(0,0);render()">🧪 Simular: e se eu não pagar ou parcelar?</button>
   <div class="tiles">
     <div class="tile t-lilac"><div class="label">Parcelas neste mês</div><div class="val">${brl(total)}</div><div class="note">${active.length} em andamento</div></div>
     <div class="tile t-butter"><div class="label">Total ainda a pagar</div><div class="val">${brl(rest)}</div><div class="note">incluindo este mês</div></div>
@@ -664,7 +687,7 @@ function events(M){ // tudo que entra e sai no mês M, com data e chave
   m.fixed.forEach(f=>ev.push({key:`fx:${f.id}:${M}`,date:dt(f.day),label:f.desc,v:f.type==='in'?f.value:-f.value,icon:f.type==='in'?'💰':'🏠',tap:`openTx('${f.id}',true)`}));
   m.tx.forEach(t=>ev.push({key:`tx:${t.id}`,date:t.date,label:t.desc,v:t.type==='in'?t.value:-t.value,icon:t.type==='in'?'💰':'🛍️',tap:`openTx('${t.id}')`}));
   m.inst.forEach(d=>ev.push({key:`debt:${d.id}:${M}`,date:dt(d.day),label:d.desc,sub:`${d.creditor}${d.total>1?` · parcela ${d.n}/${d.total}`:''}`,v:-d.value,icon:'💳',tap:`openDebt('${d.id}')`}));
-  return ev;
+  return SIM ? applySim(ev,M) : ev;
 }
 function cycleEvents(id){
   const c = cycleInfo(id), b = db.balance, ev = [];
@@ -695,60 +718,175 @@ function plan(id){
   const ev = cycleEvents(id);
   return {c:cycleInfo(id), ev, opening, fromBalance, closing:r2(opening+evSum(ev))};
 }
+function wd(date){const [y,m,d]=date.split('-').map(Number);return ['dom','seg','ter','qua','qui','sex','sáb'][new Date(y,m-1,d).getDay()]}
+function cycleSum(id){
+  const p = plan(id); if(p.past) return p;
+  const live = p.ev.filter(e=>!e.done);
+  const ins = live.filter(e=>e.v>0);
+  const bills = live.filter(e=>e.v<0&&!e.budget);
+  const need = r2(bills.filter(e=>!e.paid).reduce((s,e)=>s-e.v,0));
+  const paidTot = r2(bills.filter(e=>e.paid).reduce((s,e)=>s-e.v,0));
+  const budget = r2(live.filter(e=>e.budget).reduce((s,e)=>s-e.v,0));
+  const have = r2(p.closing+need); // dinheiro disponível para essas contas
+  return {...p,ins,bills,need,paidTot,budget,have};
+}
 function cycleCard(id){
-  const p = plan(id), c = p.c;
-  const ins = p.ev.filter(e=>e.v>0), outs = p.ev.filter(e=>e.v<0);
+  const s = cycleSum(id), c = s.c;
   const now = TODAY>=c.from && TODAY<=c.to;
-  const inTot = r2(ins.reduce((s,e)=>s+e.v,0));
-  const open = outs.filter(e=>!e.paid&&!e.done&&!e.budget), openTot = r2(open.reduce((s,e)=>s-e.v,0));
-  const row = e => {
-    const isOut = e.v<0, checkable = isOut && !e.budget && !e.done;
-    const status = e.done ? 'já estava no saldo informado' : e.paid ? 'paga ✓' : e.late ? '<b class="neg">atrasada</b>' : isOut ? (e.budget?'estimativa':`vence ${dLabel(e.date)}`) : `${dLabel(e.date)} · ${e.tag||''}`;
-    return `<li class="${e.paid||e.done?'done':''}">
-      ${checkable?`<button class="chk ${e.paid?'on':''}" onclick="togglePaid('${e.key}')" aria-label="Marcar como paga">${e.paid?'✓':''}</button>`:`<span class="dot">${e.icon}</span>`}
-      <div class="main tap" onclick="${e.tap}"><div class="t">${esc(e.label)}</div><div class="m">${e.sub?esc(e.sub)+' · ':''}${status}</div></div>
-      <div class="amt ${isOut?'':'pos'}">${isOut?'−':'+'} ${brl(Math.abs(e.v))}</div></li>`;
-  };
-  const res = p.past ? null : p.closing;
+  if(s.past) return '';
+  const res = s.closing;
+  const haveParts = [];
+  if(s.fromBalance) haveParts.push(`${brl(s.opening)} na conta em ${dLabel(db.balance.date)}`);
+  else if(s.opening) haveParts.push(`${s.opening<0?'−':''}${brl(Math.abs(s.opening))} ${s.opening<0?'que faltou':'que sobrou'} do bloco anterior`);
+  s.ins.forEach(e=>haveParts.push(`<span class="pos">+ ${brl(e.v)}</span> ${esc(e.label.toLowerCase())} em <b>${dLabel(e.date)}</b>`));
+  if(s.paidTot) haveParts.push(`− ${brl(s.paidTot)} já pagos`);
+  if(s.budget) haveParts.push(`− ${brl(s.budget)} dia a dia (estimativa)`);
+  const row = e => `<li class="${e.paid?'done':''}">
+      <button class="chk ${e.paid?'on':''}" onclick="togglePaid('${e.key}')" aria-label="Marcar como paga">${e.paid?'✓':''}</button>
+      <div class="main tap" onclick="${e.tap}"><div class="t">${esc(e.label)}</div><div class="m">${e.sub?esc(e.sub)+' · ':''}${e.paid?'paga ✓':e.late?'<b class="neg">atrasada</b>':'vence '+dLabel(e.date)+' ('+wd(e.date)+')'}</div></div>
+      <div class="amt">${brl(-e.v)}</div></li>`;
   return `<div class="card cycle ${now?'now':''}">
-    <div class="grouphead"><h2>${c.A?'🌱':'🌸'} Pagamento do dia ${c.A?'5':'20'}${now?' <span class="badge pink">agora</span>':''}</h2><span class="pos">+ ${brl(inTot)}</span></div>
-    <p class="sub">Contas que vencem de ${dLabel(c.from)} a ${dLabel(c.to)}${openTot?` · <b>${brl(openTot)} em aberto</b>`:''}</p>
-    <ul class="list">
-      ${!p.past && (p.opening || p.fromBalance) ? `<li><span class="dot">👛</span><div class="main"><div class="t">${p.fromBalance?'Na conta (saldo informado)':p.opening<0?'Faltou do pagamento anterior':'Sobrou do pagamento anterior'}</div><div class="m">${p.fromBalance?'em '+dLabel(db.balance.date):'vem do bloco anterior'}</div></div><div class="amt ${p.opening<0?'neg':'pos'}">${p.opening<0?'−':'+'} ${brl(Math.abs(p.opening))}</div></li>`:''}
-      ${ins.map(row).join('')}
-      ${outs.length?outs.map(row).join(''):'<li><div class="main"><div class="m">Nenhuma conta neste período</div></div></li>'}
-    </ul>
-    ${res===null?'':`<div class="result ${res<0?'bad':'good'}"><span>${res<0?'Vai faltar':'Vai sobrar'} depois de pagar tudo</span><b>${brl(Math.abs(res))}</b></div>`}
+    <h2>${c.A?'🌱':'🌸'} Contas de ${dLabel(c.from)} a ${dLabel(c.to)}${now?' <span class="badge pink">agora</span>':''}</h2>
+    <div class="need">
+      <div class="line"><span>Precisa ter ${c.pay>=TODAY?'até <b>'+dLabel(c.pay)+'</b>':'agora'}</span><b>${brl(s.need)}</b></div>
+      <div class="line"><span>Você vai ter</span><b>${brl(s.have)}</b></div>
+      <div class="parts">${haveParts.join('<br>')||'nada entra neste período'}</div>
+    </div>
+    <div class="result ${res<0?'bad':'good'}"><span>${res<0?'Vai faltar':'Vai sobrar'}</span><b>${brl(Math.abs(res))}</b></div>
+    ${s.bills.length?`<ul class="list" style="margin-top:8px">${s.bills.map(row).join('')}</ul>`:'<div class="empty" style="padding:12px">Nenhuma conta neste período 🎉</div>'}
   </div>`;
 }
-function monthHero(M){
-  const mName = mLabel(M,{month:'long'}), A = plan(M+'A'), B = plan(M+'B');
-  const evs = [...A.ev,...B.ev];
-  const open = evs.filter(e=>e.v<0&&!e.paid&&!e.done&&!e.budget);
-  const openTot = r2(open.reduce((s,e)=>s-e.v,0)), late = open.filter(e=>e.late);
-  const sal = month(M).sal;
-  const end = B.past ? null : B.closing;
-  return `<div class="card hero"><span class="emoji">${end!==null&&end<0?'🌧️':'🌷'}</span>
-    <div class="label">Contas em aberto em ${mName}</div>
-    <div class="big">${brl(openTot)}</div>
-    <p class="sub" style="margin:6px 0 0">${open.length} conta${open.length===1?'':'s'} para pagar${late.length?` · <b class="neg">${late.length} atrasada${late.length>1?'s':''}</b>`:''}${sal?` · salário do mês ${brl(sal.total)}`:''}</p>
-    ${end!==null?`<div class="result ${end<0?'bad':'good'}" style="margin-top:12px"><span>No fim de ${mName} vai ${end<0?'faltar':'sobrar'}</span><b>${brl(Math.abs(end))}</b></div>`:''}
-    ${!db.balance?`<p class="sub" style="margin:10px 0 0">Dica: informe quanto tem na conta hoje para a conta ficar exata.</p><button class="btn" style="margin-top:8px" onclick="openBalance()">Informar saldo da conta</button>`
-      : M===THIS_MONTH?`<button class="btn sec" style="margin-top:12px" onclick="openBalance()">Atualizar saldo da conta (${dLabel(db.balance.date)})</button>`:''}
+function moneyCalendar(M){
+  let ids = [M+'A', M+'B'];
+  if(M===THIS_MONTH){ let cur = cycleOf(TODAY); ids = [cur]; for(let i=0;i<3;i++){ cur = nextCycle(cur); ids.push(cur) } }
+  const rows = [];
+  ids.forEach(id=>{
+    const s = cycleSum(id); if(s.past) return;
+    const byDate = {};
+    s.ins.forEach(e=>(byDate[e.date]=byDate[e.date]||[]).push(e));
+    Object.entries(byDate).forEach(([date,es])=>rows.push({date,ord:0,html:`<li>
+      <div class="dday">${date.slice(8)}<small>${mShort(date.slice(0,7))}</small><small>${wd(date)}</small></div>
+      <div class="main"><div class="t">💰 Cai na conta</div><div class="m">${es.map(e=>esc(e.label)+(es.length>1?' '+brl(e.v):'')).join(' + ')}${es.some(e=>e.tag==='previsto')?' · previsto':''}</div></div>
+      <div class="amt pos">+ ${brl(es.reduce((t,e)=>t+e.v,0))}</div></li>`}));
+    if(s.need>0){
+      const date = s.c.pay>=TODAY ? s.c.pay : TODAY;
+      rows.push({date,ord:1,html:`<li class="payrow">
+        <div class="dday">${date.slice(8)}<small>${mShort(date.slice(0,7))}</small><small>${wd(date)}</small></div>
+        <div class="main"><div class="t">📌 Precisa ter ${brl(s.need)}</div><div class="m">contas de ${dLabel(s.c.from)} a ${dLabel(s.c.to)} · vai ter ${brl(s.have)}</div></div>
+        <div class="amt ${s.closing<0?'neg':'pos'}"><small style="color:inherit">${s.closing<0?'falta':'sobra'}</small>${brl(Math.abs(s.closing))}</div></li>`});
+    }
+  });
+  rows.sort((a,b)=>a.date.localeCompare(b.date)||a.ord-b.ord);
+  const last = ids.map(cycleSum).filter(s=>!s.past).pop();
+  return `<div class="card hero cal"><span class="emoji">📅</span>
+    <div class="label">${M===THIS_MONTH?'Próximas datas':'Datas de '+mLabel(M,{month:'long'})}</div>
+    <h2 style="font-size:20px;margin:2px 0 8px">Quando entra e quanto precisa ter</h2>
+    ${rows.length?`<ul class="list">${rows.map(r=>r.html).join('')}</ul>`:'<div class="empty">Nada previsto.</div>'}
+    ${last?`<div class="result ${last.closing<0?'bad':'good'}"><span>Depois de ${dLabel(last.c.to)}, ${last.closing<0?'vai faltar':'vai sobrar'}</span><b>${brl(Math.abs(last.closing))}</b></div>`:''}
+    <button class="btn" style="margin-top:12px" onclick="st.view='sim';window.scrollTo(0,0);render()">🧪 Simular: e se eu não pagar ou parcelar uma conta?</button>
+    ${!db.balance?`<p class="sub" style="margin:10px 0 0">Informe quanto tem na conta hoje para a conta ficar exata.</p><button class="btn" style="margin-top:8px" onclick="openBalance()">Informar saldo da conta</button>`
+      : M===THIS_MONTH?`<button class="btn sec" style="margin-top:12px" onclick="openBalance()">Atualizar saldo da conta (informado em ${dLabel(db.balance.date)})</button>`:''}
   </div>`;
 }
+function monthHero(M){ return moneyCalendar(M); }
 function nextMonthPreview(){
   const N = addM(THIS_MONTH,1), name = mLabel(N,{month:'long'});
-  const A = plan(N+'A'), B = plan(N+'B');
-  const evs = [...A.ev,...B.ev];
-  const bills = r2(evs.filter(e=>e.v<0&&!e.budget).reduce((s,e)=>s-e.v,0));
-  const inc = r2(evs.filter(e=>e.v>0).reduce((s,e)=>s+e.v,0));
-  const line = (lbl,p) => `<div class="result ${p.closing<0?'bad':'good'}" style="margin-top:8px"><span>${lbl}: ${p.closing<0?'falta':'sobra'}</span><b>${brl(Math.abs(p.closing))}</b></div>`;
-  return `<div class="card"><div class="grouphead"><h2>👀 Prévia de ${name}</h2></div>
-    <p class="sub">Contas ${brl(bills)} · salário ${brl(inc)}</p>
-    ${line('Pagamento do dia 5',A)}${line('Pagamento do dia 20',B)}
+  const line = id => {const s=cycleSum(id); return `<div class="need" style="margin-top:8px">
+    <div class="line"><span>Precisa ter até <b>${dLabel(s.c.pay)}</b></span><b>${brl(s.need)}</b></div>
+    <div class="line"><span>Vai ter</span><b>${brl(s.have)}</b></div>
+    <div class="result ${s.closing<0?'bad':'good'}" style="margin-top:6px"><span>${s.closing<0?'Falta':'Sobra'}</span><b>${brl(Math.abs(s.closing))}</b></div></div>`};
+  return `<div class="card"><h2>👀 Prévia de ${name}</h2>
+    ${line(N+'A')}${line(N+'B')}
     <button class="btn sec" onclick="st.month='${N}';window.scrollTo(0,0);render()">Ver ${name} em detalhe</button></div>`;
 }
+/* ---------- simulador: e se eu não pagar / parcelar? ---------- */
+let SIM = null;               // usado só durante o cálculo simulado
+const simState = {};          // key -> {mode:'skip'|'split'|'part', n, val, part, date, label, total}
+function applySim(ev,M){
+  const out = [];
+  ev.forEach(e=>{
+    const s = SIM[e.key];
+    if(!s) return out.push(e);
+    if(s.mode==='skip') return;
+    if(s.mode==='part') return out.push({...e,v:-Math.min(s.part||0,-e.v),label:e.label+' (parte)'});
+    // split: a conta original sai; as parcelas entram nos meses seguintes
+  });
+  Object.entries(SIM).forEach(([k,s])=>{
+    if(s.mode!=='split') return;
+    for(let i=1;i<=s.n;i++){
+      const date = `${addM(s.date.slice(0,7),i)}-${s.date.slice(8)}`;
+      if(date.slice(0,7)!==M) continue;
+      const dim = new Date(+M.slice(0,4),+M.slice(5),0).getDate();
+      out.push({key:`sim:${k}:${i}`,date:`${M}-${pad(Math.min(+s.date.slice(8),dim))}`,label:`${s.label} (parcela ${i}/${s.n})`,v:-s.val,icon:'🧪',tap:''});
+    }
+  });
+  return out;
+}
+function withSim(sim,fn){const old=SIM;SIM=sim;try{return fn()}finally{SIM=old}}
+function simHorizon(){let cur=cycleOf(TODAY),ids=[cur];for(let i=0;i<7;i++){cur=nextCycle(cur);ids.push(cur)}return ids}
+function simSet(key,field,value){
+  const s = simState[key];
+  if(field==='mode'){
+    if(value==='pay'){delete simState[key]}
+    else {
+      const e = SIM_BILLS[key];
+      simState[key] = {...(s||{}),mode:value,date:e.date,label:e.label,total:-e.v};
+      const t = simState[key];
+      if(value==='split' && !t.n){t.n=6;t.val=Math.floor(t.total/6*100)/100}
+      if(value==='part' && t.part==null) t.part=r2(t.total/2);
+    }
+  } else if(s){
+    const v = field==='n' ? Math.max(1,Math.min(48,parseInt(value)||1)) : r2(parseMoney(value)||0);
+    s[field] = v;
+    if(field==='n') s.val = Math.floor(s.total/v*100)/100;
+  }
+  render();
+}
+function simClear(){Object.keys(simState).forEach(k=>delete simState[k]);render()}
+let SIM_BILLS = {};
+VIEWS.sim = function(){
+  const ids = simHorizon();
+  SIM_BILLS = {};
+  const groups = ids.map(id=>{const s=cycleSum(id);return s.past?null:{s,bills:s.bills.filter(e=>!e.paid)}}).filter(g=>g&&g.bills.length);
+  groups.forEach(g=>g.bills.forEach(e=>SIM_BILLS[e.key]=e));
+  Object.keys(simState).forEach(k=>{if(!SIM_BILLS[k]) delete simState[k]});
+  const active = Object.keys(simState).length;
+  const before = ids.map(id=>cycleSum(id));
+  const after = withSim(simState,()=>ids.map(id=>cycleSum(id)));
+  const billRow = e => {
+    const s = simState[e.key], mode = s?.mode||'pay';
+    return `<div class="simbill ${mode!=='pay'?'on':''}">
+      <div class="top"><div><div class="t">${esc(e.label)}</div><div class="m">${e.sub?esc(e.sub)+' · ':''}vence ${dLabel(e.date)}</div></div><b>${brl(-e.v)}</b></div>
+      <div class="seg small">${[['pay','Pagar'],['skip','Não pagar'],['split','Parcelar'],['part','Pagar parte']].map(([v,l])=>`<button class="${mode===v?'on':''}" onclick="simSet('${e.key}','mode','${v}')">${l}</button>`).join('')}</div>
+      ${mode==='split'?`<div class="row"><label class="f"><span>Em quantas vezes</span><input inputmode="numeric" value="${s.n}" onchange="simSet('${e.key}','n',this.value)"></label>
+        <label class="f"><span>Valor de cada parcela (R$)</span><input inputmode="decimal" value="${String(s.val).replace('.',',')}" onchange="simSet('${e.key}','val',this.value)"></label></div>
+        <div class="hint">Começa no mês seguinte. Coloque o valor que o banco oferecer: parcelamento de fatura costuma ter juros. ${s.n*s.val-s.total>0.05?`Total pago: ${brl(s.n*s.val)} (<b class="neg">+${brl(s.n*s.val-s.total)} de juros</b>).`:''}</div>`:''}
+      ${mode==='part'?`<label class="f"><span>Quanto vou pagar agora (R$)</span><input inputmode="decimal" value="${String(s.part).replace('.',',')}" onchange="simSet('${e.key}','part',this.value)"></label>
+        <div class="hint">O restante (${brl(Math.max(0,s.total-s.part))}) fica em aberto e normalmente gera juros.</div>`:''}
+      ${mode==='skip'?`<div class="hint">⚠️ Conta não paga costuma gerar multa e juros, e pode levar a negativação. No cartão, o rotativo tem juros altos.</div>`:''}
+    </div>`;
+  };
+  const res = v => `<span class="${v<0?'neg':'pos'}">${v<0?'falta':'sobra'} ${brl(Math.abs(v))}</span>`;
+  const lastB = before[before.length-1], lastA = after[after.length-1];
+  const diff = r2(lastA.closing-lastB.closing);
+  return `
+  <div class="card hero"><span class="emoji">🧪</span>
+    <div class="label">Simulador</div>
+    <h2 style="font-size:20px;margin:2px 0 6px">E se eu não pagar ou parcelar uma conta?</h2>
+    <p class="sub" style="margin:0">Escolha o que fazer com cada conta e veja como ficam os próximos meses. <b>Nada aqui muda seus dados.</b></p>
+  </div>
+  <div class="card"><h2>Resultado ${active?`<span class="badge pink">${active} mudança${active>1?'s':''}</span>`:''}</h2>
+    <p class="sub">Quanto sobra ou falta depois de cada pagamento</p>
+    <table class="simtab"><thead><tr><th>Pagamento</th><th>Como está</th><th>Simulado</th></tr></thead><tbody>
+    ${before.map((b,i)=>b.past?'':`<tr class="${b.closing!==after[i].closing?'chg':''}"><td><b>${dLabel(b.c.pay>=TODAY?b.c.pay:TODAY)}</b><small>contas até ${dLabel(b.c.to)}</small></td><td>${res(b.closing)}</td><td>${res(after[i].closing)}</td></tr>`).join('')}
+    </tbody></table>
+    ${active?`<div class="result ${diff<0?'bad':'good'}"><span>Em ${dLabel(lastB.c.to)}, a simulação deixa você com</span><b>${diff<0?'−':'+'} ${brl(Math.abs(diff))}</b></div>
+      <button class="btn sec" onclick="simClear()">Limpar simulação</button>`:''}
+  </div>
+  ${groups.map(g=>`<div class="card"><h2>📌 Contas até ${dLabel(g.s.c.to)}</h2><p class="sub">Pagamento do dia ${g.s.c.A?'5':'20'} · vencem de ${dLabel(g.s.c.from)} a ${dLabel(g.s.c.to)}</p>${g.bills.map(billRow).join('')}</div>`).join('')
+    || '<div class="card"><div class="empty">Nenhuma conta em aberto nos próximos meses.</div></div>'}`;
+};
+
 function togglePaid(key){
   db.paid = db.paid||{};
   if(db.paid[key]) delete db.paid[key]; else db.paid[key] = new Date().toISOString();

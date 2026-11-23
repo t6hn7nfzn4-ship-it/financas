@@ -1,5 +1,5 @@
 ﻿// Mantém o app funcionando offline. Aumente a versão ao publicar mudanças.
-const CACHE = 'financas-v14';
+const CACHE = 'financas-v16';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-180.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {

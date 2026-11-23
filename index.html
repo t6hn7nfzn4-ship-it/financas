@@ -32,6 +32,57 @@ html{color-scheme:light only}
 .action:nth-child(2n) .ai{background:var(--mint)}
 .action:nth-child(3) .ai,.action:nth-child(6) .ai{background:var(--lilac)}
 .action b{display:block;font-size:14px;line-height:1.2}
+/* ---- Freio ---- */
+.bigbtn{display:block;width:100%;margin:12px 0;padding:20px 16px;border-radius:22px;font-size:19px;font-weight:700;color:#fff;
+  background:linear-gradient(135deg,#f39bbb,#c94f7c);box-shadow:0 8px 22px rgba(201,79,124,.3);font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;transition:transform .12s}
+.bigbtn:active{transform:scale(.97)}
+.bigbtn.small{padding:14px;font-size:16px;margin-top:12px}
+.actions.three{grid-template-columns:1fr 1fr 1fr}
+.actions.three .action{flex-direction:column;text-align:center;padding:12px 6px;gap:6px}
+.actions.three .action b{font-size:12.5px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 6px}
+.chip{padding:8px 12px;border-radius:999px;background:var(--bg);border:1px solid var(--line);font-size:14px}
+.chip.on{background:var(--pink);border-color:var(--bar);color:var(--ink);font-weight:600}
+.slider{display:flex;align-items:center;gap:10px}
+.slider input{flex:1;padding:0;border:0;background:none;accent-color:#c94f7c;height:28px}
+.slider b{font-size:22px;font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;min-width:26px;text-align:right}
+.slider span{color:var(--ink3);font-size:13px}
+.surfcta{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,var(--mint),var(--lilac));border-radius:16px;padding:14px;margin-top:12px;cursor:pointer}
+.surfcta span{font-size:30px}.surfcta b{display:block}.surfcta small{color:var(--ink2)}
+.plancard{background:var(--lilac);border-radius:16px;padding:12px 14px;margin:8px 0;font-size:15px;line-height:1.5}
+.plancard small{color:var(--ink2);font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+.plancard .m{font-size:12px;color:var(--ink2);margin-top:4px}
+.plancard .btn{margin-top:8px;padding:9px}
+h4.mini{margin:14px 0 4px;font-size:14px}
+.wave{height:200px;border-radius:20px;overflow:hidden;background:#fdf3f7;margin:4px 0 12px}
+.wave svg{width:100%;height:100%;display:block}
+.surfphrase{text-align:center;font-size:18px;min-height:54px;font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;margin:6px 4px}
+.surfphrase.fade{animation:up .8s ease both}
+.xp{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);margin-top:8px}
+.xp .prog{flex:1;margin:0;background:rgba(255,255,255,.6)}
+.garden{width:100%;height:auto;display:block}
+.garden-mini{max-width:260px;margin:0 auto}
+.metahead{display:flex;gap:12px;align-items:center}
+.metahead img{width:56px;height:56px;border-radius:14px;object-fit:cover}
+.metahead b{display:block}.metahead small{color:var(--ink2)}
+.seg.scroll{overflow-x:auto;scrollbar-width:none}
+.seg.scroll button{flex:none;padding:8px 12px;font-size:13.5px}
+.sheet-bg.intro{align-items:center;background:linear-gradient(160deg,#d4f1e2,#fcdde8 55%,#e8e0fb)}
+.sheet-bg.intro .sheet{border-radius:28px;margin:16px;width:calc(100% - 32px);animation:up .35s ease both}
+.introbox{text-align:center;padding:10px 6px 4px;position:relative}
+.introico{font-size:64px;line-height:1;margin:10px 0 8px}
+.introbox h2{font-size:24px;margin:0 0 10px}
+.introbox p{color:var(--ink2);font-size:16px;line-height:1.5;margin:0 4px 16px}
+.dots{display:flex;justify-content:center;gap:6px;margin:4px 0 6px}
+.dots i{width:8px;height:8px;border-radius:4px;background:var(--line);transition:width .2s}
+.dots i.on{width:22px;background:var(--bar)}
+.introbox .back{position:absolute;left:0;top:0;color:var(--accent);font-size:14px}
+.manual .mtext{margin:0 0 12px 38px;font-size:14px;color:var(--ink2);line-height:1.55}
+.manual .mtext ol,.manual .mtext ul{padding-left:18px;margin:6px 0}
+.manual .mtext li{margin:4px 0}
+.manual .mtext p{margin:6px 0}
+.manual .mtext b{color:var(--ink)}
+.foot{font-size:11.5px;color:var(--ink3);text-align:center;margin:18px 10px 8px;line-height:1.5}
 .action small{display:block;font-size:11.5px;color:var(--ink2);margin-top:2px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{overflow-x:hidden;margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
@@ -223,6 +274,7 @@ input.rate{width:58px;padding:6px 8px;font-size:14px;display:inline-block;margin
 <nav class="tabs">
   <button data-v="resumo" class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>Início</button>
   <button data-v="lancar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Lançar</button>
+  <button data-v="freio"><svg viewBox="0 0 24 24"><path d="M8 3h8l5 5v8l-5 5H8l-5-5V8z"/><path d="M8.5 12h7"/></svg>Freio</button>
   <button data-v="contas"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>Contas</button>
   <button data-v="simular"><svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4 19a1 1 0 001 2h14a1 1 0 001-2l-6-10V3"/></svg>Simular</button>
   <button data-v="mais"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>Mais</button>
@@ -386,7 +438,7 @@ resumo(){
     <p class="sub">Ou cadastre aos poucos pela aba <b>Lançar</b>.</p>
     <button class="btn" onclick="st.view='mais';st.maisTab='dados';render()">Colar meus dados</button>
     <button class="btn sec" onclick="st.view='lancar';render()">Lançar manualmente</button></div>`;
-  return `${monthHero(st.month)}${irBanner()}${cycleCard(st.month+'A')}${cycleCard(st.month+'B')}${gastosCard(st.month)}`;
+  return `${st.month===THIS_MONTH?freioBanner():''}${monthHero(st.month)}${irBanner()}${cycleCard(st.month+'A')}${cycleCard(st.month+'B')}${gastosCard(st.month)}`;
   const instAll = m.outInst+m.outFolha;
   const pct = m.inc ? Math.round(m.outInst/m.inc*100) : null;
   const totalDebt = db.debts.reduce((s,d)=>s+debtRemaining(d,st.month),0);
@@ -575,7 +627,7 @@ function bindChart(){
 /* ---------- formulários ---------- */
 function openSheet(html){$('#sheet').innerHTML=html;$('#sheetbg').classList.add('open')}
 function closeSheet(){$('#sheetbg').classList.remove('open')}
-$('#sheetbg').addEventListener('click',e=>{if(e.target.id==='sheetbg')closeSheet()});
+$('#sheetbg').addEventListener('click',e=>{if(e.target.id==='sheetbg'&&!e.target.classList.contains('intro'))closeSheet()});
 
 function openTx(id,isFixed,preType,preFixed){
   const x = id ? (isFixed?db.fixed:db.tx).find(t=>t.id===id) : null;
@@ -1465,6 +1517,7 @@ function normalize(data){
   if(data.budget>0) out.budget = num(data.budget);
   if(data.rates && typeof data.rates==='object') out.rates = data.rates;
   if(data.imovel && parseMoney(data.imovel.parcelaRef)>0) out.imovel = {...IMOVEL_DEFAULT,...data.imovel};
+  if(data.freio && typeof data.freio==='object') out.freio = data.freio;
   if(Array.isArray(data.ferias)) out.ferias = data.ferias.filter(f=>/^\d{4}-\d{2}-\d{2}$/.test(f.start||'')&&f.dias>0).map(f=>({id:f.id||uid(),start:f.start,dias:+f.dias,abono:+f.abono||0}));
   if(data.salary && parseMoney(data.salary.gross)>0){
     const s = data.salary;
@@ -1484,6 +1537,7 @@ function merge(data,replace){
   if(out.rates) db.rates = {...(db.rates||{}),...out.rates};
   if(out.imovel) db.imovel = out.imovel;
   if(out.ferias) db.ferias = out.ferias;
+  if(out.freio) db.freio = out.freio;
   if(!n) return alert('Nada válido para importar.'+(errs.length?'\nIgnorados: '+errs.join(', '):''));
   if(replace) db = out;
   else ['tx','fixed','debts'].forEach(k=>out[k].forEach(it=>{const i=db[k].findIndex(x=>x.id===it.id);i>=0?db[k][i]=it:db[k].push(it)}));
@@ -1632,9 +1686,582 @@ VIEWS.mais = function(){
       <button class="btn" onclick="openSalary()">${s?'Editar salário':'Configurar salário'}</button>
       ${s?`<button class="btn sec" onclick="openRealPay()">Informar valor real do holerite</button>`:''}
     </div>`;
-  return segTabs(st.maisTab,'maisTab',[['salario','💼 Salário'],['ir','🧾 Imposto'],['dados','💾 Dados']])
-    + (st.maisTab==='salario' ? salario : st.maisTab==='ir' ? VIEWS.ir() : VIEWS.dados());
+  return segTabs(st.maisTab,'maisTab',[['salario','💼 Salário'],['ir','🧾 Imposto'],['dados','💾 Dados'],['ajuda','📖 Ajuda']])
+    + (st.maisTab==='salario' ? salario : st.maisTab==='ir' ? VIEWS.ir() : st.maisTab==='ajuda' ? manualView() : VIEWS.dados());
 };
+
+/* ======================= FREIO: compras por impulso =======================
+   Baseado em técnicas de TCC: atraso da compra (cofre), urge surfing, mapa de gatilhos,
+   intenções de implementação (se... então...), controle de estímulos (missões).
+   Tudo fica salvo só neste aparelho. Sem punição, sem streak que zera, sem sorteios. */
+const EMO = [['entediada','😐','entediada'],['ansiosa','😰','ansiosa'],['triste','😢','triste'],['cansada','😴','cansada'],
+  ['sozinha','🫂','sozinha'],['feliz','🥳','feliz/comemorando'],['fome','🍔','com fome'],['outro','💭','outro']];
+const emoLabel = k => (EMO.find(x=>x[0]===k)||[,,k])[2];
+const emoIcon  = k => (EMO.find(x=>x[0]===k)||[,'💭'])[1];
+const PLANOS_SUG = [
+  {se:'estiver cansada à noite e abrir um app de compras', entao:'coloco o item no Cofre e vou dormir', gatilho:'cansada'},
+  {se:'estiver ansiosa', entao:'faço o Surfar a Onda antes de qualquer compra', gatilho:'ansiosa'},
+  {se:'estiver entediada', entao:'saio para caminhar 10 minutos ou ligo para alguém', gatilho:'entediada'},
+  {se:'estiver triste', entao:'escrevo o que estou sentindo e chamo minha pessoa de apoio', gatilho:'triste'},
+  {se:'estiver me sentindo sozinha', entao:'mando mensagem para alguém que gosto', gatilho:'sozinha'},
+  {se:'quiser comemorar algo', entao:'comemoro sem gastar: um banho demorado, uma série, uma ligação', gatilho:'feliz'},
+  {se:'estiver com fome', entao:'como algo antes de abrir qualquer loja', gatilho:'fome'},
+  {se:'chegar e-mail ou notificação de promoção', entao:'apago sem abrir', gatilho:''},
+];
+const MISSOES = [
+  ['cartoes','💳','Remover cartões salvos das lojas'],
+  ['apps','📱','Desinstalar apps de compra'],
+  ['emails','✉️','Descadastrar e-mails promocionais'],
+  ['notif','🔕','Desativar notificações de lojas'],
+  ['wallet','👛','Tirar o cartão da carteira do celular'],
+  ['seguir','🙈','Deixar de seguir perfis que me fazem querer comprar'],
+];
+const COFRE_OPCOES = [[24,'24 horas'],[48,'48 horas'],[72,'3 dias'],[120,'5 dias'],[168,'7 dias']];
+const NIVEIS = [[2,'🦋','borboleta'],[3,'☀️','sol'],[4,'🐦','passarinho'],[5,'🌈','arco-íris'],[6,'🌼','flores no chão'],[7,'✨','brilhos']];
+const SURF_FRASES = ['Respire fundo pelo nariz… e solte devagar pela boca.','Perceba onde a vontade aparece no seu corpo.',
+  'Ela está subindo. Tudo bem. Você só observa.','Vontades são como ondas: sobem, chegam ao pico…','…e sempre descem.',
+  'Você não precisa fazer nada com ela agora.','Note sua respiração. Entra… e sai…','Dê um nome ao que sente, sem julgar.',
+  'A onda já está perdendo força.','Observe: o que mudou desde o começo?','Você está surfando. Continue respirando.'];
+
+function FR(){
+  db.freio = db.freio || {};
+  const f = db.freio;
+  f.cfg = f.cfg || {horas:48};
+  ['desejos','ondas','impulsos','checkins'].forEach(k=>f[k]=f[k]||[]);
+  f.missoes = f.missoes || {};
+  if(!f.planos) f.planos = PLANOS_SUG.map(p=>({id:uid(),...p,usos:0}));
+  return f;
+}
+function freioStats(){
+  const f = FR();
+  const desist = f.desejos.filter(d=>d.status==='desisti');
+  const usos = f.planos.reduce((t,p)=>t+(p.usos||0),0);
+  const missoes = MISSOES.filter(([k])=>f.missoes[k]).length;
+  const xp = f.desejos.length*10 + f.ondas.length*15 + usos*10 + missoes*20 + f.checkins.length*5 + f.impulsos.length*5;
+  const vitorias = desist.length + f.ondas.length + usos;
+  const agua = r2(desist.reduce((t,d)=>t+(d.preco||0),0));
+  return {xp, nivel:1+Math.floor(xp/100), noNivel:xp%100, vitorias, agua, desist:desist.length};
+}
+const horasTrab = v => { const h = FR().cfg.hora; return h>0 ? Math.ceil(v/h*10)/10 : null; };
+const horasTxt = v => { const h = horasTrab(v); return h==null ? '' : `≈ ${h.toLocaleString('pt-BR')}h de trabalho`; };
+function fmtLeft(ms){
+  if(ms<=0) return 'abriu';
+  const m = Math.ceil(ms/60000), d = Math.floor(m/1440), h = Math.floor(m%1440/60), mi = m%60;
+  return d ? `${d}d ${h}h` : h ? `${h}h ${mi}min` : `${mi}min`;
+}
+const hhmm = iso => new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).replace(',',' às');
+const abertos = () => FR().desejos.filter(d=>d.status==='cofre' && new Date(d.liberaEm)<=new Date());
+
+/* ---------- chips de emoção ---------- */
+function emoChips(id, sel=[]){
+  return `<div class="chips" id="${id}">${EMO.map(([k,i,l])=>`<button type="button" class="chip ${sel.includes(k)?'on':''}" data-k="${k}" onclick="this.classList.toggle('on')">${i} ${l}</button>`).join('')}</div>`;
+}
+const chipsSel = id => [...document.querySelectorAll(`#${id} .chip.on`)].map(b=>b.dataset.k);
+const slider = (id,val=5) => `<div class="slider"><input type="range" id="${id}" min="0" max="10" value="${val}" oninput="document.getElementById('${id}_v').textContent=this.value"><b id="${id}_v">${val}</b><span>/10</span></div>`;
+
+/* ---------- 1. Cofre de desejos ---------- */
+function openVontade(){
+  const f = FR();
+  openSheet(`<h3>🛑 Tô com vontade de comprar <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub" style="color:var(--ink2);font-size:13px;margin-top:-4px">Tudo bem sentir isso. Vamos guardar no Cofre e decidir com calma.</p>
+    <label class="f"><span>O que é?</span><input id="vItem" placeholder="Ex.: tênis, blusa, fone…"></label>
+    <div class="row">
+      <label class="f"><span>Preço (R$)</span><input id="vPreco" inputmode="decimal" placeholder="0,00" oninput="const h=horasTxt(parseMoney(this.value)||0);document.getElementById('vHoras').textContent=h"></label>
+      <label class="f"><span>Loja ou app</span><input id="vLoja" list="vLojas" placeholder="Ex.: Shein"><datalist id="vLojas">${[...new Set(f.desejos.map(d=>d.loja).filter(Boolean))].map(l=>`<option value="${esc(l)}">`).join('')}</datalist></label>
+    </div>
+    <div class="hint" id="vHoras"></div>
+    <label class="f"><span>O que estou sentindo</span></label>${emoChips('vEmo')}
+    <label class="f"><span>Tamanho da vontade agora</span></label>${slider('vInt',6)}
+    <button class="btn" onclick="saveVontade()">🔒 Guardar no Cofre por ${COFRE_OPCOES.find(o=>o[0]===f.cfg.horas)?.[1]||f.cfg.horas+'h'}</button>`);
+  setTimeout(()=>$('#vItem').focus(),50);
+}
+function saveVontade(){
+  const f = FR(), item = $('#vItem').value.trim();
+  if(!item) return alert('Escreva o que você quer comprar.');
+  const now = new Date();
+  const d = {id:uid(), item, preco:r2(parseMoney($('#vPreco').value)||0), loja:$('#vLoja').value.trim(), emocoes:chipsSel('vEmo'),
+    intensidade:+$('#vInt').value, criado:now.toISOString(), liberaEm:new Date(now.getTime()+f.cfg.horas*3600e3).toISOString(), status:'cofre'};
+  f.desejos.push(d); save(); openPosCofre(d.id);
+}
+function planosPara(emocoes){ return FR().planos.filter(p=>p.gatilho && emocoes.includes(p.gatilho)); }
+function planoCard(p,ctx=''){
+  return `<div class="plancard"><div><small>Se eu</small> ${esc(p.se)},<br><small>então</small> <b>${esc(p.entao)}</b>.</div>
+    <button class="btn sec" onclick="usarPlano('${p.id}','${ctx}')">💗 Vou usar esse plano</button></div>`;
+}
+function openPosCofre(id){
+  const f = FR(), d = f.desejos.find(x=>x.id===id); if(!d) return;
+  const pl = planosPara(d.emocoes), ap = f.cfg.apoio;
+  openSheet(`<h3>🔒 Guardado no Cofre <button onclick="closeSheet()">Fechar</button></h3>
+    <div class="need"><div class="line"><span>${esc(d.item)}</span><b>${d.preco?brl(d.preco):''}</b></div>
+      ${d.preco&&horasTxt(d.preco)?`<div class="parts">${horasTxt(d.preco)}</div>`:''}
+      <div class="parts">O cadeado abre em <b>${hhmm(d.liberaEm)}</b>. Até lá, é só deixar ele guardado. 💗</div></div>
+    <div class="surfcta" onclick="openSurf('${d.id}')"><span>🌊</span><div><b>Surfar a onda agora</b><small>3 minutos para a vontade passar do pico</small></div></div>
+    ${pl.length?`<h4 class="mini">Um plano seu para esse momento</h4>${pl.map(p=>planoCard(p,d.id)).join('')}`:''}
+    ${ap?.tel?`<button class="btn sec" onclick="pedirApoio()">💬 Pedir apoio para ${esc(ap.nome||'minha pessoa')}</button>`:''}
+    <button class="btn sec" onclick="lembrarCofre('${d.id}')">📅 Me lembrar quando o cadeado abrir</button>`);
+}
+function lembrarCofre(id){
+  const d = FR().desejos.find(x=>x.id===id); if(!d) return;
+  const t = new Date(d.liberaEm), z = n=>String(n).padStart(2,'0');
+  const loc = `${t.getFullYear()}${z(t.getMonth()+1)}${z(t.getDate())}T${z(t.getHours())}${z(t.getMinutes())}00`;
+  const end = new Date(t.getTime()+15*60000), loc2 = `${end.getFullYear()}${z(end.getMonth()+1)}${z(end.getDate())}T${z(end.getHours())}${z(end.getMinutes())}00`;
+  const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Financas//Freio//PT','BEGIN:VEVENT',`UID:${uid()}@freio`,
+    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').slice(0,15)}Z`,`DTSTART:${loc}`,`DTEND:${loc2}`,
+    `SUMMARY:🔓 O cadeado abriu. Ainda quer isso?`,`DESCRIPTION:Abra o app Finanças → Freio para decidir com calma.`,
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:O cadeado abriu. Ainda quer isso?','TRIGGER:PT0M','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ics],{type:'text/calendar'})); a.download='cadeado.ics'; a.click();
+}
+function openDecidir(id){
+  const d = FR().desejos.find(x=>x.id===id); if(!d) return;
+  const q = (k,t,opts) => `<label class="f"><span>${t}</span></label><div class="chips one" id="${k}">${opts.map(o=>`<button type="button" class="chip" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on')">${o}</button>`).join('')}</div>`;
+  openSheet(`<h3>🔓 O cadeado abriu <button onclick="closeSheet()">Fechar</button></h3>
+    <div class="need"><div class="line"><span>${esc(d.item)}</span><b>${d.preco?brl(d.preco):''}</b></div>
+      <div class="parts">Guardado em ${hhmm(d.criado)}${d.emocoes.length?` · você estava ${d.emocoes.map(emoLabel).join(', ')}`:''} · vontade ${d.intensidade}/10</div></div>
+    <p class="sub" style="margin:12px 0 0">Ainda quer isso? Pense com carinho:</p>
+    ${q('r1','Eu precisava disso antes de ver o anúncio?',['Sim','Não','Não sei'])}
+    <label class="f"><span>Onde vou guardar ou usar?</span><input id="r2" placeholder="Ex.: no armário, já tenho um parecido…"></label>
+    ${q('r3','Como vou me sentir daqui a 1 semana?',['Feliz com a compra','Indiferente','Arrependida','Não sei'])}
+    <button class="btn" onclick="decidir('${id}','desisti')">💚 Desisti</button>
+    <button class="btn sec" onclick="decidir('${id}','comprei')">🛍️ Comprei conscientemente</button>
+    <button class="btn sec" onclick="decidir('${id}','adiar')">⏳ Adiar mais</button>
+    <p class="hint" style="text-align:center;margin-top:10px">Qualquer escolha está tudo bem. O importante é que agora é uma decisão, não um impulso.</p>`);
+}
+function decidir(id,res){
+  const f = FR(), d = f.desejos.find(x=>x.id===id); if(!d) return;
+  const pick = k => document.querySelector(`#${k} .chip.on`)?.textContent||'';
+  d.reflexao = {precisava:pick('r1'), onde:$('#r2')?.value||'', semana:pick('r3')};
+  if(res==='adiar'){ d.liberaEm = new Date(Date.now()+f.cfg.horas*3600e3).toISOString(); d.adiamentos=(d.adiamentos||0)+1; save(); closeSheet(); return; }
+  d.status = res; d.resolvido = new Date().toISOString(); save();
+  if(res==='desisti'){
+    const s = freioStats();
+    openSheet(`<h3>💚 Que decisão bonita <button onclick="closeSheet()">Fechar</button></h3>
+      <div class="garden-mini">${gardenSVG()}</div>
+      <p class="sub" style="text-align:center">${d.preco?`<b>${brl(d.preco)}</b> viraram água para o seu jardim 💧`:'Seu jardim ganhou água 💧'}</p>
+      <p class="sub" style="text-align:center">Você já tem <b>${s.vitorias} vitória${s.vitorias===1?'':'s'}</b>.</p>`);
+  } else {
+    openSheet(`<h3>🛍️ Compra consciente <button onclick="closeSheet()">Fechar</button></h3>
+      <p class="sub">Você esperou, pensou e decidiu. Isso é cuidado com você. 💗</p>
+      <label class="check"><input type="checkbox" id="cLanc" checked> Lançar ${d.preco?brl(d.preco):'o valor'} como gasto de hoje</label>
+      <label class="f"><span>Categoria</span><select id="cCat">${CATS.out.map(c=>`<option value="${esc(c)}" ${c==='Compras'?'selected':''}>${catIcon(c)} ${c}</option>`).join('')}</select></label>
+      <button class="btn" onclick="lancarCompra('${id}')">Pronto</button>`);
+  }
+}
+function lancarCompra(id){
+  const d = FR().desejos.find(x=>x.id===id);
+  if(d && $('#cLanc').checked && d.preco>0) db.tx.push({id:uid(),type:'out',desc:d.item,value:d.preco,cat:$('#cCat').value,date:TODAY});
+  closeSheet(); save();
+}
+
+/* ---------- 2. Surfar a onda ---------- */
+let surfRAF = null;
+function openSurf(desejoId=''){
+  cancelAnimationFrame(surfRAF);
+  openSheet(`<h3>🌊 Surfar a onda <button onclick="stopSurf();closeSheet()">Fechar</button></h3>
+    <p class="sub" style="color:var(--ink2);font-size:13px;margin-top:-4px">Uma vontade é como uma onda: sobe, chega ao pico e desce, mesmo que você não faça nada.</p>
+    <label class="f"><span>Tamanho da vontade agora</span></label>${slider('sAntes',7)}
+    <label class="f"><span>Duração</span></label>
+    <div class="seg"><button class="on" data-m="3" onclick="segPick(this)">3 min</button><button data-m="4" onclick="segPick(this)">4 min</button><button data-m="5" onclick="segPick(this)">5 min</button></div>
+    <button class="btn" onclick="startSurf('${desejoId}')">Começar</button>`);
+}
+function segPick(b){ [...b.parentNode.children].forEach(x=>x.classList.toggle('on',x===b)); }
+function startSurf(desejoId){
+  const antes = +$('#sAntes').value, mins = +document.querySelector('#sheet .seg .on').dataset.m, dur = mins*60e3, t0 = performance.now();
+  openSheet(`<h3>🌊 Respire e observe <button onclick="stopSurf();closeSheet()">Fechar</button></h3>
+    <div class="wave"><svg viewBox="0 0 300 170" preserveAspectRatio="none"><defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f39bbb"/><stop offset="1" stop-color="#bfe6d3"/></linearGradient></defs>
+      <path id="wpath" fill="url(#wg)"/></svg></div>
+    <p class="surfphrase" id="sFrase">${SURF_FRASES[0]}</p>
+    <div class="prog"><i id="sProg" style="width:0%"></i></div>
+    <p class="hint" style="text-align:center" id="sTempo"></p>
+    <button class="btn sec" onclick="endSurf(${antes},'${desejoId}',${t0})">Terminar agora</button>`);
+  let lastF = -1;
+  const frame = now => {
+    const el = $('#wpath'); if(!el) return;
+    const t = Math.min(1,(now-t0)/dur), h = Math.pow(Math.sin(Math.PI*t),1.4), ph = now/600;
+    let d = 'M0,170 ';
+    for(let x=0;x<=300;x+=10){ const y = 150 - h*105 - 7*Math.sin(x/28+ph) - 3*Math.sin(x/11-ph*1.7); d += `L${x},${y.toFixed(1)} `; }
+    el.setAttribute('d', d+'L300,170 Z');
+    $('#sProg').style.width = (t*100)+'%';
+    const left = Math.max(0,dur-(now-t0)); $('#sTempo').textContent = `${Math.floor(left/60000)}:${String(Math.floor(left/1000)%60).padStart(2,'0')}`;
+    const fi = Math.min(SURF_FRASES.length-1, Math.floor(t*SURF_FRASES.length));
+    if(fi!==lastF){ lastF = fi; const p=$('#sFrase'); p.classList.remove('fade'); void p.offsetWidth; p.textContent = SURF_FRASES[fi]; p.classList.add('fade'); }
+    if(t<1) surfRAF = requestAnimationFrame(frame); else endSurf(antes,desejoId,t0);
+  };
+  frame(performance.now());
+}
+function stopSurf(){ cancelAnimationFrame(surfRAF); surfRAF = null; }
+function endSurf(antes,desejoId,t0){
+  stopSurf();
+  const dur = Math.round((performance.now()-t0)/1000);
+  openSheet(`<h3>🌊 Você surfou a onda <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub">Antes, a vontade estava em <b>${antes}/10</b>. E agora?</p>
+    ${slider('sDepois',Math.max(0,antes-3))}
+    <button class="btn" onclick="saveSurf(${antes},'${desejoId}',${dur})">Salvar</button>`);
+}
+function saveSurf(antes,desejoId,dur){
+  const f = FR(), depois = +$('#sDepois').value;
+  f.ondas.push({id:uid(), at:new Date().toISOString(), antes, depois, dur, desejoId});
+  save();
+  const caiu = antes-depois;
+  openSheet(`<h3>💚 Feito <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub" style="text-align:center;font-size:16px">${caiu>0?`A vontade caiu de <b>${antes}</b> para <b>${depois}</b>. Você deixou a onda passar. 🌊`:`A vontade ainda está aí, e tudo bem. Você observou sem agir, e isso já é uma vitória.`}</p>
+    ${ondasChart()}`);
+}
+function ondasChart(){
+  const o = FR().ondas; if(!o.length) return '';
+  const avgA = o.reduce((t,x)=>t+x.antes,0)/o.length, avgD = o.reduce((t,x)=>t+x.depois,0)/o.length;
+  const avgMin = Math.max(1,Math.round(o.reduce((t,x)=>t+x.dur,0)/o.length/60));
+  const Y = v => 18 + (10-v)*11.5, X1 = 70, X2 = 250;
+  const lines = o.slice(-20).map(x=>`<line x1="${X1}" y1="${Y(x.antes)}" x2="${X2}" y2="${Y(x.depois)}" stroke="var(--bar-dim)" stroke-width="2" stroke-linecap="round"/>`).join('');
+  return `<div class="chartbox"><svg viewBox="0 0 320 150" role="img" aria-label="Vontade antes e depois de surfar a onda">
+    <line x1="${X1}" y1="12" x2="${X1}" y2="138" stroke="var(--line)"/><line x1="${X2}" y1="12" x2="${X2}" y2="138" stroke="var(--line)"/>
+    ${lines}
+    <line x1="${X1}" y1="${Y(avgA)}" x2="${X2}" y2="${Y(avgD)}" stroke="var(--bar)" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="${X1}" cy="${Y(avgA)}" r="5" fill="var(--bar)" stroke="var(--card)" stroke-width="2"/><circle cx="${X2}" cy="${Y(avgD)}" r="5" fill="var(--bar)" stroke="var(--card)" stroke-width="2"/>
+    <text class="vl" x="${X1-10}" y="${Y(avgA)+4}" text-anchor="end">${avgA.toFixed(1).replace('.',',')}</text>
+    <text class="vl" x="${X2+10}" y="${Y(avgD)+4}">${avgD.toFixed(1).replace('.',',')}</text>
+    <text x="${X1}" y="149" text-anchor="middle">antes</text><text x="${X2}" y="149" text-anchor="middle">depois</text></svg></div>
+    <p class="sub" style="text-align:center">Suas vontades caem em média de <b>${Math.round(avgA)}</b> para <b>${Math.round(avgD)}</b> em ${avgMin} minuto${avgMin>1?'s':''}.<br><small>Linha rosa forte = média · linhas claras = cada vez (${o.length})</small></p>`;
+}
+
+/* ---------- 3. Mapa de gatilhos ---------- */
+const DIAS = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+function registrosGatilho(){
+  const f = FR();
+  return [...f.desejos.map(d=>({at:d.criado,emocoes:d.emocoes,loja:d.loja,int:d.intensidade})),
+          ...f.impulsos.map(d=>({at:d.at,emocoes:d.emocoes||[],loja:d.loja||'',int:null}))];
+}
+function barras(list,fmt=v=>v){
+  const max = Math.max(1,...list.map(x=>x[1]));
+  return list.map(([l,v])=>`<div class="catrow"><span>${l}</span><span class="v">${fmt(v)}</span><div class="bar"><i style="width:${Math.max(3,v/max*100)}%"></i></div></div>`).join('');
+}
+function gatilhosView(){
+  const R = registrosGatilho();
+  if(!R.length) return `<div class="card"><div class="empty">Ainda não há registros. Cada vez que você usar o “Tô com vontade”, o mapa vai se formando. 🗺️</div></div>`;
+  const cnt = (arr) => arr.reduce((m,k)=>(m[k]=(m[k]||0)+1,m),{});
+  const emo = Object.entries(cnt(R.flatMap(r=>r.emocoes))).sort((a,b)=>b[1]-a[1]);
+  const faixa = h => Math.floor(h/2)*2;
+  const fx = Object.entries(cnt(R.map(r=>faixa(new Date(r.at).getHours())))).sort((a,b)=>+a[0]-+b[0]);
+  const fLabel = h => `${h}h–${(+h+2)%24}h`;
+  const dias = Object.entries(cnt(R.map(r=>new Date(r.at).getDay()))).sort((a,b)=>+a[0]-+b[0]);
+  const lojas = Object.entries(cnt(R.map(r=>r.loja).filter(Boolean))).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  // frases
+  const ins = [];
+  if(R.length>=3){
+    const topF = [...fx].sort((a,b)=>b[1]-a[1])[0];
+    const emoF = Object.entries(cnt(R.filter(r=>faixa(new Date(r.at).getHours())==topF[0]).flatMap(r=>r.emocoes))).sort((a,b)=>b[1]-a[1])[0];
+    ins.push(`Você sente mais vontade entre <b>${fLabel(topF[0])}</b>${emoF?`, geralmente <b>${emoLabel(emoF[0])}</b>`:''}.`);
+    const topD = [...dias].sort((a,b)=>b[1]-a[1])[0]; ins.push(`O dia em que a vontade mais aparece é <b>${DIAS[topD[0]]}</b>.`);
+    if(lojas[0]) ins.push(`<b>${esc(lojas[0][0])}</b> aparece em ${lojas[0][1]} dos seus ${R.length} registros.`);
+    const byEmo = {}; R.filter(r=>r.int!=null).forEach(r=>r.emocoes.forEach(e=>{(byEmo[e]=byEmo[e]||[]).push(r.int)}));
+    const forte = Object.entries(byEmo).filter(([,v])=>v.length>=2).map(([k,v])=>[k,v.reduce((a,b)=>a+b,0)/v.length]).sort((a,b)=>b[1]-a[1])[0];
+    if(forte) ins.push(`Quando você está <b>${emoLabel(forte[0])}</b>, a vontade chega mais forte (média ${forte[1].toFixed(0)}/10).`);
+    const s = freioStats(), resolvidos = FR().desejos.filter(d=>d.status!=='cofre').length;
+    if(resolvidos) ins.push(`Dos ${resolvidos} itens que passaram pelo Cofre, você desistiu de <b>${s.desist}</b>. 💚`);
+  }
+  return `
+  ${ins.length?`<div class="card"><h2>💡 O que seus registros mostram</h2><ul class="tips">${ins.map(i=>`<li>${i}</li>`).join('')}</ul></div>`
+    :`<div class="card"><p class="sub">Com 3 registros ou mais, aparecem frases sobre seus padrões. Você tem ${R.length}.</p></div>`}
+  <div class="card"><h2>Emoções</h2>${barras(emo.map(([k,v])=>[`${emoIcon(k)} ${emoLabel(k)}`,v]),v=>v+'×')}</div>
+  <div class="card"><h2>Horários</h2>${barras(fx.map(([h,v])=>[fLabel(h),v]),v=>v+'×')}</div>
+  <div class="card"><h2>Dias da semana</h2>${barras(dias.map(([d,v])=>[DIAS[d],v]),v=>v+'×')}</div>
+  ${lojas.length?`<div class="card"><h2>Lojas e apps</h2>${barras(lojas.map(([l,v])=>[esc(l),v]),v=>v+'×')}</div>`:''}
+  ${FR().ondas.length?`<div class="card"><h2>🌊 Surfar a onda</h2>${ondasChart()}</div>`:''}`;
+}
+
+/* ---------- 4. Planos se... então... ---------- */
+function usarPlano(id){
+  const p = FR().planos.find(x=>x.id===id); if(!p) return;
+  p.usos = (p.usos||0)+1; save();
+  openSheet(`<h3>💗 Combinado <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub" style="font-size:16px">Então: <b>${esc(p.entao)}</b>.</p><p class="sub">Você está cuidando de você. +10 XP</p>`);
+}
+function openPlano(id){
+  const p = id ? FR().planos.find(x=>x.id===id) : {se:'',entao:'',gatilho:''};
+  openSheet(`<h3>${id?'Editar':'Novo'} plano <button onclick="closeSheet()">Fechar</button></h3>
+    <label class="f"><span>Se eu…</span><input id="pSe" value="${esc(p.se)}" placeholder="Ex.: estiver ansiosa"></label>
+    <label class="f"><span>…então eu</span><input id="pEntao" value="${esc(p.entao)}" placeholder="Ex.: faço o Surfar a Onda"></label>
+    <label class="f"><span>Mostrar esse plano quando eu estiver</span><select id="pGat"><option value="">— só quando eu abrir —</option>
+      ${EMO.map(([k,i,l])=>`<option value="${k}" ${p.gatilho===k?'selected':''}>${i} ${l}</option>`).join('')}</select></label>
+    <button class="btn" onclick="savePlano('${id||''}')">Salvar</button>
+    ${id?`<button class="btn danger" onclick="if(confirm('Apagar esse plano?')){db.freio.planos=db.freio.planos.filter(x=>x.id!=='${id}');closeSheet();save()}">Apagar</button>`:''}`);
+}
+function savePlano(id){
+  const se=$('#pSe').value.trim(), entao=$('#pEntao').value.trim(), gatilho=$('#pGat').value;
+  if(!se||!entao) return alert('Preencha as duas partes.');
+  const f = FR();
+  if(id){ Object.assign(f.planos.find(x=>x.id===id),{se,entao,gatilho}); } else f.planos.push({id:uid(),se,entao,gatilho,usos:0});
+  closeSheet(); save();
+}
+function planosView(){
+  const f = FR();
+  return `<div class="card"><h2>🃏 Meus planos “Se… então…”</h2>
+    <p class="sub">Decidir antes ajuda o cérebro a agir no automático na hora difícil. Toque em um plano para editar.</p>
+    ${f.planos.map(p=>`<div class="plancard tap" onclick="openPlano('${p.id}')">
+      <div><small>Se eu</small> ${esc(p.se)},<br><small>então</small> <b>${esc(p.entao)}</b>.</div>
+      <div class="m">${p.gatilho?`aparece quando: ${emoIcon(p.gatilho)} ${emoLabel(p.gatilho)}`:'aparece só aqui'}${p.usos?` · usado ${p.usos}×`:''}</div></div>`).join('')}
+    <button class="btn sec" onclick="openPlano()">+ Criar meu plano</button></div>`;
+}
+
+/* ---------- 5. Missões de ambiente ---------- */
+function toggleMissao(k){ const f=FR(); f.missoes[k]=!f.missoes[k]; save(); }
+function missoesView(){
+  const f = FR(), feitas = MISSOES.filter(([k])=>f.missoes[k]).length;
+  return `<div class="card"><h2>🧹 Missões de ambiente</h2>
+    <p class="sub">Deixar a compra mais difícil é mais fácil do que resistir na hora. Cada missão vale +20 XP. ${feitas}/${MISSOES.length} feitas.</p>
+    <ul class="list">${MISSOES.map(([k,i,t])=>`<li class="${f.missoes[k]?'done':''}"><button class="chk ${f.missoes[k]?'on':''}" onclick="toggleMissao('${k}')">${f.missoes[k]?'✓':''}</button>
+      <div class="main"><div class="t">${i} ${t}</div></div><div class="amt pos">+20 XP</div></li>`).join('')}</ul></div>`;
+}
+
+/* ---------- 6. Jardim do eu do futuro ---------- */
+function gardenStage(){
+  const f = FR(), s = freioStats(), meta = f.meta;
+  const pct = meta?.valor>0 ? s.agua/meta.valor : null;
+  if(pct!=null) return pct>=1?5:pct>=.6?4:pct>=.35?3:pct>=.15?2:pct>0?1:0;
+  return s.agua>=3000?5:s.agua>=1500?4:s.agua>=700?3:s.agua>=300?2:s.agua>0?1:0;
+}
+function gardenSVG(){
+  const st_ = gardenStage(), lv = freioStats().nivel;
+  const leaf = (x,y,r,flip) => `<ellipse cx="${x}" cy="${y}" rx="14" ry="7" fill="#8fd3b0" transform="rotate(${flip?30:-30} ${x} ${y})"/>`;
+  const flower = (x,y,c='#f39bbb') => `<g>${[0,72,144,216,288].map(a=>`<circle cx="${x+7*Math.cos(a*Math.PI/180)}" cy="${y+7*Math.sin(a*Math.PI/180)}" r="5.5" fill="${c}"/>`).join('')}<circle cx="${x}" cy="${y}" r="4" fill="#ffd77a"/></g>`;
+  const stemH = [0,30,60,85,100,110][st_];
+  let plant = '';
+  if(st_===0) plant = `<ellipse cx="160" cy="150" rx="6" ry="4" fill="#c79a73"/>`;
+  else {
+    plant += `<path d="M160 152 C 158 ${152-stemH/2}, 163 ${152-stemH/1.5}, 160 ${152-stemH}" stroke="#6cbf95" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+    const leaves = [[150,140,0],[171,132,1],[148,118,0],[172,105,1],[149,95,0],[171,82,1]].slice(0,[0,2,4,5,6,6][st_]);
+    plant += leaves.map(([x,y,fl])=>leaf(x,y,0,fl)).join('');
+    if(st_>=3) plant += flower(160,152-stemH-4);
+    if(st_>=4) plant += flower(138,90,'#c9b6f2')+flower(182,78,'#ffb38a');
+    if(st_>=5) plant += flower(130,118,'#f7cddc')+flower(190,110,'#f39bbb');
+  }
+  const deco = NIVEIS.filter(([n])=>lv>=n).map(([n,e])=>({2:`<text x="40" y="50" font-size="22">🦋</text>`,3:`<circle cx="275" cy="38" r="16" fill="#ffe08a"/>`,4:`<text x="250" y="100" font-size="20">🐦</text>`,
+    5:`<path d="M20 150 A 140 120 0 0 1 300 150" stroke="#f7cddc" stroke-width="6" fill="none" opacity=".7"/><path d="M32 150 A 128 108 0 0 1 288 150" stroke="#cfe9dc" stroke-width="6" fill="none" opacity=".7"/>`,
+    6:`<text x="60" y="168" font-size="16">🌼</text><text x="235" y="168" font-size="16">🌷</text>`,7:`<text x="100" y="40" font-size="14">✨</text><text x="210" y="60" font-size="14">✨</text>`}[n])).join('');
+  return `<svg viewBox="0 0 320 180" class="garden" role="img" aria-label="Seu jardim, estágio ${st_} de 5">
+    <rect x="0" y="0" width="320" height="180" rx="18" fill="#f3faf6"/>${deco}
+    <ellipse cx="160" cy="158" rx="120" ry="14" fill="#e9dccd"/>
+    <path d="M128 150 L192 150 L184 176 L136 176 Z" fill="#f2b8a2"/><rect x="124" y="144" width="72" height="10" rx="4" fill="#eaa48b"/>
+    ${plant}</svg>`;
+}
+function jardimView(){
+  const f = FR(), s = freioStats(), meta = f.meta, pct = meta?.valor>0 ? Math.min(1,s.agua/meta.valor) : 0;
+  const prox = NIVEIS.find(([n])=>n>s.nivel);
+  return `<div class="card"><h2>🌱 Jardim do eu do futuro</h2>
+    ${meta?`<div class="metahead">${meta.img?`<img src="${meta.img}" alt="">`:''}<div><b>${esc(meta.nome)}</b><small>${brl(s.agua)} de ${brl(meta.valor)} · ${Math.round(pct*100)}%</small></div></div>
+      <div class="prog" style="height:10px;margin:8px 0 12px"><i style="width:${pct*100}%"></i></div>`
+      :`<p class="sub">Escolha uma meta (viagem, reserva…). Cada desistência vira água para a planta e soma na meta.</p>`}
+    ${gardenSVG()}
+    <p class="sub" style="text-align:center;margin-top:8px">💧 ${brl(s.agua)} em água · nível ${s.nivel}${prox?` · no nível ${prox[0]} chega ${prox[1]} ${prox[2]}`:''}</p>
+    <button class="btn sec" onclick="openMeta()">${meta?'Editar meta':'🎯 Definir minha meta'}</button>
+    <p class="hint">A água vem do valor dos itens em que você desistiu. É dinheiro que ficou com você. Para guardar de verdade, transfira para sua reserva quando puder.</p></div>`;
+}
+function openMeta(){
+  const m = FR().meta || {nome:'',valor:'',img:''};
+  openSheet(`<h3>🎯 Minha meta <button onclick="closeSheet()">Fechar</button></h3>
+    <label class="f"><span>Nome</span><input id="mNome" value="${esc(m.nome)}" placeholder="Ex.: viagem para a praia"></label>
+    <label class="f"><span>Valor (R$)</span><input id="mVal" inputmode="decimal" value="${m.valor?String(m.valor).replace('.',','):''}"></label>
+    <label class="f"><span>Imagem (opcional)</span><input type="file" id="mImg" accept="image/*"></label>
+    ${m.img?`<img src="${m.img}" style="width:100%;border-radius:14px;margin-top:6px" alt="">`:''}
+    <button class="btn" onclick="saveMeta()">Salvar</button>`);
+}
+function saveMeta(){
+  const f = FR(), nome = $('#mNome').value.trim(), valor = r2(parseMoney($('#mVal').value)||0), file = $('#mImg').files[0];
+  if(!nome||!(valor>0)) return alert('Preencha o nome e o valor.');
+  const done = img => { f.meta = {nome,valor,img:img??f.meta?.img??''}; closeSheet(); save(); };
+  if(!file) return done();
+  const r = new FileReader(); r.onload = () => { const im = new Image(); im.onload = () => {
+    const c = document.createElement('canvas'), k = Math.min(1,480/Math.max(im.width,im.height));
+    c.width = im.width*k; c.height = im.height*k; c.getContext('2d').drawImage(im,0,0,c.width,c.height); done(c.toDataURL('image/jpeg',.75)); };
+    im.src = r.result; }; r.readAsDataURL(file);
+}
+
+/* ---------- 7. Recaída sem culpa ---------- */
+function openImpulso(){
+  openSheet(`<h3>Comprei por impulso <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub" style="color:var(--ink2);font-size:13px;margin-top:-4px">Obrigada por registrar. Isso é coragem, não fracasso. 💗</p>
+    <div class="row"><label class="f"><span>O que foi?</span><input id="iItem"></label>
+      <label class="f"><span>Valor (R$)</span><input id="iVal" inputmode="decimal" placeholder="0,00"></label></div>
+    <label class="f"><span>Loja ou app</span><input id="iLoja"></label>
+    <label class="f"><span>O que eu estava sentindo</span></label>${emoChips('iEmo')}
+    <label class="f"><span>O que aprendi sobre meu gatilho?</span><textarea id="iAprendi" style="min-height:70px;font-family:inherit;font-size:15px" placeholder="Ex.: foi depois de um dia cansativo, vendo stories…"></textarea></label>
+    <label class="check"><input type="checkbox" id="iLanc" checked> Lançar também como gasto de hoje (Compras)</label>
+    <button class="btn" onclick="saveImpulso()">Registrar</button>`);
+}
+function saveImpulso(){
+  const f = FR(), valor = r2(parseMoney($('#iVal').value)||0), item = $('#iItem').value.trim()||'Compra por impulso';
+  const r = {id:uid(), at:new Date().toISOString(), item, valor, loja:$('#iLoja').value.trim(), emocoes:chipsSel('iEmo'), aprendizado:$('#iAprendi').value.trim()};
+  f.impulsos.push(r);
+  if($('#iLanc').checked && valor>0) db.tx.push({id:uid(),type:'out',desc:item,value:valor,cat:'Compras',date:TODAY});
+  save();
+  const s = freioStats(), pl = planosPara(r.emocoes);
+  openSheet(`<h3>💗 Tudo bem <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub" style="font-size:16px">Um deslize não apaga ${s.vitorias===1?'sua':'suas'} <b>${s.vitorias} vitória${s.vitorias===1?'':'s'}</b>. O que você notou hoje ajuda a entender seu gatilho da próxima vez.</p>
+    ${r.aprendizado?`<div class="need"><div class="parts">Você escreveu: “${esc(r.aprendizado)}”</div></div>`:''}
+    ${pl.length?`<h4 class="mini">Um plano para a próxima vez</h4>${pl.map(p=>planoCard(p)).join('')}`:`<button class="btn sec" onclick="openPlano()">Criar um plano “Se… então…”</button>`}`);
+}
+
+/* ---------- 8. Pessoa de apoio + ajustes ---------- */
+function pedirApoio(){
+  const ap = FR().cfg.apoio; if(!ap?.tel) return openFreioCfg();
+  let n = String(ap.tel).replace(/\D/g,''); if(n.length<=11) n = '55'+n;
+  location.href = `https://wa.me/${n}?text=${encodeURIComponent('Tô com vontade de comprar, me distrai 5 min? 💗')}`;
+}
+function sugestaoHora(){
+  const s = salaryFor(THIS_MONTH); if(!s) return 0;
+  const liquido = s.pays.filter(p=>p.key==='p5'||p.key==='p20').reduce((t,p)=>t+p.value,0);
+  return Math.floor(liquido/220*100)/100; // 220 h/mês (CLT 44h/semana)
+}
+function openFreioCfg(){
+  const c = FR().cfg, sug = sugestaoHora();
+  openSheet(`<h3>⚙️ Ajustes do Freio <button onclick="closeSheet()">Fechar</button></h3>
+    <label class="f"><span>Quanto vale 1 hora do seu trabalho (R$, líquido)</span><input id="cfHora" inputmode="decimal" value="${c.hora?String(c.hora).replace('.',','):''}" placeholder="${sug?String(sug).replace('.',','):'0,00'}"></label>
+    ${sug?`<div class="hint">Pelo seu salário líquido (÷ 220 horas no mês): ~${brl(sug)}/h. <a href="#" onclick="document.getElementById('cfHora').value='${String(sug).replace('.',',')}';return false">Usar esse valor</a></div>`:''}
+    <label class="f"><span>Tempo do cadeado no Cofre</span><select id="cfHoras">${COFRE_OPCOES.map(([h,l])=>`<option value="${h}" ${c.horas===h?'selected':''}>${l}</option>`).join('')}</select></label>
+    <h4 class="mini">💬 Pessoa de apoio (opcional)</h4>
+    <div class="row"><label class="f"><span>Nome</span><input id="cfNome" value="${esc(c.apoio?.nome||'')}"></label>
+      <label class="f"><span>WhatsApp (com DDD)</span><input id="cfTel" inputmode="tel" value="${esc(c.apoio?.tel||'')}" placeholder="11 91234-5678"></label></div>
+    <button class="btn" onclick="saveFreioCfg()">Salvar</button>`);
+}
+function saveFreioCfg(){
+  const c = FR().cfg;
+  c.hora = r2(parseMoney($('#cfHora').value)||0) || null;
+  c.horas = +$('#cfHoras').value;
+  const nome = $('#cfNome').value.trim(), tel = $('#cfTel').value.trim();
+  c.apoio = tel ? {nome,tel} : null;
+  closeSheet(); save();
+}
+function checkin(k){
+  const f = FR(); if(f.checkins.some(c=>c.date===TODAY)) return;
+  f.checkins.push({date:TODAY, emo:k}); save();
+}
+
+/* ---------- tela do Freio ---------- */
+VIEWS.freio = function(){
+  const f = FR(), s = freioStats(), now = Date.now();
+  st.freioTab = st.freioTab || 'cofre';
+  const ab = abertos(), cofre = f.desejos.filter(d=>d.status==='cofre').sort((a,b)=>a.liberaEm.localeCompare(b.liberaEm));
+  const fezCheckin = f.checkins.some(c=>c.date===TODAY);
+  const cofreView = `
+    ${ab.map(d=>`<div class="alert" style="background:var(--mint)" onclick="openDecidir('${d.id}')"><span class="ico">🔓</span><div><b>O cadeado abriu. Ainda quer isso?</b><span>${esc(d.item)}${d.preco?' · '+brl(d.preco):''}</span></div></div>`).join('')}
+    <div class="card"><h2>🔒 Cofre de desejos</h2>
+      ${cofre.length?`<ul class="list">${cofre.map(d=>{const left=new Date(d.liberaEm)-now;return `<li class="tap" onclick="${left<=0?`openDecidir('${d.id}')`:`openPosCofre('${d.id}')`}">
+        <span class="dot">${left<=0?'🔓':'🔒'}</span><div class="main"><div class="t">${esc(d.item)}</div>
+        <div class="m">${d.loja?esc(d.loja)+' · ':''}${d.emocoes.map(emoIcon).join('')} ${left<=0?'<b class="pos">pronto para decidir</b>':'abre em '+fmtLeft(left)}</div></div>
+        <div class="amt">${d.preco?brl(d.preco):''}<small>${d.preco?horasTxt(d.preco):''}</small></div></li>`}).join('')}</ul>`
+        :'<div class="empty">Seu Cofre está vazio. Quando bater a vontade, guarde aqui primeiro. 🔒</div>'}
+      ${!f.cfg.hora?`<p class="hint">Dica: em ⚙️ Ajustes, informe o valor da sua hora para ver quanto trabalho cada item custa.</p>`:''}
+    </div>
+    ${f.desejos.some(d=>d.status!=='cofre')?`<div class="card"><details><summary>Decisões anteriores (${f.desejos.filter(d=>d.status!=='cofre').length})</summary>
+      <ul class="list">${f.desejos.filter(d=>d.status!=='cofre').slice().reverse().map(d=>`<li><span class="dot">${d.status==='desisti'?'💚':'🛍️'}</span><div class="main"><div class="t">${esc(d.item)}</div><div class="m">${d.status==='desisti'?'desisti':'comprei conscientemente'} · ${dLabel(d.resolvido.slice(0,10))}</div></div><div class="amt">${d.preco?brl(d.preco):''}</div></li>`).join('')}</ul></details></div>`:''}`;
+  const body = {cofre:cofreView, jardim:jardimView(), gatilhos:gatilhosView(), planos:planosView(), missoes:missoesView()}[st.freioTab];
+  return `
+  <div class="card hero"><span class="emoji" onclick="openFreioCfg()" style="cursor:pointer">⚙️</span>
+    <div class="label">Freio</div>
+    <div class="count"><span class="big">${s.vitorias}</span><span>vitória${s.vitorias===1?'':'s'}</span></div>
+    <div class="xp"><span>Nível ${s.nivel}</span><div class="prog"><i style="width:${s.noNivel}%"></i></div><span>${s.noNivel}/100 XP</span></div>
+  </div>
+  <button class="bigbtn" onclick="openVontade()">🛑 Tô com vontade de comprar</button>
+  <div class="actions three">
+    <button class="action" onclick="openSurf()"><span class="ai">🌊</span><span><b>Surfar a onda</b></span></button>
+    <button class="action" onclick="pedirApoio()"><span class="ai">💬</span><span><b>Pedir apoio</b></span></button>
+    <button class="action" onclick="openImpulso()"><span class="ai">🛍️</span><span><b>Comprei por impulso</b></span></button>
+  </div>
+  ${!fezCheckin?`<div class="card"><h2>☀️ Check-in de hoje</h2><p class="sub">Como você está agora? (+5 XP)</p>
+    <div class="chips"><button class="chip" onclick="checkin('bem')">😊 bem</button>${EMO.filter(e=>e[0]!=='outro').map(([k,i,l])=>`<button class="chip" onclick="checkin('${k}')">${i} ${l}</button>`).join('')}</div></div>`:''}
+  <div class="seg scroll">${[['cofre','🔒 Cofre'],['jardim','🌱 Jardim'],['gatilhos','🗺️ Gatilhos'],['planos','🃏 Planos'],['missoes','🧹 Missões']].map(([v,l])=>`<button class="${st.freioTab===v?'on':''}" onclick="st.freioTab='${v}';render()">${l}</button>`).join('')}</div>
+  ${body}
+  <p class="foot">Se a compra compulsiva está afetando muito sua vida, procure apoio profissional (ex.: TCC, PRO-AMITI/IPq-USP).</p>`;
+};
+function freioBanner(){
+  const n = db.freio ? abertos().length : 0;
+  return `<button class="bigbtn small" onclick="openVontade()">🛑 Tô com vontade de comprar</button>
+    ${n?`<div class="alert" style="background:var(--mint)" onclick="st.view='freio';st.freioTab='cofre';render()"><span class="ico">🔓</span><div><b>O cadeado abriu${n>1?` para ${n} itens`:''}</b><span>Ainda quer? Toque para decidir com calma.</span></div></div>`:''}`;
+}
+/* ---------- introdução (primeiro acesso) ---------- */
+const INTRO_KEY = 'financas.intro.v1';
+const INTRO = [
+  ['👋','Oi! Que bom ter você aqui','Este app ajuda você a saber <b>quando o dinheiro entra</b>, <b>quanto precisa ter</b> para pagar as contas e a <b>frear compras por impulso</b>.<br><br>🔒 Tudo fica salvo <b>só neste celular</b>. Ninguém mais vê.'],
+  ['🏠','Início','Mostra as próximas datas: quando cai o salário e quanto você precisa ter em cada <b>dia 5</b> e <b>dia 20</b>.<br><br>Verde = vai sobrar. Rosa = vai faltar.'],
+  ['➕','Lançar','Aqui entra <b>o que é real</b>: o salário que caiu, um gasto, uma fatura nova, uma conta que você pagou.<br><br>O que não foi lançado aparece como <b>previsto</b>, sempre calculado para menos nos ganhos e para mais nas dívidas.'],
+  ['🛑','Freio','Bateu vontade de comprar? Toque em <b>“Tô com vontade de comprar”</b>. O item vai para o Cofre com um cadeado, e você decide com calma depois.<br><br>Sem culpa, sem punição: cada passo conta como vitória. 💗'],
+  ['🧪','Simular','Teste sem medo: e se eu parcelar essa fatura? E se eu tirar férias em dezembro?<br><br><b>Nada do que você testa muda seus dados reais.</b>'],
+  ['🚀','Vamos começar?','Se o Claude preparou seus dados, cole tudo de uma vez. Se não, comece do zero pela aba Lançar.<br><br>O manual completo fica em <b>Mais → 📖 Ajuda</b>.'],
+];
+let introStep = 0;
+function showIntro(step=0){
+  introStep = step;
+  const [ico,t,txt] = INTRO[step], last = step===INTRO.length-1;
+  $('#sheetbg').classList.add('open','intro');
+  $('#sheet').innerHTML = `<div class="introbox">
+    <div class="introico">${ico}</div><h2>${t}</h2><p>${txt}</p>
+    <div class="dots">${INTRO.map((_,i)=>`<i class="${i===step?'on':''}"></i>`).join('')}</div>
+    ${last?`<button class="btn" onclick="endIntro('dados')">Colar meus dados</button>
+      <button class="btn sec" onclick="endIntro('lancar')">Começar do zero</button>`
+      :`<button class="btn" onclick="showIntro(${step+1})">Próximo</button>
+      <button class="btn sec" style="background:none" onclick="endIntro()">Pular introdução</button>`}
+    ${step>0&&!last?`<button class="back" onclick="showIntro(${step-1})">‹ voltar</button>`:''}
+  </div>`;
+}
+function endIntro(go){
+  localStorage.setItem(INTRO_KEY,'1');
+  $('#sheetbg').classList.remove('open','intro');
+  if(go==='dados'){ st.view='mais'; st.maisTab='dados'; }
+  if(go==='lancar'){ st.view='lancar'; }
+  window.scrollTo(0,0); render();
+}
+
+/* ---------- manual ---------- */
+const MANUAL = [
+  ['🚀','Primeiros passos',`<ol>
+    <li>Instale no iPhone: abra o endereço no <b>Safari</b>, toque em <b>Compartilhar → Adicionar à Tela de Início</b>.</li>
+    <li>Coloque seus dados: <b>Mais → 💾 Dados → Colar dados</b> (o bloco que o Claude preparou) ou cadastre pela aba <b>Lançar</b>.</li>
+    <li>Informe quanto tem na conta: <b>Lançar → 👛 Saldo da conta</b>. Faça isso sempre que quiser “acertar” a previsão.</li>
+    <li>Configure o Freio: no ⚙️ da aba <b>Freio</b>, coloque o valor da sua hora e, se quiser, uma pessoa de apoio.</li></ol>`],
+  ['🏠','Início',`<p><b>Próximas datas</b> mostra, em ordem, quando cai dinheiro (💰) e quando você precisa ter dinheiro para as contas (📌).</p>
+    <p>Abaixo vêm os dois blocos do mês:</p><ul><li><b>🌱 Dia 5</b>: salário do dia 5 paga as contas que vencem de 05 a 19.</li>
+    <li><b>🌸 Dia 20</b>: adiantamento (e 13º) paga as contas de 20 até o dia 4 do mês seguinte.</li></ul>
+    <p>O que sobra (ou falta) num bloco passa para o próximo. Use ‹ › no topo para ver outros meses.</p>
+    <p><b>📊 Para onde vai seu dinheiro</b> mostra seus gastos do mês por categoria.</p>`],
+  ['➕','Lançar (o que é real)',`<ul>
+    <li><b>💰 Recebi meu salário</b>: coloque o valor líquido do holerite. Ele substitui a previsão.</li>
+    <li><b>➕ Recebi outro dinheiro</b>: Pix, freela, reembolso…</li>
+    <li><b>🛒 Gastei com algo</b>: escolha a categoria (iFood, Uber/99, vestuário…). Gastos de saúde e educação podem ser marcados como dedutíveis no IR.</li>
+    <li><b>🧾 Chegou fatura ou dívida</b>: informe o valor, o dia do vencimento e a parcela (ex.: 3 de 10). Fatura à vista = parcela 1 de 1.</li>
+    <li><b>🔁 Nova conta fixa</b>: algo que se repete todo mês (aluguel, internet).</li>
+    <li><b>✅ Paguei uma conta</b>: toque na bolinha. O “Falta pagar” diminui na hora.</li></ul>`],
+  ['💳','Contas',`<p>Tudo o que você paga: contas fixas, apartamento, dívidas por banco e consignados (descontados no salário). Toque em qualquer item para editar ou excluir.</p>
+    <p>No <b>🏢 Apartamento</b>, atualize todo mês o valor que a Caixa cobrou. A projeção se ajusta sozinha.</p>`],
+  ['🛑','Freio (compras por impulso)',`<ul>
+    <li><b>Tô com vontade de comprar</b>: anote o item, o preço, a loja e o que está sentindo. Ele vai para o <b>Cofre</b> com cadeado (48h por padrão).</li>
+    <li>Ao lado do preço aparece quantas <b>horas de trabalho</b> aquilo custa.</li>
+    <li>Quando o cadeado abrir, responda 3 perguntas e escolha: <b>Desisti</b>, <b>Comprei conscientemente</b> ou <b>Adiar mais</b>. Nenhuma escolha é erro.</li>
+    <li><b>🌊 Surfar a onda</b>: 3 a 5 minutos respirando enquanto a vontade sobe e desce.</li>
+    <li><b>🗺️ Gatilhos</b>: mostra em que horários, dias e emoções a vontade aparece mais.</li>
+    <li><b>🃏 Planos “Se… então…”</b>: combinados com você mesma que aparecem na hora certa.</li>
+    <li><b>🧹 Missões</b>: pequenas mudanças que deixam a compra por impulso mais difícil.</li>
+    <li><b>🌱 Jardim</b>: o valor do que você desistiu vira água para a planta e soma na sua meta.</li>
+    <li><b>Comprei por impulso</b>: registre sem culpa. Suas vitórias continuam lá.</li></ul>
+    <p class="hint">O app não consegue mandar notificação sozinho. Use “📅 Me lembrar quando o cadeado abrir” para criar um lembrete no Calendário.</p>`],
+  ['🧪','Simular',`<ul><li><b>🧭 Plano</b>: o app procura a combinação de parcelamentos com menos juros para você não fechar no vermelho.</li>
+    <li><b>🧪 E se…</b>: escolha não pagar, parcelar ou pagar parte de uma conta e compare com a situação atual.</li>
+    <li><b>🏖️ Férias</b>: escolha a data e veja quanto cai, quanto sai dos próximos salários (a folha fecha dia 12) e como ficam os pagamentos.</li></ul>
+    <p>Os juros usados são estimativas <b>para cima</b>. Se o banco mostrar a taxa real, troque em <b>Plano → ⚙️ Juros usados</b>.</p>`],
+  ['💼','Salário, Imposto e Dados (aba Mais)',`<ul><li><b>Salário</b>: bruto, adiantamento e descontos. O app calcula INSS e IR pelas tabelas de 2026 e arredonda o líquido para baixo.</li>
+    <li><b>Imposto</b>: prazo da declaração, lembretes no Calendário, gastos dedutíveis e dicas.</li>
+    <li><b>Dados</b>: colar dados, fazer <b>backup</b> (faça de vez em quando!) e restaurar.</li></ul>`],
+  ['❓','Perguntas frequentes',`<p><b>Por que está escrito “previsto”?</b> É uma estimativa do app. Quando o valor real chegar, lance em <b>Lançar</b>.</p>
+    <p><b>Por que os ganhos são calculados para menos e as dívidas para mais?</b> Para a previsão nunca te surpreender para pior.</p>
+    <p><b>Meus dados vão para a internet?</b> Não. Ficam só neste celular. Por isso o backup é importante.</p>
+    <p><b>Troquei de celular, e agora?</b> No celular antigo: Mais → Dados → Exportar backup. No novo: Restaurar de arquivo.</p>
+    <p><b>Como atualizo o app?</b> Quando houver versão nova no GitHub, feche e abra o app. Seus dados continuam.</p>`],
+];
+function manualView(){
+  return `<div class="card"><h2>📖 Como usar o app</h2>
+    <p class="sub">Toque em um tema para abrir.</p>
+    ${MANUAL.map(([i,t,h],k)=>`<details class="tip-item manual" ${k===0?'open':''}><summary><span class="e">${i}</span>${t}</summary><div class="mtext">${h}</div></details>`).join('')}
+    <button class="btn sec" onclick="showIntro(0)">Ver a introdução de novo</button></div>`;
+}
 
 /* ---------- navegação ---------- */
 document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{st.view=b.dataset.v;window.scrollTo(0,0);render()});
@@ -1643,6 +2270,7 @@ $('#next').onclick=()=>{st.month=addM(st.month,1);render()};
 $('#gotoday').onclick=()=>{st.month=THIS_MONTH;render()};
 
 render();
+if(!localStorage.getItem(INTRO_KEY)) showIntro(0);
 
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js');
 </script>

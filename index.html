@@ -155,6 +155,20 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--bar-dim);border-
 .tip-item p{margin:0 0 10px 38px;font-size:14px;color:var(--ink2)}
 .chk{width:24px;height:24px;border-radius:12px;border:2px solid var(--bar);display:grid;place-items:center;flex:none;font-size:13px;color:var(--on-accent)}
 .chk.on{background:var(--pos);border-color:var(--pos)}
+.list li.done{opacity:.45}
+.list li.done .t{text-decoration:line-through}
+.list .dot{width:24px;flex:none;text-align:center;font-size:16px}
+.list .chk{cursor:pointer;background:none}
+.list .chk.on{background:var(--pos)}
+.cycle.now{outline:2px solid var(--bar-dim)}
+.result{display:flex;justify-content:space-between;align-items:center;gap:10px;border-radius:14px;padding:12px 14px;margin-top:12px;font-size:14px}
+.result b{font-size:18px;font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;white-space:nowrap}
+.result.good{background:var(--mint);color:var(--pos)}
+.result.bad{background:var(--pink);color:var(--neg)}
+.result span{color:var(--ink)}
+.dday{width:36px;flex:none;text-align:center;font:700 18px/1.1 ui-rounded,"SF Pro Rounded",-apple-system,sans-serif}
+.dday small{display:block;font-size:10px;font-weight:500;color:var(--ink3);text-transform:uppercase}
+.list .m b.neg,.sub.neg{color:var(--neg)}
 </style>
 </head>
 <body>
@@ -343,16 +357,17 @@ resumo(){
   if(m.outInst) cats['Parcelas e dívidas']=(cats['Parcelas e dívidas']||0)+m.outInst;
   const catList = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
   const catMax = catList.length ? catList[0][1] : 1;
+  const mName = mLabel(st.month,{month:'long'});
   return `
-  <div class="card hero"><span class="emoji">${m.saldo<0?'🌧️':'🌷'}</span>
-    <div class="label">Saldo do mês (entradas − saídas)</div>
-    <div class="big ${m.saldo<0?'neg':''}">${brl(m.saldo)}</div>
-  </div>
+  ${monthHero(st.month)}
   ${irBanner()}
-  ${m.sal ? salaryCard(m.sal) : !db.salary ? `<div class="card"><h2>Salário</h2><p class="sub">Configure para o app projetar quanto cai na conta</p><button class="btn sec" onclick="openSalary()">Configurar salário</button></div>` : ''}
+  ${cycleCard(st.month+'A')}
+  ${cycleCard(st.month+'B')}
+  ${st.month===THIS_MONTH ? nextMonthPreview() : ''}
+  ${!db.salary ? `<div class="card"><h2>Salário</h2><p class="sub">Configure para o app projetar quanto cai na conta</p><button class="btn sec" onclick="openSalary()">Configurar salário</button></div>` : ''}
   <div class="tiles">
-    <div class="tile t-mint"><div class="label">Entradas</div><div class="val pos">${brl(m.inc)}</div>${m.sal?`<div class="note">salário líquido ${brlShort(m.sal.total)}</div>`:''}</div>
-    <div class="tile t-pink"><div class="label">Saídas</div><div class="val">${brl(m.out)}</div><div class="note">fixos ${brlShort(m.outFixed)} · variáveis ${brlShort(m.outVar)} · parcelas ${brlShort(m.outInst)}</div></div>
+    <div class="tile t-mint"><div class="label">Entra em ${mName}</div><div class="val pos">${brl(m.inc)}</div>${m.sal?`<div class="note">salário líquido ${brlShort(m.sal.total)}</div>`:''}</div>
+    <div class="tile t-pink"><div class="label">Sai em ${mName}</div><div class="val">${brl(m.out)}</div><div class="note">fixos ${brlShort(m.outFixed)} · variáveis ${brlShort(m.outVar)} · parcelas ${brlShort(m.outInst)}</div></div>
     <div class="tile t-lilac"><div class="label">Parcelas no mês</div><div class="val">${brl(instAll)}</div><div class="note">${m.outFolha?brlShort(m.outFolha)+' já descontado em folha':pct===null?'sem entradas no mês':pct+'% das entradas'}</div></div>
     <div class="tile t-butter"><div class="label">Dívida restante</div><div class="val">${brl(totalDebt)}</div><div class="note">${lastEnd?'última parcela em '+mShortY(lastEnd):'nenhuma em aberto'}</div></div>
   </div>
@@ -593,7 +608,10 @@ function openDebt(id){
       <label class="f"><span>Onde / credor</span><input id="dcred" list="credlist" value="${esc(d?.creditor)}" placeholder="Ex.: Nubank"><datalist id="credlist">${creditors.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></label>
       <label class="f"><span>Tipo</span><select id="dkind">${Object.entries(KINDS).map(([k,v])=>`<option value="${k}" ${d?.kind===k?'selected':''}>${v}</option>`).join('')}</select></label>
     </div>
-    <label class="f"><span>Valor da parcela (R$)</span><input id="dval" inputmode="decimal" value="${d?String(d.value).replace('.',','):''}" placeholder="0,00"></label>
+    <div class="row">
+      <label class="f"><span>Valor da parcela (R$)</span><input id="dval" inputmode="decimal" value="${d?String(d.value).replace('.',','):''}" placeholder="0,00"></label>
+      <label class="f"><span>Dia do vencimento</span><input id="dday" inputmode="numeric" value="${d?.day||''}" placeholder="Ex.: 7"></label>
+    </div>
     <div class="row3">
       <label class="f"><span>Parcela nº</span><input id="dcur" inputmode="numeric" value="${cur}"></label>
       <label class="f"><span>de (total)</span><input id="dtot" inputmode="numeric" value="${d?.total||''}" placeholder="10"></label>
@@ -619,11 +637,146 @@ function saveDebt(id){
   if(!(value>0)) return alert('Informe o valor da parcela.');
   if(!(total>=1&&cur>=1&&cur<=total)) return alert('Confira a parcela atual e o total (ex.: 3 de 10).');
   if(!ref) return alert('Informe o mês.');
-  const rec = {id:id||uid(),desc,creditor,kind,value,total,firstMonth:addM(ref,-(cur-1))};
+  const day = Math.min(31,Math.max(0,parseInt($('#dday').value)||0)) || null;
+  const rec = {id:id||uid(),desc,creditor,kind,value,total,day,firstMonth:addM(ref,-(cur-1))};
   if(id){const i=db.debts.findIndex(x=>x.id===id);db.debts[i]=rec}else db.debts.push(rec);
   closeSheet(); save();
 }
 function delDebt(id){if(!confirm('Excluir esta dívida?'))return;db.debts=db.debts.filter(x=>x.id!==id);closeSheet();save()}
+
+/* ---------- blocos de pagamento: dia 5 e dia 20 ----------
+   Bloco "A" do mês M: recebe o pagamento do dia 5 e paga o que vence de 05 a 19.
+   Bloco "B" do mês M: recebe o pagamento do dia 20 e paga o que vence de 20 até 04 do mês seguinte. */
+const DAY_DEFAULT = 10;
+const cycleOf = date => {const d=+date.slice(8), M=date.slice(0,7); return d<5 ? addM(M,-1)+'B' : d<20 ? M+'A' : M+'B'};
+const nextCycle = id => id.endsWith('A') ? id.slice(0,7)+'B' : addM(id.slice(0,7),1)+'A';
+function cycleInfo(id){
+  const M=id.slice(0,7), A=id.endsWith('A');
+  return {id,M,A,pay:A?`${M}-05`:`${M}-20`,from:A?`${M}-05`:`${M}-20`,to:A?`${M}-19`:`${addM(M,1)}-04`};
+}
+function events(M){ // tudo que entra e sai no mês M, com data e chave
+  const m = month(M), ev = [];
+  const dim = new Date(+M.slice(0,4), +M.slice(5), 0).getDate();
+  const dt = day => `${M}-${pad(Math.min(day||DAY_DEFAULT,dim))}`;
+  if(m.sal) m.sal.pays.forEach(p=>ev.push({key:`sal:${p.key}:${M}`,date:p.date,
+    nominal:p.key==='p5'?`${M}-05`:(p.key==='p20'||p.key==='d2')?`${M}-20`:p.date,
+    label:p.label,v:p.value,icon:'💰',tap:`st.month='${M}';openPay('${p.key}')`,tag:p.real?'valor real':'previsto'}));
+  m.fixed.forEach(f=>ev.push({key:`fx:${f.id}:${M}`,date:dt(f.day),label:f.desc,v:f.type==='in'?f.value:-f.value,icon:f.type==='in'?'💰':'🏠',tap:`openTx('${f.id}',true)`}));
+  m.tx.forEach(t=>ev.push({key:`tx:${t.id}`,date:t.date,label:t.desc,v:t.type==='in'?t.value:-t.value,icon:t.type==='in'?'💰':'🛍️',tap:`openTx('${t.id}')`}));
+  m.inst.forEach(d=>ev.push({key:`debt:${d.id}:${M}`,date:dt(d.day),label:d.desc,sub:`${d.creditor}${d.total>1?` · parcela ${d.n}/${d.total}`:''}`,v:-d.value,icon:'💳',tap:`openDebt('${d.id}')`}));
+  return ev;
+}
+function cycleEvents(id){
+  const c = cycleInfo(id), b = db.balance, ev = [];
+  [c.M, addM(c.M,1)].forEach(M=>events(M).forEach(e=>{ if(cycleOf(e.nominal||e.date)===id) ev.push(e) }));
+  if(db.budget>0){
+    let v = db.budget/2;
+    if(b && b.date>=c.from && b.date<=c.to) v = v*daysBetween(b.date,c.to)/(daysBetween(c.from,c.to)+1);
+    v = r2(v);
+    if(v>0) ev.push({key:`bud:${id}`,date:c.to,label:'Gastos do dia a dia (estimativa)',v:-v,icon:'🛒',tap:'openBalance()',budget:true});
+  }
+  const paid = db.paid||{};
+  ev.forEach(e=>{
+    e.paid = !!paid[e.key];
+    const bAt = b ? (b.at || b.date+'T00:00:00') : '';
+    e.done = !!b && (e.date<=b.date || (e.paid && paid[e.key]<bAt)); // já está dentro do saldo informado
+    e.late = e.v<0 && !e.paid && !e.done && !e.budget && e.date<TODAY;
+  });
+  return ev.sort((x,y)=>(y.v>0)-(x.v>0) || x.date.localeCompare(y.date));
+}
+const evSum = ev => r2(ev.filter(e=>!e.done).reduce((s,e)=>s+e.v,0));
+function plan(id){
+  const b = db.balance;
+  let start, opening = 0, fromBalance = false;
+  if(b){ start = cycleOf(b.date); if(id<start) return {past:true,c:cycleInfo(id),ev:cycleEvents(id)}; opening = b.value; fromBalance = true; }
+  else start = id.slice(0,7)+'A';
+  for(let cur=start; cur<id; cur=nextCycle(cur)){ opening = r2(opening+evSum(cycleEvents(cur))); fromBalance = false; }
+  if(!b && id<start) opening = 0;
+  const ev = cycleEvents(id);
+  return {c:cycleInfo(id), ev, opening, fromBalance, closing:r2(opening+evSum(ev))};
+}
+function cycleCard(id){
+  const p = plan(id), c = p.c;
+  const ins = p.ev.filter(e=>e.v>0), outs = p.ev.filter(e=>e.v<0);
+  const now = TODAY>=c.from && TODAY<=c.to;
+  const inTot = r2(ins.reduce((s,e)=>s+e.v,0));
+  const open = outs.filter(e=>!e.paid&&!e.done&&!e.budget), openTot = r2(open.reduce((s,e)=>s-e.v,0));
+  const row = e => {
+    const isOut = e.v<0, checkable = isOut && !e.budget && !e.done;
+    const status = e.done ? 'já estava no saldo informado' : e.paid ? 'paga ✓' : e.late ? '<b class="neg">atrasada</b>' : isOut ? (e.budget?'estimativa':`vence ${dLabel(e.date)}`) : `${dLabel(e.date)} · ${e.tag||''}`;
+    return `<li class="${e.paid||e.done?'done':''}">
+      ${checkable?`<button class="chk ${e.paid?'on':''}" onclick="togglePaid('${e.key}')" aria-label="Marcar como paga">${e.paid?'✓':''}</button>`:`<span class="dot">${e.icon}</span>`}
+      <div class="main tap" onclick="${e.tap}"><div class="t">${esc(e.label)}</div><div class="m">${e.sub?esc(e.sub)+' · ':''}${status}</div></div>
+      <div class="amt ${isOut?'':'pos'}">${isOut?'−':'+'} ${brl(Math.abs(e.v))}</div></li>`;
+  };
+  const res = p.past ? null : p.closing;
+  return `<div class="card cycle ${now?'now':''}">
+    <div class="grouphead"><h2>${c.A?'🌱':'🌸'} Pagamento do dia ${c.A?'5':'20'}${now?' <span class="badge pink">agora</span>':''}</h2><span class="pos">+ ${brl(inTot)}</span></div>
+    <p class="sub">Contas que vencem de ${dLabel(c.from)} a ${dLabel(c.to)}${openTot?` · <b>${brl(openTot)} em aberto</b>`:''}</p>
+    <ul class="list">
+      ${!p.past && (p.opening || p.fromBalance) ? `<li><span class="dot">👛</span><div class="main"><div class="t">${p.fromBalance?'Na conta (saldo informado)':p.opening<0?'Faltou do pagamento anterior':'Sobrou do pagamento anterior'}</div><div class="m">${p.fromBalance?'em '+dLabel(db.balance.date):'vem do bloco anterior'}</div></div><div class="amt ${p.opening<0?'neg':'pos'}">${p.opening<0?'−':'+'} ${brl(Math.abs(p.opening))}</div></li>`:''}
+      ${ins.map(row).join('')}
+      ${outs.length?outs.map(row).join(''):'<li><div class="main"><div class="m">Nenhuma conta neste período</div></div></li>'}
+    </ul>
+    ${res===null?'':`<div class="result ${res<0?'bad':'good'}"><span>${res<0?'Vai faltar':'Vai sobrar'} depois de pagar tudo</span><b>${brl(Math.abs(res))}</b></div>`}
+  </div>`;
+}
+function monthHero(M){
+  const mName = mLabel(M,{month:'long'}), A = plan(M+'A'), B = plan(M+'B');
+  const evs = [...A.ev,...B.ev];
+  const open = evs.filter(e=>e.v<0&&!e.paid&&!e.done&&!e.budget);
+  const openTot = r2(open.reduce((s,e)=>s-e.v,0)), late = open.filter(e=>e.late);
+  const sal = month(M).sal;
+  const end = B.past ? null : B.closing;
+  return `<div class="card hero"><span class="emoji">${end!==null&&end<0?'🌧️':'🌷'}</span>
+    <div class="label">Contas em aberto em ${mName}</div>
+    <div class="big">${brl(openTot)}</div>
+    <p class="sub" style="margin:6px 0 0">${open.length} conta${open.length===1?'':'s'} para pagar${late.length?` · <b class="neg">${late.length} atrasada${late.length>1?'s':''}</b>`:''}${sal?` · salário do mês ${brl(sal.total)}`:''}</p>
+    ${end!==null?`<div class="result ${end<0?'bad':'good'}" style="margin-top:12px"><span>No fim de ${mName} vai ${end<0?'faltar':'sobrar'}</span><b>${brl(Math.abs(end))}</b></div>`:''}
+    ${!db.balance?`<p class="sub" style="margin:10px 0 0">Dica: informe quanto tem na conta hoje para a conta ficar exata.</p><button class="btn" style="margin-top:8px" onclick="openBalance()">Informar saldo da conta</button>`
+      : M===THIS_MONTH?`<button class="btn sec" style="margin-top:12px" onclick="openBalance()">Atualizar saldo da conta (${dLabel(db.balance.date)})</button>`:''}
+  </div>`;
+}
+function nextMonthPreview(){
+  const N = addM(THIS_MONTH,1), name = mLabel(N,{month:'long'});
+  const A = plan(N+'A'), B = plan(N+'B');
+  const evs = [...A.ev,...B.ev];
+  const bills = r2(evs.filter(e=>e.v<0&&!e.budget).reduce((s,e)=>s-e.v,0));
+  const inc = r2(evs.filter(e=>e.v>0).reduce((s,e)=>s+e.v,0));
+  const line = (lbl,p) => `<div class="result ${p.closing<0?'bad':'good'}" style="margin-top:8px"><span>${lbl}: ${p.closing<0?'falta':'sobra'}</span><b>${brl(Math.abs(p.closing))}</b></div>`;
+  return `<div class="card"><div class="grouphead"><h2>👀 Prévia de ${name}</h2></div>
+    <p class="sub">Contas ${brl(bills)} · salário ${brl(inc)}</p>
+    ${line('Pagamento do dia 5',A)}${line('Pagamento do dia 20',B)}
+    <button class="btn sec" onclick="st.month='${N}';window.scrollTo(0,0);render()">Ver ${name} em detalhe</button></div>`;
+}
+function togglePaid(key){
+  db.paid = db.paid||{};
+  if(db.paid[key]) delete db.paid[key]; else db.paid[key] = new Date().toISOString();
+  save();
+}
+function openBalance(){
+  const b = db.balance || {value:0,date:TODAY};
+  const neg = b.value<0;
+  openSheet(`
+    <h3>Saldo da conta <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub" style="color:var(--ink2);font-size:13px;margin-top:-4px">Some o que tem em todas as suas contas hoje. Se estiver usando cheque especial, escolha “Negativo”.</p>
+    <div class="seg" id="bsign"><button data-s="1" class="${neg?'':'on'}">Positivo</button><button data-s="-1" class="${neg?'on':''}">Negativo</button></div>
+    <label class="f"><span>Quanto tem na conta agora (R$)</span><input id="bval" inputmode="decimal" value="${db.balance?String(Math.abs(b.value)).replace('.',','):''}" placeholder="0,00"></label>
+    <div class="hint">Tudo que venceu até hoje (${dLabel(TODAY)}) é considerado já pago e incluído nesse saldo.</div>
+    <label class="f" style="margin-top:16px"><span>Gastos do dia a dia por mês (mercado, transporte, lazer…) — estimativa</span><input id="bbud" inputmode="decimal" value="${db.budget?String(db.budget).replace('.',','):''}" placeholder="Ex.: 1.200,00"></label>
+    <div class="hint">Deixa a previsão mais realista. Use 0 se preferir lançar cada gasto.</div>
+    <button class="btn" onclick="saveBalance()">Salvar</button>`);
+  document.querySelectorAll('#bsign button').forEach(x=>x.onclick=()=>document.querySelectorAll('#bsign button').forEach(o=>o.classList.toggle('on',o===x)));
+  if(!db.balance) setTimeout(()=>$('#bval').focus(),50);
+}
+function saveBalance(){
+  const v = parseMoney($('#bval').value||'0'), sign = +$('#bsign .on').dataset.s;
+  if(!isFinite(v)) return alert('Valor inválido.');
+  const bud = parseMoney($('#bbud').value||'0');
+  db.balance = {value:r2(Math.abs(v)*sign), date:TODAY, at:new Date().toISOString()};
+  db.budget = isFinite(bud)&&bud>0 ? r2(bud) : 0;
+  st.month = THIS_MONTH; closeSheet(); save();
+}
 
 /* ---------- salário: telas ---------- */
 const payRow = p => `<li class="tap" onclick="openPay('${p.key}')"><div class="main">
@@ -781,7 +934,7 @@ function normalize(data){
     let first = d.firstMonth;
     if(!first && d.current) first = addM(d.refMonth||THIS_MONTH,-(parseInt(d.current)-1));
     if(!d.desc||!(value>0)||!(total>=1)||!/^\d{4}-\d{2}$/.test(first||'')) return errs.push(`dívida ${i+1} (${d.desc||'?'})`);
-    out.debts.push({id:d.id||uid(),desc:d.desc,creditor:d.creditor||'Outros',kind:KINDS[d.kind]?d.kind:'cartao',value,total,firstMonth:first});
+    out.debts.push({id:d.id||uid(),desc:d.desc,creditor:d.creditor||'Outros',kind:KINDS[d.kind]?d.kind:'cartao',value,total,day:parseInt(d.day)||null,firstMonth:first});
   });
   (data.tx||[]).forEach((t,i)=>{
     const value=num(t.value);
@@ -794,6 +947,8 @@ function normalize(data){
     out.fixed.push({id:f.id||uid(),type:f.type==='in'?'in':'out',desc:f.desc,value,cat:f.cat||'Outros',start:f.start,day:f.day?+f.day:null,end:f.end||null,ded:f.ded||'',nf:!!f.nf});
   });
   if(data.irDates && typeof data.irDates==='object') out.irDates = data.irDates;
+  if(data.balance && /^\d{4}-\d{2}-\d{2}$/.test(data.balance.date||'') && isFinite(+data.balance.value)) out.balance = {value:+data.balance.value,date:data.balance.date};
+  if(data.budget>0) out.budget = num(data.budget);
   if(data.salary && parseMoney(data.salary.gross)>0){
     const s = data.salary;
     out.salary = {gross:num(s.gross), advPct:s.advPct!=null?Number(s.advPct):40, deps:parseInt(s.deps)||0,
@@ -807,6 +962,8 @@ function merge(data,replace){
   const n = out.tx.length+out.fixed.length+out.debts.length+(out.salary?1:0);
   if(out.salary) db.salary = out.salary;
   if(out.irDates) db.irDates = {...(db.irDates||{}),...out.irDates};
+  if(out.balance) db.balance = out.balance;
+  if(out.budget) db.budget = out.budget;
   if(!n) return alert('Nada válido para importar.'+(errs.length?'\nIgnorados: '+errs.join(', '):''));
   if(replace) db = out;
   else ['tx','fixed','debts'].forEach(k=>out[k].forEach(it=>{const i=db[k].findIndex(x=>x.id===it.id);i>=0?db[k][i]=it:db[k].push(it)}));

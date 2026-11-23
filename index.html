@@ -7,8 +7,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Finanças">
-<meta name="theme-color" content="#fbf7f5" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#17151c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fbf7f5">
+<meta name="color-scheme" content="light only">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-512.png">
@@ -23,15 +23,16 @@
   --pos:#2c8560; --neg:#c8435a; --warn:#a86a00;
   --radius:20px; --shadow:0 2px 10px rgba(120,70,100,.07);
 }
-@media (prefers-color-scheme:dark){:root{
-  color-scheme:dark;
-  --bg:#17151c; --card:#221f29; --line:#332f3b; --ink:#f4eff5; --ink2:#c9c0cc; --ink3:#8e8594;
-  --accent:#f29ab9; --on-accent:#2b1720; --accent-soft:#3a2431;
-  --mint:#1f3a30; --pink:#3d2532; --lilac:#2e2842; --butter:#3a3320; --peach:#3d2c22;
-  --bar:#f29ab9; --bar-dim:#5a3445;
-  --pos:#7fd6ad; --neg:#ff8fa3; --warn:#f0c060;
-  --shadow:none;
-}}
+/* sempre claro, mesmo com o celular no modo escuro */
+html{color-scheme:light only}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.action{display:flex;gap:10px;align-items:center;text-align:left;background:var(--card);border-radius:18px;padding:14px 12px;box-shadow:var(--shadow);transition:transform .12s}
+.action:active{transform:scale(.97)}
+.action .ai{font-size:24px;width:40px;height:40px;border-radius:14px;background:var(--pink);display:grid;place-items:center;flex:none}
+.action:nth-child(2n) .ai{background:var(--mint)}
+.action:nth-child(3) .ai,.action:nth-child(6) .ai{background:var(--lilac)}
+.action b{display:block;font-size:14px;line-height:1.2}
+.action small{display:block;font-size:11.5px;color:var(--ink2);margin-top:2px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{overflow-x:hidden;margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
 body{padding:env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom))}
@@ -217,15 +218,14 @@ input.rate{width:58px;padding:6px 8px;font-size:14px;display:inline-block;margin
 
 <main class="wrap" id="view"></main>
 
-<button class="fab" id="fab" aria-label="Adicionar">+</button>
+<button class="fab" id="fab" aria-label="Adicionar" style="display:none">+</button>
 
 <nav class="tabs">
-  <button data-v="resumo" class="on"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Resumo</button>
-  <button data-v="lanc"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Lançamentos</button>
-  <button data-v="dividas"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>Dívidas</button>
-  <button data-v="plano"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Plano</button>
-  <button data-v="ir"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v13a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>IR</button>
-  <button data-v="dados"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>Dados</button>
+  <button data-v="resumo" class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>Início</button>
+  <button data-v="lancar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Lançar</button>
+  <button data-v="contas"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>Contas</button>
+  <button data-v="simular"><svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4 19a1 1 0 001 2h14a1 1 0 001-2l-6-10V3"/></svg>Simular</button>
+  <button data-v="mais"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>Mais</button>
 </nav>
 
 <div class="sheet-bg" id="sheetbg"><div class="sheet" id="sheet"></div></div>
@@ -234,7 +234,7 @@ input.rate{width:58px;padding:6px 8px;font-size:14px;display:inline-block;margin
 /* ---------- utilidades ---------- */
 const KEY = 'financas.v1';
 const CATS = {
-  out: ['Moradia','Alimentação','Mercado','Transporte','Saúde','Educação','Lazer','Compras','Assinaturas','Contas da casa','Cuidados pessoais','Pets','Outros'],
+  out: ['Mercado','iFood/delivery','Restaurantes','Transporte (Uber/99)','Vestuário','Assinaturas','Lazer','Beleza e cuidados','Saúde','Educação','Moradia','Contas da casa','Compras','Presentes','Pets','Outros'],
   in:  ['Salário','Freela/extra','Rendimentos','Reembolso','Outros']
 };
 const KINDS = {cartao:'Cartão (parcelado)', consignado:'Consignado (desconto em folha)', emprestimo:'Empréstimo', financiamento:'Financiamento', acordo:'Acordo/negociação', outro:'Outro'};
@@ -370,9 +370,10 @@ function render(){
   const sig = st.view+st.month; document.body.classList.toggle('noanim', render.last===sig); render.last = sig;
   $('#gotoday').hidden = st.month===THIS_MONTH;
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.view));
-  $('#fab').style.display = (st.view==='lanc'||st.view==='dividas'||st.view==='resumo'||st.view==='ir') ? '' : 'none';
+  if(!VIEWS[st.view]) st.view = 'resumo';
+  document.querySelector('header').style.display = (st.view==='resumo'||st.view==='contas') ? '' : 'none';
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.view));
   $('#view').innerHTML = VIEWS[st.view]();
-  if(st.view==='resumo') bindChart();
 }
 
 /* ---------- telas ---------- */
@@ -381,11 +382,11 @@ resumo(){
   const m = month(st.month);
   if(!db.tx.length && !db.fixed.length && !db.debts.length && !db.salary) return `
     <div class="card"><h2>Boas-vindas! 👋</h2>
-    <p class="sub" style="margin-top:6px">Comece cadastrando sua renda e gastos fixos em <b>Lançamentos</b>, e suas parcelas (cartão, empréstimos, financiamentos) em <b>Dívidas</b>.</p>
-    <p class="sub">Se preferir, mande suas faturas para o Claude: ele monta os dados e você cola tudo de uma vez em <b>Dados → Colar dados</b>.</p>
-    <button class="btn" onclick="openSalary()">Configurar salário (CLT)</button>
-    <button class="btn sec" onclick="openTx()">Adicionar lançamento</button>
-    <button class="btn sec" onclick="openDebt()">Adicionar parcela/dívida</button></div>`;
+    <p class="sub" style="margin-top:6px">Para começar, cole os dados que o Claude preparou para você em <b>Mais → Backup e dados → Colar dados</b>.</p>
+    <p class="sub">Ou cadastre aos poucos pela aba <b>Lançar</b>.</p>
+    <button class="btn" onclick="st.view='mais';st.maisTab='dados';render()">Colar meus dados</button>
+    <button class="btn sec" onclick="st.view='lancar';render()">Lançar manualmente</button></div>`;
+  return `${monthHero(st.month)}${irBanner()}${cycleCard(st.month+'A')}${cycleCard(st.month+'B')}${gastosCard(st.month)}`;
   const instAll = m.outInst+m.outFolha;
   const pct = m.inc ? Math.round(m.outInst/m.inc*100) : null;
   const totalDebt = db.debts.reduce((s,d)=>s+debtRemaining(d,st.month),0);
@@ -466,7 +467,6 @@ dividas(){
   const total = active.reduce((s,d)=>s+d.value,0);
   const rest = db.debts.reduce((s,d)=>s+debtRemaining(d,M),0);
   return `
-  <button class="btn sec" style="margin:12px 0 0" onclick="st.view='sim';window.scrollTo(0,0);render()">🧪 Simular: e se eu não pagar ou parcelar?</button>
   ${imovelCard()}
   <div class="tiles">
     <div class="tile t-lilac"><div class="label">Parcelas neste mês</div><div class="val">${brl(total)}</div><div class="note">${active.length} em andamento</div></div>
@@ -518,10 +518,6 @@ ir(){
 dados(){
   const n =db.tx.length+db.fixed.length+db.debts.length;
   return `
-  <div class="card"><h2>Salário</h2>
-    <p class="sub">${db.salary?`Bruto ${brl(db.salary.gross)} · adiantamento ${db.salary.advPct}% · ${db.salary.deps||0} dependente(s)`:'Ainda não configurado'}</p>
-    <button class="btn sec" onclick="openSalary()">${db.salary?'Editar salário':'Configurar salário'}</button>
-  </div>
   <div class="card"><h2>Colar dados</h2>
     <p class="sub">Mande suas faturas ou descreva seus gastos para o Claude. Ele devolve um bloco de texto (JSON). Cole aqui e toque em Importar.</p>
     <textarea id="paste" placeholder='{"debts":[{"desc":"Geladeira","creditor":"Nubank","value":250,"current":3,"total":10}]}'></textarea>
@@ -581,12 +577,12 @@ function openSheet(html){$('#sheet').innerHTML=html;$('#sheetbg').classList.add(
 function closeSheet(){$('#sheetbg').classList.remove('open')}
 $('#sheetbg').addEventListener('click',e=>{if(e.target.id==='sheetbg')closeSheet()});
 
-function openTx(id,isFixed){
+function openTx(id,isFixed,preType,preFixed){
   const x = id ? (isFixed?db.fixed:db.tx).find(t=>t.id===id) : null;
-  const type = x?.type || 'out';
-  const date = x ? (isFixed ? `${x.start}-${pad(x.day||1)}` : x.date) : (st.month===THIS_MONTH?TODAY:st.month+'-01');
+  const type = x?.type || preType || 'out';
+  const date = x ? (isFixed ? `${x.start}-${pad(x.day||1)}` : x.date) : TODAY;
   openSheet(`
-    <h3>${x?'Editar':'Novo'} lançamento <button onclick="closeSheet()">Fechar</button></h3>
+    <h3>${x?'Editar lançamento':preType==='in'?'💰 Recebi dinheiro':preFixed?'🔁 Nova conta fixa':'🛒 Novo gasto'} <button onclick="closeSheet()">Fechar</button></h3>
     <div class="seg" id="ttype">
       <button data-t="out" class="${type==='out'?'on':''}">Saída</button>
       <button data-t="in" class="${type==='in'?'on':''}">Entrada</button>
@@ -603,11 +599,11 @@ function openTx(id,isFixed){
         <option value="educacao" ${x?.ded==='educacao'?'selected':''}>Sim — educação (faculdade, pós, escola…)</option></select></label>
       <label class="check"><input type="checkbox" id="tnf" ${x?.nf?'checked':''}> Tenho nota/recibo com meu nome e CPF</label>
     </div>
-    <label class="check"><input type="checkbox" id="tfixed" ${isFixed?'checked':''} ${x?'disabled':''}> Repete todo mês (fixo)</label>
+    <label class="check"><input type="checkbox" id="tfixed" ${isFixed||preFixed?'checked':''} ${x?'disabled':''}> Repete todo mês (fixo)</label>
     <button class="btn" onclick="saveTx('${id||''}',${!!isFixed})">Salvar</button>
     ${x&&isFixed?`<button class="btn sec" onclick="stopFixed('${id}')">Parar de repetir a partir de ${mLabel(st.month,{month:'long'})}</button>`:''}
     ${x?`<button class="btn danger" onclick="delTx('${id}',${!!isFixed})">Excluir${isFixed?' (todos os meses)':''}</button>`:''}`);
-  const fillCats = t => {$('#tcat').innerHTML = CATS[t].map(c=>`<option ${x?.cat===c?'selected':''}>${c}</option>`).join('')};
+  const fillCats = t => {const list=[...CATS[t]]; if(x?.cat&&!list.includes(x.cat)) list.unshift(x.cat); $('#tcat').innerHTML = list.map(c=>`<option value="${esc(c)}" ${x?.cat===c?'selected':''}>${catIcon(c)} ${c}</option>`).join('')};
   const irVis = t => $('#tirbox').style.display = t==='out' ? '' : 'none';
   fillCats(type); irVis(type);
   $('#tcat').addEventListener('change',()=>{ if(!$('#tded').value){
@@ -790,10 +786,10 @@ function eventsRaw(M){ // tudo que entra e sai no mês M, com data e chave
     nominal:p.key==='p5'?`${M}-05`:(p.key==='p20'||p.key==='d2')?`${M}-20`:p.date,
     label:p.label,v:p.value,icon:'💰',tap:`st.month='${M}';openPay('${p.key}')`,tag:p.real?'valor real':'previsto'}));
   (db.ferias||[]).forEach(f=>{const c=feriasCalc(f); if(c && c.payDate.slice(0,7)===M) ev.push({key:`fer:${f.id}`,date:c.payDate,
-    label:`Férias (${f.dias} dias${f.abono?` + venda de ${f.abono}`:''})`,v:c.liquido,icon:'🏖️',tap:"st.view='plano';render()",tag:'previsto'});
+    label:`Férias (${f.dias} dias${f.abono?` + venda de ${f.abono}`:''})`,v:c.liquido,icon:'🏖️',tap:"st.view='simular';st.simTab='ferias';render()",tag:'previsto'});
     // os dias de férias já foram pagos antes: o salário do dia 5 seguinte vem menor
     if(c) c.descontos.filter(x=>x.mes===M).forEach(x=>ev.push({key:`ferdesc:${f.id}:${M}`,date:payDate(M,5),nominal:`${M}-05`,
-      label:`Desconto no salário: ${x.dias} dias de férias já pagos`,sub:'sai do salário do dia 5',v:-x.valor,icon:'🏖️',tap:"st.view='plano';render()",auto:true}))});
+      label:`Desconto no salário: ${x.dias} dias de férias já pagos`,sub:'sai do salário do dia 5',v:-x.valor,icon:'🏖️',tap:"st.view='simular';st.simTab='ferias';render()",auto:true}))});
   if(m.imv) ev.push({key:`imovel:${M}`,date:dt(db.imovel.day||20),label:db.imovel.nome||'Apartamento (Caixa)',
     sub:m.imv.real?'valor real':m.imv.fase==='obra'?`fase de obra · ~${Math.round(m.imv.pct)}% da obra · estimativa`:`após as chaves (SAC) · estimativa`,
     v:-m.imv.value,icon:'🏢',tap:'openImovel()'});
@@ -907,7 +903,7 @@ function moneyCalendar(M){
     <h2 style="font-size:20px;margin:2px 0 8px">Quando entra e quanto precisa ter</h2>
     ${rows.length?`<ul class="list">${rows.map(r=>r.html).join('')}</ul>`:'<div class="empty">Nada previsto.</div>'}
     ${last?`<div class="result ${last.closing<0?'bad':'good'}"><span>Depois de ${dLabel(last.c.to)}, ${last.closing<0?'vai faltar':'vai sobrar'}</span><b>${brl(Math.abs(last.closing))}</b></div>`:''}
-    <button class="btn" style="margin-top:12px" onclick="st.view='sim';window.scrollTo(0,0);render()">🧪 Simular: e se eu não pagar ou parcelar uma conta?</button>
+    <button class="btn" style="margin-top:12px" onclick="st.view='simular';st.simTab='parcelar';window.scrollTo(0,0);render()">🧪 Simular: e se eu não pagar ou parcelar uma conta?</button>
     ${!db.balance?`<p class="sub" style="margin:10px 0 0">Informe quanto tem na conta hoje para a conta ficar exata.</p><button class="btn" style="margin-top:8px" onclick="openBalance()">Informar saldo da conta</button>`
       : M===THIS_MONTH?`<button class="btn sec" style="margin-top:12px" onclick="openBalance()">Atualizar saldo da conta (informado em ${dLabel(db.balance.date)})</button>`:''}
   </div>`;
@@ -1111,7 +1107,7 @@ function applyPlanSim(){
   const p = suggestPlanCached();
   Object.keys(simState).forEach(k=>delete simState[k]);
   Object.assign(simState, p.sim||{});
-  st.view='sim'; window.scrollTo(0,0); render();
+  st.view='simular'; st.simTab='parcelar'; window.scrollTo(0,0); render();
 }
 function applyPlanReal(){
   const p = suggestPlanCached(); if(!p.steps.length) return;
@@ -1227,7 +1223,6 @@ VIEWS.plano = function(){
     ${!db.budget?`<p class="sub" style="margin:8px 0 0">⚠️ Os gastos do dia a dia (mercado, transporte…) ainda não estão na conta. Informe uma estimativa em <a href="#" onclick="openBalance();return false">Atualizar saldo</a> para o plano ficar realista.</p>`:''}
   </div>
 
-  ${feriasCard()}
   ${neg.length?`<div class="card"><h2>✨ Plano sugerido</h2>
     <p class="sub">A combinação de parcelamentos com <b>menos juros no total</b> que deixa todos os pagamentos dos próximos 12 meses no azul.</p>
     ${p.steps.length?`<ol class="steps">${p.steps.map(s=>`<li><b>Parcelar ${esc(s.e.label)} (${esc(s.e.creditor)})</b> de ${brl(-s.e.v)} em <b>${s.opt.n}× de ${brl(s.opt.pmt)}</b>
@@ -1404,7 +1399,7 @@ function irBanner(){
   else if(i.toStart<=75) msg = [`A declaração do IR abre em ${i.toStart} dias`,`Já vá separando informes e recibos de ${i.base}.`];
   else {const d=deductibles(String(i.base)); if(!d.semNf.length) return '';
     msg = [`${d.semNf.length} gasto${d.semNf.length>1?'s':''} dedutíve${d.semNf.length>1?'is':'l'} sem recibo`,'Peça a nota agora para não perder a dedução no IR.'];}
-  return `<div class="alert" onclick="st.view='ir';render()"><span class="ico">🔔</span><div><b>${msg[0]}</b><span>${msg[1]}</span></div></div>`;
+  return `<div class="alert" onclick="st.view='mais';st.maisTab='ir';render()"><span class="ico">🔔</span><div><b>${msg[0]}</b><span>${msg[1]}</span></div></div>`;
 }
 function openIrDates(){
   const i = irInfo();
@@ -1517,12 +1512,136 @@ async function copyData(){
 }
 function wipe(){if(confirm('Apagar TODOS os dados deste aparelho? Isso não pode ser desfeito.')&&confirm('Tem certeza? Faça um backup antes se quiser guardar.')){db=blank();save()}}
 
+/* ---------- categorias ---------- */
+const CAT_ICONS = {'Mercado':'🛒','iFood/delivery':'🛵','Restaurantes':'🍽️','Transporte (Uber/99)':'🚗','Transporte':'🚗','Vestuário':'👗','Assinaturas':'📺',
+  'Lazer':'🎉','Beleza e cuidados':'💅','Cuidados pessoais':'💅','Saúde':'🩺','Educação':'📚','Moradia':'🏠','Contas da casa':'💡','Compras':'🛍️','Presentes':'🎁',
+  'Pets':'🐾','Alimentação':'🍽️','Outros':'📦','Cartões e parcelas':'💳','Consignados (folha)':'🏦','Apartamento':'🏢',
+  'Salário':'💰','Freela/extra':'✨','Rendimentos':'📈','Reembolso':'↩️'};
+const catIcon = c => CAT_ICONS[c] || '📦';
+function gastosPorCategoria(M){
+  const m = month(M), cats = {};
+  const add = (c,v) => { if(v>0) cats[c] = r2((cats[c]||0)+v); };
+  m.tx.filter(t=>t.type==='out').forEach(t=>add(t.cat,t.value));
+  m.fixed.filter(t=>t.type==='out').forEach(t=>add(t.cat,t.value));
+  if(m.imv) add('Apartamento',m.imv.value);
+  add('Cartões e parcelas', m.outInst);
+  add('Consignados (folha)', m.outFolha);
+  return Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+}
+function gastosCard(M){
+  const list = gastosPorCategoria(M), tot = list.reduce((t,[,v])=>t+v,0);
+  if(!list.length) return '';
+  const max = list[0][1];
+  const sozinho = list.filter(([c])=>!['Cartões e parcelas','Consignados (folha)','Apartamento','Moradia','Contas da casa'].includes(c));
+  return `<div class="card"><h2>📊 Para onde vai seu dinheiro</h2>
+    <p class="sub">Gastos de ${mLabel(M,{month:'long'})} por categoria · total ${brl(tot)}</p>
+    ${list.map(([c,v])=>`<div class="catrow" title="${esc(c)}: ${brl(v)} (${Math.round(v/tot*100)}%)"><span>${catIcon(c)} ${esc(c)}</span><span class="v">${brl(v)} · <b>${Math.round(v/tot*100)}%</b></span>
+      <div class="bar"><i style="width:${Math.max(2,v/max*100)}%"></i></div></div>`).join('')}
+    ${!sozinho.length?`<p class="hint" style="margin-top:8px">Os gastos do dia a dia (mercado, iFood, Uber…) aparecem aqui quando você lança em <b>Lançar → Gastei com algo</b>.</p>`:''}
+  </div>`;
+}
+
+/* ---------- Lançar: o que aconteceu de verdade ---------- */
+function openRealPay(){
+  if(!db.salary) return openSalary();
+  const ms = [THIS_MONTH, addM(THIS_MONTH,-1)];
+  const rows = ms.flatMap(M=>{const s=salaryFor(M); return s?s.pays.map(p=>({M,p})):[]}).filter(x=>x.p.date<=addDays(TODAY,15)).sort((a,b)=>b.p.date.localeCompare(a.p.date));
+  openSheet(`<h3>💰 Recebi meu salário <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub" style="color:var(--ink2);font-size:13px;margin-top:-4px">Coloque o <b>valor líquido</b> que caiu na conta (está no holerite). Deixe vazio o que ainda não caiu.</p>
+    ${rows.map(({M,p})=>`<label class="f"><span>${p.label} · ${dLabel(p.date)} <span class="badge ${p.real?'':'butter'}">${p.real?'real':'previsto '+brl(p.value)}</span></span>
+      <input inputmode="decimal" data-m="${M}" data-k="${p.key}" value="${p.real?String(p.value).replace('.',','):''}" placeholder="Valor do holerite"></label>`).join('')}
+    <button class="btn" onclick="saveRealPay()">Salvar</button>`);
+}
+function saveRealPay(){
+  const s = db.salary; s.actual = s.actual||{};
+  document.querySelectorAll('#sheet input[data-k]').forEach(inp=>{
+    const M=inp.dataset.m, k=inp.dataset.k, v=inp.value.trim();
+    s.actual[M] = s.actual[M]||{};
+    if(v==='') delete s.actual[M][k]; else { const n=r2(parseMoney(v)); if(n>=0) s.actual[M][k]=n; }
+    if(!Object.keys(s.actual[M]).length) delete s.actual[M];
+  });
+  closeSheet(); save();
+}
+const action = (ico,t,sub,fn) => `<button class="action" onclick="${fn}"><span class="ai">${ico}</span><span><b>${t}</b><small>${sub}</small></span></button>`;
+VIEWS.lancar = function(){
+  const ids = [cycleOf(TODAY), nextCycle(cycleOf(TODAY))];
+  const bills = ids.flatMap(id=>{const s=cycleSum(id); return s.past?[]:s.bills;});
+  const txs = db.tx.filter(t=>t.date.slice(0,7)===THIS_MONTH).sort((a,b)=>b.date.localeCompare(a.date));
+  const sal = salaryFor(THIS_MONTH), reals = sal ? sal.pays.filter(p=>p.real) : [];
+  return `
+  <div class="card hero"><span class="emoji">✍️</span>
+    <div class="label">Lançar</div>
+    <h2 style="font-size:20px;margin:2px 0 4px">O que aconteceu de verdade?</h2>
+    <p class="sub" style="margin:0">Aqui você registra o que é real. Previsões e testes ficam na aba <b>Simular</b>.</p>
+  </div>
+  <div class="actions">
+    ${action('💰','Recebi meu salário','valor do holerite','openRealPay()')}
+    ${action('➕','Recebi outro dinheiro','extra, Pix, reembolso',"openTx(null,false,'in')")}
+    ${action('🛒','Gastei com algo','iFood, Uber, roupa…',"openTx(null,false,'out')")}
+    ${action('🧾','Chegou fatura ou dívida','cartão, empréstimo','openDebt()')}
+    ${action('🔁','Nova conta fixa','repete todo mês',"openTx(null,false,'out',true)")}
+    ${action('👛','Saldo da conta','quanto tem hoje','openBalance()')}
+  </div>
+  <div class="card"><h2>✅ Paguei uma conta</h2>
+    <p class="sub">Toque na bolinha das contas que você já pagou</p>
+    ${bills.length?`<ul class="list">${bills.map(e=>`<li class="${e.paid?'done':''}">
+      <button class="chk ${e.paid?'on':''}" onclick="togglePaid('${e.key}')" aria-label="Marcar como paga">${e.paid?'✓':''}</button>
+      <div class="main"><div class="t">${esc(e.label)}</div><div class="m">${e.sub?esc(e.sub)+' · ':''}${e.paid?'paga ✓':e.late?'<b class="neg">atrasada</b>':'vence '+dLabel(e.date)}</div></div>
+      <div class="amt">${brl(-e.v)}</div></li>`).join('')}</ul>`:'<div class="empty">Nenhuma conta para os próximos dias 🎉</div>'}
+  </div>
+  <div class="card"><h2>📒 Lançado em ${mLabel(THIS_MONTH,{month:'long'})}</h2>
+    ${reals.length||txs.length?`<ul class="list">
+      ${reals.map(p=>`<li class="tap" onclick="openRealPay()"><span class="dot">💰</span><div class="main"><div class="t">${p.label}</div><div class="m">${dLabel(p.date)} · valor real</div></div><div class="amt pos">+ ${brl(p.value)}</div></li>`).join('')}
+      ${txs.map(t=>`<li class="tap" onclick="openTx('${t.id}')"><span class="dot">${catIcon(t.cat)}</span><div class="main"><div class="t">${esc(t.desc)}</div><div class="m">${esc(t.cat)} · ${dLabel(t.date)}</div></div><div class="amt ${t.type==='in'?'pos':''}">${t.type==='in'?'+':'−'} ${brl(t.value)}</div></li>`).join('')}
+    </ul>`:'<div class="empty">Nada lançado este mês ainda.</div>'}
+  </div>`;
+};
+
+/* ---------- Contas: tudo que você paga ---------- */
+VIEWS.contas = function(){
+  const M = st.month, m = month(M);
+  const fx = m.fixed.filter(f=>f.type==='out');
+  return `
+  <div class="card"><div class="grouphead"><h2>🔁 Contas fixas</h2><span>${brl(fx.reduce((t,f)=>t+f.value,0))}</span></div>
+    <p class="sub">Repetem todo mês · toque para editar</p>
+    ${fx.length?`<ul class="list">${fx.map(f=>`<li class="tap" onclick="openTx('${f.id}',true)"><span class="dot">${catIcon(f.cat)}</span><div class="main"><div class="t">${esc(f.desc)}</div><div class="m">dia ${f.day||1}${f.end?` · até ${mShortY(f.end)}`:''}</div></div><div class="amt">${brl(f.value)}</div></li>`).join('')}</ul>`:'<div class="empty">Nenhuma conta fixa.</div>'}
+    <button class="btn sec" onclick="openTx(null,false,'out',true)">+ Nova conta fixa</button>
+  </div>
+  ${VIEWS.dividas()}
+  <button class="btn sec" onclick="openDebt()">+ Nova dívida ou fatura</button>
+  ${gastosCard(M)}`;
+};
+
+/* ---------- Simular ---------- */
+const segTabs = (cur,key,opts) => `<div class="seg" style="margin:12px 0">${opts.map(([v,l])=>`<button class="${cur===v?'on':''}" onclick="st.${key}='${v}';window.scrollTo(0,0);render()">${l}</button>`).join('')}</div>`;
+VIEWS.simular = function(){
+  st.simTab = st.simTab||'plano';
+  return segTabs(st.simTab,'simTab',[['plano','🧭 Plano'],['parcelar','🧪 E se…'],['ferias','🏖️ Férias']])
+    + `<p class="hint" style="margin:-4px 2px 4px">Nada aqui muda seus dados reais. Ganhos são calculados para menos, dívidas para mais.</p>`
+    + (st.simTab==='plano' ? VIEWS.plano() : st.simTab==='parcelar' ? VIEWS.sim() : feriasCard());
+};
+
+/* ---------- Mais ---------- */
+VIEWS.mais = function(){
+  st.maisTab = st.maisTab||'salario';
+  const s = db.salary;
+  const salario = `<div class="card"><h2>💼 Seu salário</h2>
+      ${s?`<p class="sub">Bruto ${brl(s.gross)} · adiantamento ${s.advPct}% no dia 20 · ${s.deps||0} dependente(s)</p>
+        <p class="sub">O app calcula INSS, IR e descontos e projeta o líquido de cada pagamento, sempre para menos.</p>`
+        :'<p class="sub">Ainda não configurado.</p>'}
+      <button class="btn" onclick="openSalary()">${s?'Editar salário':'Configurar salário'}</button>
+      ${s?`<button class="btn sec" onclick="openRealPay()">Informar valor real do holerite</button>`:''}
+    </div>`;
+  return segTabs(st.maisTab,'maisTab',[['salario','💼 Salário'],['ir','🧾 Imposto'],['dados','💾 Dados']])
+    + (st.maisTab==='salario' ? salario : st.maisTab==='ir' ? VIEWS.ir() : VIEWS.dados());
+};
+
 /* ---------- navegação ---------- */
 document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{st.view=b.dataset.v;window.scrollTo(0,0);render()});
 $('#prev').onclick=()=>{st.month=addM(st.month,-1);render()};
 $('#next').onclick=()=>{st.month=addM(st.month,1);render()};
 $('#gotoday').onclick=()=>{st.month=THIS_MONTH;render()};
-$('#fab').onclick=()=>st.view==='dividas'?openDebt():openTx();
+
 render();
 
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js');

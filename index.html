@@ -169,11 +169,22 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--bar-dim);border-
 .need{background:var(--bg);border-radius:14px;padding:12px 14px;margin-top:10px}
 .need .line{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:3px 0}
 .need .line b:last-child{font-size:17px;font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;white-space:nowrap}
+.need .line.big2{border-top:1px dashed var(--line);margin-top:4px;padding-top:8px}
+.need .line.big2 b:last-child{font-size:20px}
 .need .parts{font-size:12.5px;color:var(--ink2);margin-top:6px;line-height:1.6}
 .cal .list li{border-top-color:rgba(0,0,0,.06)}
 .cal .list li.payrow .t{font-weight:650}
 .cal .list .t{white-space:normal}
 .list .amt small{display:block}
+nav.tabs button{font-size:10.5px}
+.steps{margin:6px 0 0;padding-left:20px}
+.steps li{margin:8px 0;font-size:14.5px}
+.steps li small{display:block;color:var(--ink2);font-size:12px;margin-top:2px}
+.tips{list-style:none;margin:0;padding:0}
+.tips li{padding:8px 0;border-top:1px solid var(--line);font-size:14px;color:var(--ink2)}
+.tips li:first-child{border-top:0}
+.tips li b{color:var(--ink)}
+input.rate{width:58px;padding:6px 8px;font-size:14px;display:inline-block;margin-right:2px}
 .noanim .card,.noanim .tile,.noanim .alert{animation:none!important}
 .simbill{border-top:1px solid var(--line);padding:12px 0}
 .simbill:first-of-type{border-top:0}
@@ -181,6 +192,11 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--bar-dim);border-
 .simbill .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .simbill .t{font-weight:600}.simbill .m{font-size:12px;color:var(--ink2)}
 .seg.small button{font-size:13px;padding:7px 2px}
+.simrow{border-top:1px solid var(--line);padding:10px 8px;margin:0 -8px}
+.simrow.chg{background:var(--butter);border-radius:12px;border-top-color:transparent}
+.simrow .h{font-size:14px;margin-bottom:6px}
+.simrow .g{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:14px}
+.simrow .g small{display:block;font-size:11px;color:var(--ink3)}
 .simtab{width:100%;border-collapse:collapse;font-size:13.5px}
 .simtab th{text-align:left;font-size:11px;color:var(--ink3);font-weight:600;padding:4px 4px 6px;text-transform:uppercase;letter-spacing:.3px}
 .simtab td{padding:8px 4px;border-top:1px solid var(--line);vertical-align:top}
@@ -207,6 +223,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--bar-dim);border-
   <button data-v="resumo" class="on"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Resumo</button>
   <button data-v="lanc"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Lançamentos</button>
   <button data-v="dividas"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>Dívidas</button>
+  <button data-v="plano"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Plano</button>
   <button data-v="ir"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v13a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>IR</button>
   <button data-v="dados"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>Dados</button>
 </nav>
@@ -270,11 +287,11 @@ const fixedActive = (f,M) => f.start<=M && (!f.end || f.end>=M);
 const trunc2 = v => Math.floor(v*100+1e-6)/100;
 const pctTxt = a => (Math.round(a*1000)/10).toLocaleString('pt-BR')+'%';
 function calcINSS(s){let t=0,prev=0;for(const [lim,a] of TAX.inss){if(s>prev)t+=trunc2((Math.min(s,lim)-prev)*a);prev=lim}return r2(t)}
-function calcIR(rend,deducoes){
+function calcIR(rend,deducoes,semRedutor){
   const ded = Math.max(deducoes,TAX.simplificado), base = Math.max(0,rend-ded);
   const [,aliq,parc] = TAX.irrf.find(([lim])=>base<=lim);
   const bruto = Math.max(0,base*aliq-parc), R = TAX.redutor;
-  let red = rend<=R.isento ? R.max : rend<=R.teto ? Math.max(0,R.a-R.b*rend) : 0;
+  let red = semRedutor ? 0 : rend<=R.isento ? R.max : rend<=R.teto ? Math.max(0,R.a-R.b*rend) : 0;
   red = Math.min(red,bruto);
   return {ir:trunc2(bruto-red), base:r2(base), aliq, red:trunc2(red), simpl:ded===TAX.simplificado&&deducoes<ded};
 }
@@ -300,7 +317,7 @@ function salaryFor(M){
   if(s.vr) lines5.push(['Desconto VR',-s.vr]);
   others.forEach(o=>lines5.push([o.desc,-o.value]));
   consig.forEach(d=>lines5.push([`Consignado ${d.desc} (${instNo(d,M)}/${d.total})`,-d.value]));
-  const lines20 = [[`Adiantamento (${s.advPct}%)`,adv],[`IR do mês (${pctTxt(irc.aliq)}${irc.red?', com redutor':''})`,-irc.ir]];
+  const lines20 =[[`Adiantamento (${s.advPct}%)`,adv],[`IR do mês (${pctTxt(irc.aliq)}${irc.red?', com redutor':''})`,-irc.ir]];
   const mk = (key,label,date,raw,lines,note) => {
     const real = act?.[key]!=null;
     return {key,label,date,lines,note,real,raw,value:real?act[key]:Math.max(0,Math.floor(raw))};
@@ -337,10 +354,11 @@ function month(M){
   const folha = sal ? all.filter(d=>d.kind==='consignado') : [];
   const sum = (arr,type) => arr.filter(x=>x.type===type).reduce((s,x)=>s+x.value,0);
   const inc = sum(tx,'in')+sum(fixed,'in')+(sal?sal.total:0);
-  const outVar = sum(tx,'out'), outFixed = sum(fixed,'out');
+  const imv = imovelFor(M);
+  const outVar = sum(tx,'out'), outFixed = sum(fixed,'out')+(imv?imv.value:0);
   const outInst = inst.reduce((s,d)=>s+d.value,0), outFolha = folha.reduce((s,d)=>s+d.value,0);
   const out = outVar+outFixed+outInst;
-  return {tx,fixed,inst,folha,sal,inc,outVar,outFixed,outInst,outFolha,out,saldo:inc-out};
+  return {tx,fixed,inst,folha,sal,imv,inc,outVar,outFixed,outInst,outFolha,out,saldo:inc-out};
 }
 
 /* ---------- estado de tela ---------- */
@@ -449,6 +467,7 @@ dividas(){
   const rest = db.debts.reduce((s,d)=>s+debtRemaining(d,M),0);
   return `
   <button class="btn sec" style="margin:12px 0 0" onclick="st.view='sim';window.scrollTo(0,0);render()">🧪 Simular: e se eu não pagar ou parcelar?</button>
+  ${imovelCard()}
   <div class="tiles">
     <div class="tile t-lilac"><div class="label">Parcelas neste mês</div><div class="val">${brl(total)}</div><div class="note">${active.length} em andamento</div></div>
     <div class="tile t-butter"><div class="label">Total ainda a pagar</div><div class="val">${brl(rest)}</div><div class="note">incluindo este mês</div></div>
@@ -667,6 +686,84 @@ function saveDebt(id){
 }
 function delDebt(id){if(!confirm('Excluir esta dívida?'))return;db.debts=db.debts.filter(x=>x.id!==id);closeSheet();save()}
 
+/* ---------- apartamento financiado (Caixa) ----------
+   Fase de obra: paga juros sobre o que a Caixa já liberou à construtora + seguros (MIP/DFI) + tarifa.
+   Conforme a obra avança, a liberação cresce e a parcela sobe. Depois das chaves começa a amortização (SAC).
+   Tudo estimado PARA CIMA: juros padrão 13,5% a.a. (SBPE até 11,49% + TR, arredondado para cima). */
+const IMOVEL_DEFAULT = {nome:'Apartamento (Caixa)',day:20,ref:'2026-11',parcelaRef:726.14,taxas:85,juros:13.5,tr:2,obraPct:50,fimObra:'2027-11',prazo:420,financiado:0,actual:{}};
+function imovelCalc(){
+  const im = {...IMOVEL_DEFAULT,...db.imovel};
+  // juros nominais ao ano ÷ 12 + TR estimada (para cima)
+  const i = im.juros/1200 + (Math.pow(1+(im.tr||0)/100,1/12)-1);
+  let F, fees = im.taxas;
+  if(im.financiado>0){
+    F = im.financiado;
+    // seguros + tarifa calculados a partir da parcela real (se não informados)
+    if(im.taxasAuto!==false) fees = r2(Math.max(25, im.parcelaRef - F*(im.obraPct/100)*i));
+  } else F = Math.max(0,(im.parcelaRef-im.taxas))/((im.obraPct/100)*i);
+  im.taxas = fees;
+  return {im,i,F};
+}
+function imovelFor(M){
+  if(!db.imovel) return null;
+  const {im,i,F} = imovelCalc(); // im.taxas já calibrado
+  if(M<im.ref) return null;
+  const act = (im.actual||{})[M];
+  if(act!=null) return {value:act,real:true,fase:M<=im.fimObra?'obra':'sac'};
+  if(M===im.ref) return {value:im.parcelaRef,real:true,fase:'obra',pct:im.obraPct};
+  if(M<=im.fimObra){
+    const tot = Math.max(1,diffM(im.ref,im.fimObra)), t = diffM(im.ref,M);
+    const pct = Math.min(100, im.obraPct+(100-im.obraPct)*t/tot);
+    let v = ceil2(im.taxas+F*(pct/100)*i);
+    if(im.parcelaPos>0) v = Math.min(v, im.parcelaPos); // na obra paga só juros: não passa da parcela cheia
+    return {value:v,fase:'obra',pct};
+  }
+  const k = diffM(im.fimObra,M), amort = F/im.prazo, saldo = Math.max(0,F-amort*(k-1));
+  if(k>im.prazo) return null;
+  // valor do contrato: mantido fixo (no SAC ela cai devagar, mas a TR corrige — fica "para cima")
+  if(im.parcelaPos>0) return {value:im.parcelaPos,fase:'sac',contrato:true};
+  return {value:ceil2(amort+saldo*i+im.taxas),fase:'sac'};
+}
+function openImovel(){
+  const im = {...IMOVEL_DEFAULT,...db.imovel};
+  const {F} = imovelCalc();
+  const f = (id,label,val,hint='',type='decimal') => `<label class="f"><span>${label}</span><input id="${id}" ${type==='month'?'type="month"':`inputmode="${type}"`} value="${val}">${hint?`<div class="hint">${hint}</div>`:''}</label>`;
+  const br = v => String(v).replace('.',',');
+  openSheet(`<h3>🏢 Apartamento <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub" style="color:var(--ink2);font-size:13px;margin-top:-4px">Na fase de obra você paga juros sobre o que a Caixa já liberou para a construtora, mais seguros e tarifa. A parcela sobe conforme a obra avança. Depois das chaves começa a parcela "cheia".</p>
+    <div class="row">${f('im_val','Parcela paga (R$)',br(im.parcelaRef))}${f('im_ref','no mês',im.ref,'','month')}</div>
+    <div class="row">${f('im_pct','% da obra hoje',br(im.obraPct),'Veja no app Habitação Caixa')}${f('im_fim','Previsão das chaves',im.fimObra,'','month')}</div>
+    <div class="row">${f('im_juros','Juros nominais ao ano (%)',br(im.juros),'Está no contrato')}${f('im_tr','TR estimada ao ano (%)',br(im.tr??2),'Correção do saldo; usamos para cima')}</div>
+    <div class="row">${f('im_tx','Seguros + tarifa (R$/mês)',im.financiado&&im.taxasAuto!==false?'':br(im.taxas),im.financiado?`Vazio = calcular pela parcela (~${brl(imovelCalc().im.taxas)})`:'')}<div></div></div>
+    <div class="row">${f('im_fin','Valor financiado (R$)',im.financiado?br(im.financiado):'','Deixe vazio para estimar')}${f('im_prazo','Prazo (meses)',im.prazo,'','numeric')}</div>
+    ${!im.financiado?`<div class="hint">Valor financiado estimado a partir da parcela: ~${brl(F)}</div>`:''}
+    <div class="row">${f('im_pos','1ª parcela após as chaves (R$)',im.parcelaPos?br(im.parcelaPos):'','Do contrato. Vazio = estimar')}${f('im_day','Dia do pagamento',im.day,'','numeric')}</div>
+    <button class="btn" onclick="saveImovel()">Salvar</button>
+    ${db.imovel?`<button class="btn danger" onclick="if(confirm('Remover o apartamento?')){db.imovel=null;closeSheet();save()}">Remover</button>`:''}`);
+}
+function saveImovel(){
+  const g = id => parseMoney($('#'+id).value);
+  const im = {...IMOVEL_DEFAULT,...(db.imovel||{}),
+    parcelaRef:r2(g('im_val')), ref:$('#im_ref').value||THIS_MONTH, obraPct:Math.min(99,Math.max(1,g('im_pct')||50)),
+    fimObra:$('#im_fim').value||IMOVEL_DEFAULT.fimObra, juros:Math.ceil((g('im_juros')||13.5)*100)/100,
+    tr:isFinite(g('im_tr'))?g('im_tr'):2, taxasAuto:$('#im_tx').value.trim()==='', taxas:r2(g('im_tx')||0),
+    parcelaPos:r2(g('im_pos')||0), financiado:r2(g('im_fin')||0), prazo:parseInt($('#im_prazo').value)||420, day:parseInt($('#im_day').value)||20};
+  if(!(im.parcelaRef>0)) return alert('Informe o valor da parcela.');
+  db.imovel = im; closeSheet(); save();
+}
+function imovelCard(){
+  if(!db.imovel) return `<div class="card"><h2>🏢 Financiamento do apartamento</h2><p class="sub">Ainda não cadastrado</p><button class="btn sec" onclick="openImovel()">Cadastrar</button></div>`;
+  const im = {...IMOVEL_DEFAULT,...db.imovel};
+  const pts = []; for(let k=0;k<=diffM(THIS_MONTH,im.fimObra)+3;k+=1){const M=addM(THIS_MONTH,k);const p=imovelFor(M);if(p)pts.push([M,p])}
+  const show = pts.filter((x,i)=>i%3===0||x[1].fase==='sac'&&pts[i-1]&&pts[i-1][1].fase==='obra').slice(0,8);
+  const first = pts.find(x=>x[1].fase==='sac');
+  return `<div class="card"><div class="grouphead"><h2>🏢 ${esc(im.nome)}</h2><span>dia ${im.day}</span></div>
+    <p class="sub">Fase de obra até ${mShortY(im.fimObra)} (previsão) · valores estimados para cima</p>
+    <ul class="list">${show.map(([M,p])=>`<li><div class="main"><div class="t">${mLabel(M,{month:'short',year:'numeric'}).replace('.','')}</div><div class="m">${p.real?'valor real':p.fase==='obra'?`obra ~${Math.round(p.pct)}%`:'após as chaves'}</div></div><div class="amt">${brl(p.value)}</div></li>`).join('')}</ul>
+    ${first?`<div class="result bad"><span>Depois das chaves (${mShortY(first[0])}) a parcela passa para cerca de</span><b>${brl(first[1].value)}</b></div>`:''}
+    <button class="btn sec" onclick="openImovel()">Ajustar dados do contrato</button></div>`;
+}
+
 /* ---------- blocos de pagamento: dia 5 e dia 20 ----------
    Bloco "A" do mês M: recebe o pagamento do dia 5 e paga o que vence de 05 a 19.
    Bloco "B" do mês M: recebe o pagamento do dia 20 e paga o que vence de 20 até 04 do mês seguinte. */
@@ -677,16 +774,32 @@ function cycleInfo(id){
   const M=id.slice(0,7), A=id.endsWith('A');
   return {id,M,A,pay:A?`${M}-05`:`${M}-20`,from:A?`${M}-05`:`${M}-20`,to:A?`${M}-19`:`${addM(M,1)}-04`};
 }
-function events(M){ // tudo que entra e sai no mês M, com data e chave
+let EV_CACHE = null; // acelera o plano de ação (muitos cálculos seguidos)
+function events(M){
+  if(EV_CACHE){
+    if(!EV_CACHE[M]){ const s=SIM; SIM=null; EV_CACHE[M]=eventsRaw(M); SIM=s; }
+    return SIM ? applySim(EV_CACHE[M],M) : EV_CACHE[M];
+  }
+  return eventsRaw(M);
+}
+function eventsRaw(M){ // tudo que entra e sai no mês M, com data e chave
   const m = month(M), ev = [];
   const dim = new Date(+M.slice(0,4), +M.slice(5), 0).getDate();
   const dt = day => `${M}-${pad(Math.min(day||DAY_DEFAULT,dim))}`;
   if(m.sal) m.sal.pays.forEach(p=>ev.push({key:`sal:${p.key}:${M}`,date:p.date,
     nominal:p.key==='p5'?`${M}-05`:(p.key==='p20'||p.key==='d2')?`${M}-20`:p.date,
     label:p.label,v:p.value,icon:'💰',tap:`st.month='${M}';openPay('${p.key}')`,tag:p.real?'valor real':'previsto'}));
+  (db.ferias||[]).forEach(f=>{const c=feriasCalc(f); if(c && c.payDate.slice(0,7)===M) ev.push({key:`fer:${f.id}`,date:c.payDate,
+    label:`Férias (${f.dias} dias${f.abono?` + venda de ${f.abono}`:''})`,v:c.liquido,icon:'🏖️',tap:"st.view='plano';render()",tag:'previsto'});
+    // os dias de férias já foram pagos antes: o salário do dia 5 seguinte vem menor
+    if(c) c.descontos.filter(x=>x.mes===M).forEach(x=>ev.push({key:`ferdesc:${f.id}:${M}`,date:payDate(M,5),nominal:`${M}-05`,
+      label:`Desconto no salário: ${x.dias} dias de férias já pagos`,sub:'sai do salário do dia 5',v:-x.valor,icon:'🏖️',tap:"st.view='plano';render()",auto:true}))});
+  if(m.imv) ev.push({key:`imovel:${M}`,date:dt(db.imovel.day||20),label:db.imovel.nome||'Apartamento (Caixa)',
+    sub:m.imv.real?'valor real':m.imv.fase==='obra'?`fase de obra · ~${Math.round(m.imv.pct)}% da obra · estimativa`:`após as chaves (SAC) · estimativa`,
+    v:-m.imv.value,icon:'🏢',tap:'openImovel()'});
   m.fixed.forEach(f=>ev.push({key:`fx:${f.id}:${M}`,date:dt(f.day),label:f.desc,v:f.type==='in'?f.value:-f.value,icon:f.type==='in'?'💰':'🏠',tap:`openTx('${f.id}',true)`}));
   m.tx.forEach(t=>ev.push({key:`tx:${t.id}`,date:t.date,label:t.desc,v:t.type==='in'?t.value:-t.value,icon:t.type==='in'?'💰':'🛍️',tap:`openTx('${t.id}')`}));
-  m.inst.forEach(d=>ev.push({key:`debt:${d.id}:${M}`,date:dt(d.day),label:d.desc,sub:`${d.creditor}${d.total>1?` · parcela ${d.n}/${d.total}`:''}`,v:-d.value,icon:'💳',tap:`openDebt('${d.id}')`}));
+  m.inst.forEach(d=>ev.push({key:`debt:${d.id}:${M}`,date:dt(d.day),label:d.desc,sub:`${d.creditor}${d.total>1?` · parcela ${d.n}/${d.total}`:''}`,v:-d.value,icon:'💳',tap:`openDebt('${d.id}')`,debtId:d.id,creditor:d.creditor,kind:d.kind,dtotal:d.total}));
   return SIM ? applySim(ev,M) : ev;
 }
 function cycleEvents(id){
@@ -695,7 +808,7 @@ function cycleEvents(id){
   if(db.budget>0){
     let v = db.budget/2;
     if(b && b.date>=c.from && b.date<=c.to) v = v*daysBetween(b.date,c.to)/(daysBetween(c.from,c.to)+1);
-    v = r2(v);
+    v = ceil2(v); // gasto: arredonda para mais
     if(v>0) ev.push({key:`bud:${id}`,date:c.to,label:'Gastos do dia a dia (estimativa)',v:-v,icon:'🛒',tap:'openBalance()',budget:true});
   }
   const paid = db.paid||{};
@@ -723,12 +836,13 @@ function cycleSum(id){
   const p = plan(id); if(p.past) return p;
   const live = p.ev.filter(e=>!e.done);
   const ins = live.filter(e=>e.v>0);
-  const bills = live.filter(e=>e.v<0&&!e.budget);
+  const bills = live.filter(e=>e.v<0&&!e.budget&&!e.auto);
+  const autos = live.filter(e=>e.auto);
   const need = r2(bills.filter(e=>!e.paid).reduce((s,e)=>s-e.v,0));
   const paidTot = r2(bills.filter(e=>e.paid).reduce((s,e)=>s-e.v,0));
   const budget = r2(live.filter(e=>e.budget).reduce((s,e)=>s-e.v,0));
   const have = r2(p.closing+need); // dinheiro disponível para essas contas
-  return {...p,ins,bills,need,paidTot,budget,have};
+  return {...p,ins,bills,need,paidTot,budget,have,autos};
 }
 function cycleCard(id){
   const s = cycleSum(id), c = s.c;
@@ -739,20 +853,30 @@ function cycleCard(id){
   if(s.fromBalance) haveParts.push(`${brl(s.opening)} na conta em ${dLabel(db.balance.date)}`);
   else if(s.opening) haveParts.push(`${s.opening<0?'−':''}${brl(Math.abs(s.opening))} ${s.opening<0?'que faltou':'que sobrou'} do bloco anterior`);
   s.ins.forEach(e=>haveParts.push(`<span class="pos">+ ${brl(e.v)}</span> ${esc(e.label.toLowerCase())} em <b>${dLabel(e.date)}</b>`));
-  if(s.paidTot) haveParts.push(`− ${brl(s.paidTot)} já pagos`);
+  if(s.paidTot) haveParts.push(`− ${brl(s.paidTot)} que você já usou nas contas pagas`);
   if(s.budget) haveParts.push(`− ${brl(s.budget)} dia a dia (estimativa)`);
+  (s.autos||[]).forEach(e=>haveParts.push(`<span class="neg">− ${brl(-e.v)}</span> ${esc(e.label.toLowerCase())}`));
+  const total = r2(s.need+s.paidTot), pct = total ? Math.round(s.paidTot/total*100) : 0;
   const row = e => `<li class="${e.paid?'done':''}">
       <button class="chk ${e.paid?'on':''}" onclick="togglePaid('${e.key}')" aria-label="Marcar como paga">${e.paid?'✓':''}</button>
       <div class="main tap" onclick="${e.tap}"><div class="t">${esc(e.label)}</div><div class="m">${e.sub?esc(e.sub)+' · ':''}${e.paid?'paga ✓':e.late?'<b class="neg">atrasada</b>':'vence '+dLabel(e.date)+' ('+wd(e.date)+')'}</div></div>
       <div class="amt">${brl(-e.v)}</div></li>`;
   return `<div class="card cycle ${now?'now':''}">
     <h2>${c.A?'🌱':'🌸'} Contas de ${dLabel(c.from)} a ${dLabel(c.to)}${now?' <span class="badge pink">agora</span>':''}</h2>
+    ${total?`<div class="need">
+      <div class="line"><span>Contas do período</span><b>${brl(total)}</b></div>
+      ${s.paidTot?`<div class="line"><span class="pos">✓ Já pagou</span><b class="pos">${brl(s.paidTot)}</b></div>
+      <div class="prog" style="margin:4px 0 6px"><i style="width:${pct}%"></i></div>`:''}
+      <div class="line big2"><span>Falta pagar ${s.need&&c.pay>=TODAY?'até <b>'+dLabel(c.pay)+'</b>':''}</span><b>${brl(s.need)}</b></div>
+    </div>`:''}
     <div class="need">
-      <div class="line"><span>Precisa ter ${c.pay>=TODAY?'até <b>'+dLabel(c.pay)+'</b>':'agora'}</span><b>${brl(s.need)}</b></div>
-      <div class="line"><span>Você vai ter</span><b>${brl(s.have)}</b></div>
+      <div class="line"><span>${s.paidTot?'Dinheiro que ainda vai ter':'Você vai ter'}</span><b>${brl(s.have)}</b></div>
       <div class="parts">${haveParts.join('<br>')||'nada entra neste período'}</div>
     </div>
-    <div class="result ${res<0?'bad':'good'}"><span>${res<0?'Vai faltar':'Vai sobrar'}</span><b>${brl(Math.abs(res))}</b></div>
+    ${total && !s.need
+      ? (res>=0 ? `<div class="result good"><span>Tudo pago! 🎉 Sobra</span><b>${brl(res)}</b></div>`
+               : `<div class="result bad"><span>Tudo pago, mas pela conta do app ficou faltando. Atualize o saldo da conta</span><b>${brl(-res)}</b></div>`)
+      : `<div class="result ${res<0?'bad':'good'}"><span>${res<0?'Para pagar o que falta, vai faltar':'Paga tudo e ainda sobra'}</span><b>${brl(Math.abs(res))}</b></div>`}
     ${s.bills.length?`<ul class="list" style="margin-top:8px">${s.bills.map(row).join('')}</ul>`:'<div class="empty" style="padding:12px">Nenhuma conta neste período 🎉</div>'}
   </div>`;
 }
@@ -877,9 +1001,20 @@ VIEWS.sim = function(){
   </div>
   <div class="card"><h2>Resultado ${active?`<span class="badge pink">${active} mudança${active>1?'s':''}</span>`:''}</h2>
     <p class="sub">Quanto sobra ou falta depois de cada pagamento</p>
-    <table class="simtab"><thead><tr><th>Pagamento</th><th>Como está</th><th>Simulado</th></tr></thead><tbody>
-    ${before.map((b,i)=>b.past?'':`<tr class="${b.closing!==after[i].closing?'chg':''}"><td><b>${dLabel(b.c.pay>=TODAY?b.c.pay:TODAY)}</b><small>contas até ${dLabel(b.c.to)}</small></td><td>${res(b.closing)}</td><td>${res(after[i].closing)}</td></tr>`).join('')}
-    </tbody></table>
+    ${before.map((b,i)=>{ if(b.past) return ''; const a = after[i];
+      const inTot = r2(a.ins.reduce((t,e)=>t+e.v,0));
+      const inDates = [...new Set(a.ins.map(e=>dLabel(e.date)))].join(' e ');
+      const prevLbl = a.fromBalance ? 'Na conta (saldo informado)' : a.opening<0 ? 'Falta do pagamento anterior' : 'Sobra do pagamento anterior';
+      return `<div class="simrow ${b.closing!==a.closing?'chg':''}">
+        <div class="h"><b>${dLabel(b.c.pay>=TODAY?b.c.pay:TODAY)}</b> · contas até ${dLabel(b.c.to)}</div>
+        <div class="g">
+          <div><small>${prevLbl}${active?' (simulado)':''}</small><span class="${a.opening<0?'neg':'pos'}">${a.opening<0?'−':'+'} ${brl(Math.abs(a.opening))}</span></div>
+          <div><small>Entra${inDates?' em '+inDates:''}</small><span class="pos">+ ${brl(inTot)}</span></div>
+          <div><small>Vai ter${active?' (simulado)':''}</small><span><b>${brl(a.have)}</b></span></div>
+          <div><small>Contas${active?' (simulado)':''}</small><span>− ${brl(a.need)}</span></div>
+          <div><small>Como está</small>${res(b.closing)}</div>
+          <div><small>Simulado</small><b>${res(a.closing)}</b></div>
+        </div></div>`}).join('')}
     ${active?`<div class="result ${diff<0?'bad':'good'}"><span>Em ${dLabel(lastB.c.to)}, a simulação deixa você com</span><b>${diff<0?'−':'+'} ${brl(Math.abs(diff))}</b></div>
       <button class="btn sec" onclick="simClear()">Limpar simulação</button>`:''}
   </div>
@@ -887,6 +1022,252 @@ VIEWS.sim = function(){
     || '<div class="card"><div class="empty">Nenhuma conta em aberto nos próximos meses.</div></div>'}`;
 };
 
+/* ---------- plano de ação: não fechar no vermelho ----------
+   Taxas mensais estimadas, sempre arredondadas PARA CIMA (o real tende a ser igual ou menor).
+   Referências (nov/2026): BC — parcelado do cartão ~9,3% a.m. (média), rotativo ~15–16% a.m. (média);
+   cheque especial: teto legal de 8% a.m. (Res. CMN 4.765/2019); IOF de crédito para PF: 0,38% + até 3% ao ano. */
+const RATE_DEFAULT = {parc:10, rot:16, cheque:8};
+const RATE_BANKS = {
+  'Santander': {parc:10, rot:16},
+  'Itaú':      {parc:10, rot:16, cheque:8},
+  'Carrefour': {parc:13, rot:20},
+};
+const IOF_MAX = 0.0338; // 0,38% fixo + até 3% — usamos o máximo
+function rateFor(creditor,type){
+  const r = (db.rates||{})[creditor] || RATE_BANKS[creditor] || {};
+  return (r[type] ?? RATE_DEFAULT[type]);
+}
+const ceil2 = v => Math.ceil(v*100-1e-6)/100;
+function parcelamento(P, ratePct, n){
+  const i = ratePct/100, base = P*(1+IOF_MAX);
+  const pmt = ceil2(i ? base*i/(1-Math.pow(1+i,-n)) : base/n);
+  return {n, pmt, total:r2(pmt*n), juros:r2(pmt*n-P)};
+}
+const isCheque = e => /cheque especial/i.test(e.label||'');
+const parcelable = e => e.v<0 && !e.paid && !e.done && e.debtId && e.dtotal===1 && (e.kind==='cartao' || isCheque(e));
+function planHorizon(){ return simHorizon(); }
+const PLAN_CYCLES = 24; // 12 meses
+function fastRows(n){ // saldo ao fim de cada pagamento, encadeado, em uma passada só
+  const b = db.balance, now = cycleOf(TODAY);
+  let cur = b ? cycleOf(b.date) : now, open = b ? b.value : 0;
+  if(cur>now) cur = now;
+  const rows = [];
+  while(rows.length<n){
+    const ev = cycleEvents(cur), close = r2(open+evSum(ev));
+    if(cur>=now) rows.push({c:cycleInfo(cur),closing:close});
+    open = close; cur = nextCycle(cur);
+  }
+  return rows;
+}
+function evalSim(sim){ return withSim(sim, ()=>fastRows(PLAN_CYCLES)); }
+const worst = rows => rows.reduce((m,s)=>s.closing<m.closing?s:m, rows[0]);
+function candidates(){
+  const out = [];
+  planHorizon().forEach(id=>{const s=cycleSum(id); if(!s.past) s.bills.filter(parcelable).forEach(e=>out.push({e,rate:rateFor(e.creditor,isCheque(e)?'cheque':'parc')}))});
+  return out;
+}
+function simEntry(e,opt){return {mode:'split',n:opt.n,val:opt.pmt,date:e.date,label:e.label,total:-e.v}}
+const NS = [2,3,4,5,6,8,10,12,18,24];
+function suggestPlan(){ EV_CACHE = {}; try { return suggestPlanInner(); } finally { EV_CACHE = null; } }
+function suggestPlanInner(){
+  const base = evalSim({});
+  if(worst(base).closing>=0) return {ok:true,steps:[],rows:base,base};
+  const cands = candidates();
+  const cost = s => Object.values(s).reduce((t,x)=>t+(x.n*x.val-x.total),0);
+  // nota: viável (nunca fica no vermelho) sempre vence; entre viáveis, menos juros;
+  // entre não viáveis, a menor falta no pior momento.
+  const score = s => { const w = worst(evalSim(s)).closing; return w>=0 ? 1e9-cost(s) : w - cost(s)*1e-4; };
+  const set = (s,c,n) => { const t={...s}; if(n) t[c.e.key]=simEntry(c.e,parcelamento(-c.e.v,c.rate,n)); else delete t[c.e.key]; return t; };
+  const OPTS = [0,...NS];
+  // 1) todas as combinações das 3 maiores contas
+  const big = [...cands].sort((a,b)=>a.e.v-b.e.v).slice(0,3);
+  let best = {}, bestScore = score({});
+  const rec = (i,cur) => {
+    if(i===big.length){ const sc=score(cur); if(sc>bestScore){best=cur;bestScore=sc} return; }
+    for(const n of OPTS) rec(i+1,set(cur,big[i],n));
+  };
+  rec(0,{});
+  // 2) ajuste fino com todas as contas, uma mudança por vez
+  for(let it=0; it<12; it++){
+    let move=null;
+    for(const c of cands) for(const n of OPTS){
+      const t=set(best,c,n), sc=score(t);
+      if(sc>(move?move.sc:bestScore)+0.01) move={s:t,sc};
+    }
+    if(!move) break;
+    best=move.s; bestScore=move.sc;
+  }
+  const steps = cands.filter(c=>best[c.e.key]).map(c=>{const x=best[c.e.key];return {e:c.e,rate:c.rate,opt:{n:x.n,pmt:x.val,total:r2(x.n*x.val),juros:r2(x.n*x.val-x.total)}}});
+  const rows = evalSim(best);
+  return {ok:worst(rows).closing>=0, steps, rows, base, sim:best};
+}
+const planCache = {key:null,val:null};
+function suggestPlanCached(){
+  const key = JSON.stringify(db)+TODAY;
+  if(planCache.key!==key){ planCache.key = key; planCache.val = suggestPlan(); }
+  return planCache.val;
+}
+function applyPlanSim(){
+  const p = suggestPlanCached();
+  Object.keys(simState).forEach(k=>delete simState[k]);
+  Object.assign(simState, p.sim||{});
+  st.view='sim'; window.scrollTo(0,0); render();
+}
+function applyPlanReal(){
+  const p = suggestPlanCached(); if(!p.steps.length) return;
+  const txt = p.steps.map(s=>`• ${s.e.label} (${s.e.creditor}): ${s.opt.n}× de ${brl(s.opt.pmt)}`).join('\n');
+  if(!confirm(`Registrar estes parcelamentos como dívidas de verdade?\n\n${txt}\n\nFaça isso só depois de parcelar no banco. Depois confira se o valor da parcela é o mesmo que o banco ofereceu.`)) return;
+  p.steps.forEach(s=>{
+    const d = db.debts.find(x=>x.id===s.e.debtId); if(!d) return;
+    db.debts = db.debts.filter(x=>x.id!==d.id);
+    db.debts.push({id:uid(),desc:`Parcelamento: ${d.desc}`,creditor:d.creditor,kind:d.kind==='cartao'?'cartao':'emprestimo',
+      value:s.opt.pmt,total:s.opt.n,day:d.day,firstMonth:addM(d.firstMonth,1)});
+  });
+  save(); alert('Pronto! Os parcelamentos foram registrados em Dívidas.');
+}
+function setRate(creditor,type,val){
+  const v = parseMoney(val); if(!(v>=0)) return;
+  db.rates = db.rates||{}; db.rates[creditor] = {...(RATE_BANKS[creditor]||{}),...(db.rates[creditor]||{}),[type]:Math.ceil(v*100)/100};
+  save();
+}
+/* ---------- férias: quanto entra (sempre para menos) ----------
+   Recebe até 2 dias antes: dias de férias + 1/3. Se vender dias (abono pecuniário, até 1/3), recebe esses dias + 1/3, sem INSS e sem IR.
+   INSS: a parte das férias no INSS do mês. IR: calculado à parte, sem o redutor (para menos).
+   Depois, o salário do dia 5 seguinte vem menor, porque os dias de férias já foram pagos. */
+const FERIAS_SALDO = 45;
+const FOLHA_FECHA = 12; // dia em que a folha da empresa fecha
+function feriasCalc(f){
+  const s = db.salary; if(!s) return null;
+  const S = s.gross, dia = S/30;
+  const fer = r2(dia*f.dias), terco = r2(fer/3), ab = r2(dia*(f.abono||0)), abTerco = r2(ab/3);
+  const inss = r2(Math.max(0, calcINSS(Math.min(S+terco, TAX.inss[TAX.inss.length-1][0])) - calcINSS(Math.max(0,S-fer))));
+  const ir = calcIR(fer+terco, inss+(s.deps||0)*TAX.dependente, true).ir;
+  const bruto = r2(fer+terco+ab+abTerco);
+  const liquido = Math.max(0, Math.floor(bruto-inss-ir));
+  const d = new Date(f.start+'T12:00'); d.setDate(d.getDate()-2);
+  while(d.getDay()===0||d.getDay()===6||FERIADOS.includes(`${pad(d.getMonth()+1)}-${pad(d.getDate())}`)) d.setDate(d.getDate()-1);
+  // sai do salário do dia 5 seguinte: o valor dos dias menos o INSS que já foi pago nas férias (o IR não abatemos: fica para menos)
+  const desconto = ceil2(fer - Math.max(0, calcINSS(S) - calcINSS(Math.max(0,S-fer))));
+  // a folha fecha todo dia 12: dias de 13/(X-1) a 12/X entram na competência X, paga no dia 5 de X+1
+  const porDia = desconto/f.dias, comp = {};
+  for(let k=0;k<f.dias;k++){
+    const dt = addDays(f.start,k), dd = +dt.slice(8), M = dt.slice(0,7);
+    const C = dd<=FOLHA_FECHA ? M : addM(M,1);
+    comp[C] = (comp[C]||0)+1;
+  }
+  const descontos = Object.entries(comp).sort().map(([C,n])=>({comp:C, mes:addM(C,1), dias:n, valor:ceil2(porDia*n)}));
+  return {fer,terco,ab,abTerco,inss,ir,bruto,liquido,payDate:iso(d),desconto,descontos,
+    ganho:Math.floor(liquido-descontos.reduce((t,x)=>t+x.valor,0)), volta:addDays(f.start,f.dias), descMes:descontos[0]?.mes};
+}
+const ferDraft = {start:`${addM(THIS_MONTH,1)}-07`, dias:30, abono:0};
+function ferSet(k,v){ ferDraft[k] = k==='start' ? v : Math.max(0,parseInt(v)||0); render(); }
+function ferAdd(){
+  const used = (db.ferias||[]).reduce((t,f)=>t+f.dias+(f.abono||0),0);
+  if(ferDraft.dias+ferDraft.abono+used > FERIAS_SALDO && !confirm('Isso passa dos 45 dias que você tem. Incluir mesmo assim?')) return;
+  db.ferias = [...(db.ferias||[]), {id:uid(), ...ferDraft}]; save();
+}
+function ferDel(id){ db.ferias = (db.ferias||[]).filter(f=>f.id!==id); save(); }
+function feriasImpacto(){
+  const keep = db.ferias, n = 10;
+  db.ferias = keep||[];               const sem = fastRows(n);
+  db.ferias = [...(keep||[]), {id:'draft',...ferDraft}]; const com = fastRows(n);
+  db.ferias = keep;
+  const cell = v => `<span class="${v<0?'neg':'pos'}">${v<0?'falta':'sobra'} ${brl(Math.abs(v))}</span>`;
+  const ws = worst(sem), wc = worst(com);
+  return `<div class="simrow" style="margin-top:12px"><div class="g" style="grid-template-columns:1.1fr 1fr 1fr">
+      <div><small>Pagamento</small></div><div><small>Sem essas férias</small></div><div><small>Com essas férias</small></div>
+      ${sem.map((s,i)=>`<div><b>${dLabel(s.c.pay>=TODAY?s.c.pay:TODAY)}</b></div><div>${cell(s.closing)}</div><div><b>${cell(com[i].closing)}</b></div>`).join('')}
+    </div></div>
+    <div class="result ${wc.closing<0?'bad':'good'}"><span>Pior momento com essas férias: ${dLabel(wc.c.pay>=TODAY?wc.c.pay:TODAY)}</span><b>${wc.closing<0?'falta ':'sobra '}${brl(Math.abs(wc.closing))}</b></div>`;
+}
+function feriasCard(){
+  if(!db.salary) return '';
+  const used = (db.ferias||[]).reduce((t,f)=>t+f.dias+(f.abono||0),0);
+  const c = feriasCalc(ferDraft);
+  const sel = (k,opts) => `<select onchange="ferSet('${k}',this.value)">${opts.map(o=>`<option ${ferDraft[k]===o?'selected':''}>${o}</option>`).join('')}</select>`;
+  const line = (l,v,cls='') => `<div class="line"><span>${l}</span><b class="${cls}">${v}</b></div>`;
+  return `<div class="card"><h2>🏖️ Suas férias</h2>
+    <p class="sub">Você tem <b>${FERIAS_SALDO-used} dias</b> para usar${used?` (${used} já planejados)`:''}. Nas férias você recebe os dias + 1/3 adiantado, e o salário seguinte vem menor. O ganho real é o 1/3.</p>
+    <div class="row">
+      <label class="f"><span>Início</span><input type="date" value="${ferDraft.start}" onchange="ferSet('start',this.value)"></label>
+      <label class="f"><span>Dias de folga</span>${sel('dias',[5,10,14,15,20,25,30])}</label>
+    </div>
+    ${c?`<div class="need">
+      ${line(`${ferDraft.dias} dias de férias`,'+ '+brl(c.fer))}
+      ${line('1/3 constitucional','+ '+brl(c.terco))}
+      ${c.ab?line(`Venda de ${ferDraft.abono} dias (abono) + 1/3`,'+ '+brl(c.ab+c.abTerco)):''}
+      ${line('INSS','− '+brl(c.inss))}
+      ${line('IR','− '+brl(c.ir))}
+      <div class="line big2"><span>Cai na conta até <b>${dLabel(c.payDate)}</b></span><b class="pos">${brl(c.liquido)}</b></div>
+      <div class="parts">Você volta em ${dLabel(c.volta)}. Como a folha fecha dia ${FOLHA_FECHA}, os dias de férias saem do salário assim:<br>
+        ${c.descontos.map(x=>`• dia 5 de ${mLabel(x.mes,{month:'long'})}: <b class="neg">− ${brl(x.valor)}</b> (${x.dias} dias da folha de ${mLabel(x.comp,{month:'long'})})`).join('<br>')}</div>
+    </div>
+    <div class="result ${c.ganho<0?'bad':'good'}"><span>Dinheiro a mais, no total</span><b>${brl(c.ganho)}</b></div>
+    ${feriasImpacto()}
+    <button class="btn" onclick="ferAdd()">Incluir essas férias no planejamento</button>`:''}
+    ${(db.ferias||[]).length?`<ul class="list" style="margin-top:10px">${db.ferias.map(f=>{const x=feriasCalc(f);return `<li><span class="dot">🏖️</span><div class="main"><div class="t">${dLabel(f.start)} · ${f.dias} dias${f.abono?` + ${f.abono} vendidos`:''}</div><div class="m">recebe ${brl(x.liquido)} em ${dLabel(x.payDate)} · ganho ${brl(x.ganho)}</div></div><button class="chk" style="border-color:var(--neg);color:var(--neg)" onclick="ferDel('${f.id}')" aria-label="Remover">×</button></li>`}).join('')}</ul>`:''}
+    <div class="hint" style="margin-top:8px">Combine as datas com o RH: a empresa precisa aprovar o período. Um dos períodos precisa ter pelo menos 14 dias, e os outros, pelo menos 5.</div>
+  </div>`;
+}
+VIEWS.plano = function(){
+  const p = suggestPlanCached(), base = p.base, w0 = worst(base);
+  const neg = base.filter(s=>s.closing<0);
+  const rowsCmp = p.rows;
+  const jurosTot = r2(p.steps.reduce((t,s)=>t+s.opt.juros,0));
+  const cands = candidates();
+  const banks = [...new Set([...cands.map(c=>c.e.creditor), ...Object.keys(RATE_BANKS)])];
+  const resCell = v => `<span class="${v<0?'neg':'pos'}">${v<0?'falta':'sobra'} ${brl(Math.abs(v))}</span>`;
+  return `
+  <div class="card hero"><span class="emoji">🧭</span>
+    <div class="label">Plano de ação</div>
+    <h2 style="font-size:20px;margin:2px 0 6px">${neg.length?'Como não fechar no vermelho':'Você não fecha no vermelho 🎉'}</h2>
+    <p class="sub" style="margin:0">${neg.length
+      ? `Hoje, <b>${neg.length} de ${base.length}</b> pagamentos dos próximos 12 meses ficam no vermelho. O pior é em <b>${dLabel(w0.c.pay>=TODAY?w0.c.pay:TODAY)}</b>: <b class="neg">falta ${brl(-w0.closing)}</b>.`
+      : 'Em todos os pagamentos dos próximos meses sobra dinheiro.'}</p>
+    ${!db.budget?`<p class="sub" style="margin:8px 0 0">⚠️ Os gastos do dia a dia (mercado, transporte…) ainda não estão na conta. Informe uma estimativa em <a href="#" onclick="openBalance();return false">Atualizar saldo</a> para o plano ficar realista.</p>`:''}
+  </div>
+
+  ${feriasCard()}
+  ${neg.length?`<div class="card"><h2>✨ Plano sugerido</h2>
+    <p class="sub">A combinação de parcelamentos com <b>menos juros no total</b> que deixa todos os pagamentos dos próximos 12 meses no azul.</p>
+    ${p.steps.length?`<ol class="steps">${p.steps.map(s=>`<li><b>Parcelar ${esc(s.e.label)} (${esc(s.e.creditor)})</b> de ${brl(-s.e.v)} em <b>${s.opt.n}× de ${brl(s.opt.pmt)}</b>
+      <small>juros estimados ${s.rate.toLocaleString('pt-BR')}% ao mês + IOF · total ${brl(s.opt.total)} (<span class="neg">+${brl(s.opt.juros)}</span>)</small></li>`).join('')}</ol>
+      <div class="result ${p.ok?'good':'bad'}"><span>${p.ok?'Com isso, nenhum pagamento fica no vermelho':'Ajuda, mas ainda falta'} · juros totais</span><b>${brl(jurosTot)}</b></div>`
+      :`<div class="empty">Parcelar faturas não é suficiente para resolver.</div>`}
+    <div class="simrow" style="margin-top:10px"><div class="g" style="grid-template-columns:1.1fr 1fr 1fr">
+      <div><small>Pagamento</small></div><div><small>Hoje</small></div><div><small>Com o plano</small></div>
+      ${base.slice(0,8).map((b,i)=>`<div><b>${dLabel(b.c.pay>=TODAY?b.c.pay:TODAY)}</b></div><div>${resCell(b.closing)}</div><div><b>${resCell(rowsCmp[i].closing)}</b></div>`).join('')}
+    </div></div>
+    ${(()=>{const rb=base.slice(8),ra=rowsCmp.slice(8);if(!rb.length)return "";const wb=worst(rb),wa=worst(ra);return `<p class="hint">Nos meses seguintes (até ${dLabel(rb[rb.length-1].c.to)}): pior momento hoje ${resCell(wb.closing)} · com o plano ${resCell(wa.closing)}</p>`})()}
+    ${p.steps.length?`<button class="btn" onclick="applyPlanSim()">🧪 Abrir no simulador para ajustar</button>
+      <button class="btn sec" onclick="applyPlanReal()">Já parcelei no banco: registrar</button>`:''}
+  </div>`:''}
+
+  ${neg.length && !p.ok?`<div class="card"><h2>Se ainda faltar</h2>
+    <ul class="tips">
+      <li>✂️ <b>Corte gastos variáveis</b> nos meses vermelhos. Cada R$ 100 a menos reduz a falta em R$ 100.</li>
+      <li>🤝 <b>Negocie direto com o credor</b> antes do vencimento: às vezes eles oferecem parcelas maiores, mas com juros menores que o parcelamento automático.</li>
+      <li>💸 <b>Renda extra pontual</b> (vender algo parado, freela) nos meses vermelhos.</li>
+      <li>🚫 <b>Evite o rotativo</b> (pagar só o mínimo): é o crédito mais caro, perto de ${RATE_DEFAULT.rot}% ao mês.</li>
+    </ul></div>`:''}
+
+  ${cands.length?`<div class="card"><h2>📊 Opções por conta</h2>
+    <p class="sub">Quanto custa parcelar cada conta (juros estimados para cima, já com IOF)</p>
+    ${cands.map(c=>{const P=-c.e.v;return `<div class="simbill"><div class="top"><div><div class="t">${esc(c.e.label)}</div><div class="m">${esc(c.e.creditor)} · vence ${dLabel(c.e.date)} · ${c.rate.toLocaleString('pt-BR')}% a.m.</div></div><b>${brl(P)}</b></div>
+      <table class="simtab"><thead><tr><th>Vezes</th><th>Parcela</th><th>Total</th><th>Juros</th></tr></thead><tbody>
+      ${[3,6,12,24].map(n=>{const o=parcelamento(P,c.rate,n);return `<tr><td>${n}×</td><td><b>${brl(o.pmt)}</b></td><td>${brl(o.total)}</td><td class="neg">+${brl(o.juros)}</td></tr>`}).join('')}
+      </tbody></table>
+      <div class="hint">Não pagar e cair no rotativo (${rateFor(c.e.creditor,'rot')}% a.m.): em 1 mês essa conta viraria ~${brl(ceil2(P*(1+rateFor(c.e.creditor,'rot')/100)*(1+IOF_MAX)))}.</div></div>`}).join('')}
+  </div>`:''}
+
+  <div class="card"><h2>⚙️ Juros usados</h2>
+    <p class="sub">Estimativas por mês, arredondadas para cima. Se a fatura ou o app do banco mostrar a taxa real (CET), coloque aqui.</p>
+    <table class="simtab"><thead><tr><th>Banco</th><th>Parcelar</th><th>Rotativo</th><th>Cheque esp.</th></tr></thead><tbody>
+    ${banks.map(b=>`<tr><td><b>${esc(b)}</b></td>${['parc','rot','cheque'].map(t=>`<td><input class="rate" inputmode="decimal" value="${String(rateFor(b,t)).replace('.',',')}" onchange="setRate('${esc(b)}','${t}',this.value)">%</td>`).join('')}</tr>`).join('')}
+    </tbody></table>
+    <div class="hint" style="margin-top:8px">De onde vêm: média do Banco Central para o cartão parcelado (~9,3% a.m.) e para o rotativo (~15–16% a.m.); teto legal do cheque especial (8% a.m.); IOF de até 3,38%. Para o Carrefour usei uma taxa maior, porque cartões de loja costumam cobrar mais. Juros do rotativo + encargos não podem passar de 100% da dívida (Lei 14.690/2023).</div>
+  </div>`;
+};
 function togglePaid(key){
   db.paid = db.paid||{};
   if(db.paid[key]) delete db.paid[key]; else db.paid[key] = new Date().toISOString();
@@ -1087,6 +1468,9 @@ function normalize(data){
   if(data.irDates && typeof data.irDates==='object') out.irDates = data.irDates;
   if(data.balance && /^\d{4}-\d{2}-\d{2}$/.test(data.balance.date||'') && isFinite(+data.balance.value)) out.balance = {value:+data.balance.value,date:data.balance.date};
   if(data.budget>0) out.budget = num(data.budget);
+  if(data.rates && typeof data.rates==='object') out.rates = data.rates;
+  if(data.imovel && parseMoney(data.imovel.parcelaRef)>0) out.imovel = {...IMOVEL_DEFAULT,...data.imovel};
+  if(Array.isArray(data.ferias)) out.ferias = data.ferias.filter(f=>/^\d{4}-\d{2}-\d{2}$/.test(f.start||'')&&f.dias>0).map(f=>({id:f.id||uid(),start:f.start,dias:+f.dias,abono:+f.abono||0}));
   if(data.salary && parseMoney(data.salary.gross)>0){
     const s = data.salary;
     out.salary = {gross:num(s.gross), advPct:s.advPct!=null?Number(s.advPct):40, deps:parseInt(s.deps)||0,
@@ -1102,6 +1486,9 @@ function merge(data,replace){
   if(out.irDates) db.irDates = {...(db.irDates||{}),...out.irDates};
   if(out.balance) db.balance = out.balance;
   if(out.budget) db.budget = out.budget;
+  if(out.rates) db.rates = {...(db.rates||{}),...out.rates};
+  if(out.imovel) db.imovel = out.imovel;
+  if(out.ferias) db.ferias = out.ferias;
   if(!n) return alert('Nada válido para importar.'+(errs.length?'\nIgnorados: '+errs.join(', '):''));
   if(replace) db = out;
   else ['tx','fixed','debts'].forEach(k=>out[k].forEach(it=>{const i=db[k].findIndex(x=>x.id===it.id);i>=0?db[k][i]=it:db[k].push(it)}));

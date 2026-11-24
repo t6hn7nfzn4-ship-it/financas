@@ -74,6 +74,9 @@ details.porDia > .card{box-shadow:none;border:1px solid var(--line);margin:12px 
 .verdict{display:flex;gap:10px;align-items:center;border-radius:14px;padding:12px 14px;margin-top:8px;font-size:16px}.verdict span{font-size:24px}
 .pbars text{font-size:9px;fill:var(--ink3)}
 .meta details summary{color:var(--accent);font-size:14px;cursor:pointer}
+#updBar{position:fixed;left:50%;bottom:calc(82px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;
+  background:var(--ink);color:var(--bg);border-radius:999px;padding:11px 18px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25);white-space:nowrap;animation:up .4s ease both}
+#updBar b{color:var(--accent-soft);margin-left:4px}
 .modeopts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 10px}
 .introbox .steps{text-align:left;margin:0 6px 14px;color:var(--ink2)}
 .kbd{display:inline-block;min-width:22px;padding:0 6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);text-align:center;font-weight:700}
@@ -2932,6 +2935,43 @@ function metasView(){
       <button class="btn" style="margin-top:12px" onclick="openMetaCompra()">+ Nova meta</button></div>
     ${L.length?L.map(metaCard).join(''):'<div class="card"><div class="empty">Nenhuma meta ainda.</div></div>'}`;
 }
+/* ---------- atualização do app ----------
+   A cada versão publicada, aumente APP_VERSION (e a versão do cache no sw.js).
+   O app compara com o index.html publicado e, se mudou, mostra a faixa "Atualizar agora". */
+const APP_VERSION = '28';
+let ultimaChecagem = 0;
+async function versaoPublicada(){
+  const r = await fetch(`./index.html?checar=${Date.now()}`, {cache:'no-store'});
+  const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/);
+  return m ? m[1] : null;
+}
+async function procurarAtualizacao(manual){
+  if(!location.protocol.startsWith('http')) return;
+  if(!manual && Date.now()-ultimaChecagem < 10*60e3) return; // no máximo a cada 10 minutos
+  ultimaChecagem = Date.now();
+  try{
+    const v = await versaoPublicada();
+    if(v && v !== APP_VERSION){ mostrarFaixaAtualizacao(); return true; }
+    if(manual) alert(`Você já está na versão mais recente do Cofrivo (versão ${APP_VERSION}). ✅`);
+  }catch(e){ if(manual) alert('Sem internet agora. Tente de novo quando estiver conectada(o).'); }
+  return false;
+}
+function mostrarFaixaAtualizacao(){
+  if($('#updBar')) return;
+  const b = document.createElement('button');
+  b.id = 'updBar'; b.innerHTML = '✨ Nova versão do Cofrivo · <b>Atualizar agora</b>';
+  b.onclick = atualizarAgora; document.body.appendChild(b);
+}
+async function atualizarAgora(){
+  const b = $('#updBar'); if(b) b.innerHTML = 'Atualizando…';
+  try{
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if(reg) await reg.update();
+    if(window.caches){ const ks = await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); } // descarta a versão antiga guardada
+  }catch(e){}
+  location.reload();
+}
+
 /* ---------- controle de acesso (assinatura) ----------
    Enquanto ACESSO_CFG.url estiver vazio, o app funciona livre (como hoje).
    Com o servidor configurado: a pessoa digita o código de acesso uma vez; o app confere no servidor
@@ -3151,7 +3191,9 @@ function manualView(){
     <p class="sub">Toque em um tema para abrir.</p>
     ${MANUAL.map(([i,t,h],k)=>`<details class="tip-item manual" ${k===0?'open':''}><summary><span class="e">${i}</span>${t}</summary><div class="mtext">${h.replace('{mesma}',gw('você mesma','você mesmo','você'))}</div></details>`).join('')}
     <button class="btn sec" onclick="showIntro(0)">Ver a introdução de novo</button>
-    <button class="btn sec" onclick="maybeInstall(true)">📲 Instalar na tela inicial</button></div>
+    <button class="btn sec" onclick="maybeInstall(true)">📲 Instalar na tela inicial</button>
+    <button class="btn sec" onclick="procurarAtualizacao(true).then(n=>{ if(n) atualizarAgora(); })">🔄 Procurar atualização</button>
+    <p class="hint" style="text-align:center;margin-top:8px">Cofrivo · versão ${APP_VERSION}</p></div>
     <div class="card"><h2>🎨 Aparência</h2><p class="sub">Como você se identifica? Muda as cores e o jeito como o app fala com você.</p>
     ${idButtons('render()')}<p class="sub" style="margin:10px 0 4px">Tema do app</p>${modeButtons('render()')}
     <p class="hint">O ícone na tela inicial segue o tema escolhido no momento em que você adiciona o app. Para trocar o ícone depois, remova o atalho e adicione de novo.</p></div>`;
@@ -3170,8 +3212,10 @@ function iniciarApp(){
 }
 verificarAcessoNaAbertura(iniciarApp);
 // ao voltar para o app (ele pode ficar dias aberto em segundo plano): atualiza a data e confere o acesso
+setTimeout(()=>procurarAtualizacao(), 3000);
 document.addEventListener('visibilitychange', () => {
   if(document.visibilityState !== 'visible') return;
+  procurarAtualizacao();
   if(atualizarHoje() && !$('#sheetbg').classList.contains('open')) render();
   if(ACESSO_ON() && !$('#sheetbg').classList.contains('intro')) verificarAcessoNaAbertura(()=>{});
 });

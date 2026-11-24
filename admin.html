@@ -75,7 +75,12 @@ async function entrar(){
   const email=$('#lgEmail').value.trim(), senha=$('#lgSenha').value;
   $('#lgMsg').textContent='Entrando…';
   const r = await fetch(CFG.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':CFG.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:senha})});
-  if(!r.ok){ $('#lgMsg').textContent='E-mail ou senha incorretos.'; return; }
+  if(!r.ok){
+    const j = await r.json().catch(()=>({})), cod = String(j.error_code||j.code||'')+' '+String(j.msg||j.message||j.error_description||'');
+    if(/not.confirmed/i.test(cod)){
+      $('#lgMsg').innerHTML = `Seu e-mail ainda não foi confirmado. Abra o e-mail do Cofrivo/Supabase e toque no link (veja também o spam).<br><a href="#" onclick="reenviarConfirmacao();return false">Reenviar e-mail de confirmação</a>`; return; }
+    $('#lgMsg').textContent = /rate|too.many|429/i.test(cod+r.status) ? 'Muitas tentativas seguidas. Espere alguns minutos e tente de novo.' : 'E-mail ou senha incorretos.';
+    return; }
   const j = await r.json(); S.token=j.access_token; S.refresh=j.refresh_token; S.email=email;
   sessionStorage.setItem('cof.adm',JSON.stringify({t:S.token,r:S.refresh,e:email}));
   carregar();
@@ -94,6 +99,14 @@ function telaLogin(){
       <button onclick="entrar()">Entrar</button><p class="hint" id="lgMsg"></p>
       <p class="m" style="margin-top:14px">Foi convidada(o) para administrar? <a href="#" onclick="telaCriarSenha();return false">Criar minha senha</a></p></div>`;
   $('#lgSenha').addEventListener('keydown',e=>{if(e.key==='Enter')entrar()});
+}
+async function reenviarConfirmacao(){
+  const email = $('#lgEmail').value.trim().toLowerCase(); if(!email) return $('#lgMsg').textContent='Digite seu e-mail acima.';
+  $('#lgMsg').textContent='Enviando…';
+  try{ const r = await fetch(CFG.url+'/auth/v1/resend?redirect_to='+encodeURIComponent(PAINEL_LINK),{method:'POST',headers:{'apikey':CFG.key,'Content-Type':'application/json'},body:JSON.stringify({type:'signup',email})});
+    $('#lgMsg').textContent = r.ok ? 'E-mail reenviado. Toque no link e depois entre aqui (veja também o spam).'
+      : r.status===429 ? 'O servidor de e-mail atingiu o limite de envios. Espere 1 hora e tente de novo.' : 'Não consegui reenviar agora.'; }
+  catch(e){ $('#lgMsg').textContent='Sem conexão com o servidor.'; }
 }
 function telaCriarSenha(){
   $('#app').innerHTML = `<h1><img src="icon-light-64.png" alt="">Painel do Cofrivo</h1>
@@ -114,8 +127,9 @@ async function criarSenha(){
   try{
     const r = await fetch(CFG.url+'/auth/v1/signup?redirect_to='+encodeURIComponent(PAINEL_LINK),{method:'POST',headers:{'apikey':CFG.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:s1})});
     const j = await r.json().catch(()=>({}));
-    if(!r.ok){ const m = String(j.msg||j.message||j.error_description||'');
-      return $('#cdMsg').textContent = /registered|already/i.test(m) ? 'Este e-mail já tem senha. Volte e entre normalmente.'
+    if(!r.ok){ const m = String(j.error_code||'')+' '+String(j.msg||j.message||j.error_description||'');
+      return $('#cdMsg').textContent = /rate.limit|too.many/i.test(m)||r.status===429 ? 'O servidor de e-mail atingiu o limite de envios por hora. A senha pode já ter sido criada: procure o e-mail de confirmação (veja o spam). Se não chegou, espere 1 hora e use "Reenviar e-mail de confirmação" na tela de entrar.'
+        : /registered|already/i.test(m) ? 'Este e-mail já tem senha. Volte e entre normalmente.'
         : /disabled|not allowed/i.test(m) ? 'O cadastro está desligado no servidor. Peça para quem te convidou criar seu login no Supabase.' : 'Não consegui criar: '+m; }
     if(j.access_token){ S.token=j.access_token; S.refresh=j.refresh_token; S.email=email; sessionStorage.setItem('cof.adm',JSON.stringify({t:S.token,r:S.refresh,e:email})); return carregar(); }
     $('#app').innerHTML = `<h1><img src="icon-light-64.png" alt="">Painel do Cofrivo</h1><div class="card" style="max-width:420px"><h2>📧 Confirme seu e-mail</h2>

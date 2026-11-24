@@ -1,5 +1,5 @@
-﻿// Cofrivo — mantém o app funcionando offline. Aumente a versão ao publicar mudanças.
-const CACHE = 'cofrivo-v30';
+// Cofrivo — mantém o app funcionando offline. Aumente a versão ao publicar mudanças.
+const CACHE = 'cofrivo-v32';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'manifest-dark.webmanifest',
   'icon-light-180.png', 'icon-light-192.png', 'icon-light-512.png', 'icon-light-maskable-512.png', 'icon-light-64.png',
   'icon-dark-180.png', 'icon-dark-192.png', 'icon-dark-512.png', 'icon-dark-maskable-512.png', 'icon-dark-64.png'];

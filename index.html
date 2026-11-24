@@ -409,7 +409,7 @@ function migrate(d){
   return d;
 }
 migrate(db);
-function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));render();syncAgendar()}
 
 const instNo = (d,M) => diffM(d.firstMonth,M)+1;
 const debtActive = (d,M) => {const n=instNo(d,M);return n>=1&&n<=d.total};
@@ -673,6 +673,7 @@ dados(){
   const n =db.tx.length+db.fixed.length+db.debts.length;
   return `
   ${acessoCard()}
+  ${nuvemCard()}
   <div class="card"><h2>Colar dados</h2>
     <p class="sub">Mande suas faturas ou descreva seus gastos para o Claude. Ele devolve um bloco de texto (JSON). Cole aqui e toque em Importar.</p>
     <textarea id="paste" placeholder='{"debts":[{"desc":"Geladeira","creditor":"Nubank","value":250,"current":3,"total":10}]}'></textarea>
@@ -782,7 +783,7 @@ function saveTx(id,isFixed){
     const rec = {id:id||uid(),type,desc,value,cat,ded,nf,start:date.slice(0,7),day:+date.slice(8,10),end:null,...pag};
     if(id){const i=db.fixed.findIndex(f=>f.id===id);rec.end=db.fixed[i].end;db.fixed[i]=rec}else db.fixed.push(rec);
   } else {
-    const rec = {id:id||uid(),type,desc,value,cat,date,ded,nf,...pag};
+    const rec = {id:id||uid(),type,desc,value,cat,date,ded,nf,...pag, at:(id&&db.tx.find(t=>t.id===id)?.at)||new Date().toISOString()};
     if(id){const i=db.tx.findIndex(t=>t.id===id);db.tx[i]=rec}else db.tx.push(rec);
   }
   closeSheet(); save();
@@ -960,7 +961,7 @@ function eventsRaw(M){ // tudo que entra e sai no mês M, com data e chave
   (db.cartoes||[]).forEach(cd=>{ const ft = faturaTotal(cd,M); if(ft.total>0) ev.push({key:`fat:${cd.id}:${M}`, date:faturaVence(cd,M),
     label:`Fatura ${cd.nome}`, sub: ft.real ? 'valor real da fatura' : `prevista · ${ft.itens.length} item(ns)`, v:-ft.total, icon:'💳',
     tap:`openCartao('${cd.id}','${M}')`, fatura:true, creditor:cd.nome, kind:'cartao'}); });
-  m.tx.filter(t=>!t.cartao).forEach(t=>ev.push({key:`tx:${t.id}`,date:t.date,label:t.desc,v:t.type==='in'?t.value:-t.value,icon:t.type==='in'?'💰':'🛍️',tap:`openTx('${t.id}')`}));
+  m.tx.filter(t=>!t.cartao).forEach(t=>ev.push({key:`tx:${t.id}`,date:t.date,label:t.desc,v:t.type==='in'?t.value:-t.value,icon:t.type==='in'?'💰':'🛍️',tap:`openTx('${t.id}')`,at:t.at}));
   m.inst.forEach(d=>ev.push({key:`debt:${d.id}:${M}`,date:dt(d.day),label:d.desc,sub:`${d.creditor}${d.total>1?` · parcela ${d.n}/${d.total}`:''}`,v:-d.value,icon:'💳',tap:`openDebt('${d.id}')`,debtId:d.id,creditor:d.creditor,kind:d.kind,dtotal:d.total}));
   const pv = db.pagoValor||{}; // pagou outro valor: vale o real (e guarda o previsto)
   ev.forEach(e=>{ if(pv[e.key]!=null && e.v<0){ e.prev = -e.v; e.v = -pv[e.key]; } });
@@ -1246,7 +1247,7 @@ function suggestPlan(){ EV_CACHE = {}; try { return suggestPlanInner(); } finall
 function suggestPlanInner(){
   const base = evalSim({});
   if(worst(base).closing>=0) return {ok:true,steps:[],rows:base,base};
-  const cands = candidates();
+  const cands = candidates().sort((a,b)=>a.e.v-b.e.v).slice(0,6); // só as 6 maiores contas: mantém rápido no celular
   const cost = s => Object.values(s).reduce((t,x)=>t+(x.n*x.val-x.total),0);
   // nota: viável (nunca fica no vermelho) sempre vence; entre viáveis, menos juros;
   // entre não viáveis, a menor falta no pior momento.
@@ -1258,11 +1259,11 @@ function suggestPlanInner(){
   let best = {}, bestScore = score({});
   const rec = (i,cur) => {
     if(i===big.length){ const sc=score(cur); if(sc>bestScore){best=cur;bestScore=sc} return; }
-    for(const n of OPTS) rec(i+1,set(cur,big[i],n));
+    for(const n of [0,3,6,12,18,24]) rec(i+1,set(cur,big[i],n)); // busca inicial com menos prazos; o ajuste fino abaixo testa todos
   };
   rec(0,{});
   // 2) ajuste fino com todas as contas, uma mudança por vez
-  for(let it=0; it<12; it++){
+  for(let it=0; it<6; it++){
     let move=null;
     for(const c of cands) for(const n of OPTS){
       const t=set(best,c,n), sc=score(t);
@@ -1714,7 +1715,7 @@ function normalize(data){
   (data.tx||[]).forEach((t,i)=>{
     const value=num(t.value);
     if(!t.desc||!(value>0)||!/^\d{4}-\d{2}-\d{2}$/.test(t.date||'')) return errs.push(`lançamento ${i+1} (${t.desc||'?'})`);
-    out.tx.push({id:t.id||uid(),type:t.type==='in'?'in':'out',desc:t.desc,value,date:t.date,cat:t.cat||'Outros',ded:t.ded||'',nf:!!t.nf});
+    out.tx.push({id:t.id||uid(),type:t.type==='in'?'in':'out',desc:t.desc,value,date:t.date,cat:t.cat||'Outros',ded:t.ded||'',nf:!!t.nf,...(t.at?{at:t.at}:{})});
   });
   (data.fixed||[]).forEach((f,i)=>{
     const value=num(f.value);
@@ -2167,7 +2168,7 @@ function decidir(id,res){
 }
 function lancarCompra(id){
   const d = FR().desejos.find(x=>x.id===id);
-  if(d && $('#cLanc').checked && d.preco>0) db.tx.push({id:uid(),type:'out',desc:d.item,value:d.preco,cat:$('#cCat').value,date:TODAY});
+  if(d && $('#cLanc').checked && d.preco>0) db.tx.push({id:uid(),type:'out',desc:d.item,value:d.preco,cat:$('#cCat').value,date:TODAY,at:new Date().toISOString()});
   closeSheet(); save();
 }
 
@@ -2411,7 +2412,7 @@ function saveImpulso(){
   const f = FR(), valor = r2(parseMoney($('#iVal').value)||0), item = $('#iItem').value.trim()||'Compra por impulso';
   const r = {id:uid(), at:new Date().toISOString(), item, valor, loja:$('#iLoja').value.trim(), emocoes:chipsSel('iEmo'), aprendizado:$('#iAprendi').value.trim()};
   f.impulsos.push(r);
-  if($('#iLanc').checked && valor>0) db.tx.push({id:uid(),type:'out',desc:item,value:valor,cat:'Compras',date:TODAY});
+  if($('#iLanc').checked && valor>0) db.tx.push({id:uid(),type:'out',desc:item,value:valor,cat:'Compras',date:TODAY,at:new Date().toISOString()});
   save();
   const s = freioStats(), pl = planosPara(r.emocoes);
   openSheet(`<h3>💗 Tudo bem <button onclick="closeSheet()">Fechar</button></h3>
@@ -2719,7 +2720,8 @@ function monthFlow(M, depth=0){
   if(MF_MEMO && MF_MEMO[M]) return MF_MEMO[M];
   const b = db.balance, paid = db.paid||{}, bAt = b ? (b.at||b.date+'T00:00:00') : '', bm = b?.date.slice(0,7);
   // "done" = já aconteceu: antes do saldo informado, ou (sem saldo) antes de hoje
-  const ev = events(M).map(e=>({...e, paid:!!paid[e.key], done: b ? (e.date<=b.date || (!!paid[e.key] && paid[e.key]<bAt)) : e.date<TODAY}));
+  // gasto lançado DEPOIS de informar o saldo ainda não está no saldo: desconta (mesmo que a data seja o dia do saldo)
+  const ev = events(M).map(e=>({...e, paid:!!paid[e.key], done: b ? (e.at ? e.at<bAt && e.date<=b.date : (e.date<=b.date || (!!paid[e.key] && paid[e.key]<bAt))) : e.date<TODAY}));
   const byDate = (x,y) => x.date.localeCompare(y.date);
   const ins = ev.filter(e=>e.v>0).sort(byDate), outs = ev.filter(e=>e.v<0).sort(byDate);
   const inTot = r2(ins.reduce((t,e)=>t+e.v,0)), outTot = r2(outs.reduce((t,e)=>t-e.v,0));
@@ -2759,6 +2761,10 @@ function resumoMes(M){
   const pagoDepois = r2(f.outs.filter(e=>e.paid && !e.done).reduce((t,e)=>t-e.v,0));
   const outFut = r2(f.aPagar + f.bud), outJa = r2(f.outTot - f.aPagar - pagoDepois);
   const temPassado = inJa>0 || outJa>0;
+  // dinheiro que vem do mês anterior (ou o saldo informado): entra no "Vai ter" ou no "Precisa pagar"
+  const carry = passado ? null : f.start;
+  const carryTxt = f.isBalMonth ? `que você tem na conta (informado em ${dLabel(db.balance.date)})`
+    : `que sobraram de ${mLabel(addM(M,-1),{month:'long'})}`;
   const fimSemSaldo = r2(inFut - outFut - pagoDepois);
   const L = (t,v,cls='') => `<div class="line"><span>${t}</span><b class="${cls}">${v}</b></div>`;
   const prox = !passado && f.end!=null && f.end>0 ? monthFlow(addM(M,1)) : null;
@@ -2784,15 +2790,18 @@ function resumoMes(M){
   <div class="card hero resumo">
     <div class="label">${passado?`Resumo de ${nome} (já passou)`:temPassado?`${nome[0].toUpperCase()+nome.slice(1)}: daqui para a frente`:`Resumo de ${nome}`}</div>
     <div class="duo">
-      <div class="t-mint"><small>💰 ${passado?'Entrou':temPassado?'Ainda vai entrar':'Vai entrar'}</small><b class="pos">${brl(passado?f.inTot:inFut)}</b></div>
-      <div class="t-pink"><small>💳 ${passado?'Saiu':temPassado?'Ainda falta pagar':'Contas do mês'}</small><b>${brl(passado?f.outTot:outFut)}</b></div>
+      <div class="t-mint"><small>💰 ${passado?'Entrou':carry!=null?'Vai ter':temPassado?'Ainda vai entrar':'Vai entrar'}</small><b class="pos">${brl(passado?f.inTot:inFut+Math.max(carry||0,0))}</b></div>
+      <div class="t-pink"><small>💳 ${passado?'Saiu':temPassado?'Ainda falta pagar':'Precisa pagar'}</small><b>${brl(passado?f.outTot:outFut+pagoDepois+Math.max(-(carry||0),0))}</b></div>
+    </div>
+    ${carry?`<p class="sub" style="margin:8px 0 0">${carry>0?`💰 Inclui <b>${brl(carry)}</b> ${carryTxt}.`:`💳 Inclui <b>${brl(-carry)}</b> que ${f.isBalMonth||(!db.balance&&M===THIS_MONTH)?'estão negativos na conta hoje':`faltaram em ${mLabel(addM(M,-1),{month:'long'})}`}.`}</p>`:''}
+    <div style="display:none">
     </div>
     ${temPassado&&!passado?`<p class="sub" style="margin:8px 0 0">Já aconteceu em ${nome}: recebido ${brl(inJa)} · pago ${brl(outJa)}. Isso não entra na conta acima, porque já saiu ou entrou da sua conta.</p>`:''}
     ${conta}${aviso}
   </div>
   <div class="card"><div class="grouphead"><h2>💰 Entradas de ${nome}</h2>${passado?`<span class="pos">${brl(f.inTot)}</span>`:inFut>0?`<span class="pos">a receber ${brl(inFut)}</span>`:f.inTot?`<span class="pos">✓ tudo recebido</span>`:''}</div>
     ${f.inTot&&!passado?`<p class="sub">Total do mês: ${brl(f.inTot)}${inJa?` · já recebido ${brl(inJa)}`:''}</p>`:''}
-    ${f.ins.length?`<ul class="list">${f.ins.map(linha).join('')}</ul>`:'<div class="empty">Nenhuma entrada prevista.</div>'}
+    ${(f.ins.length||carry>0)?`<ul class="list">${carry>0?`<li><span class="dot">👛</span><div class="main"><div class="t">${f.isBalMonth?'Já na conta':`Sobra de ${mLabel(addM(M,-1),{month:'long'})}`}</div><div class="m">${f.isBalMonth?carryTxt:`o que sobrar de ${mLabel(addM(M,-1),{month:'long'})} · diminui a cada gasto lançado lá`}</div></div><div class="amt pos">+ ${brl(carry)}</div></li>`:''}${f.ins.map(linha).join('')}</ul>`:'<div class="empty">Nenhuma entrada prevista.</div>'}
   </div>
   <div class="card"><div class="grouphead"><h2>💳 Contas de ${nome}</h2>${passado?`<span>${brl(f.outTot)}</span>`:(f.aPagar+f.bud)>0?`<span class="neg">falta ${brl(f.aPagar+f.bud)}</span>`:f.outTot?`<span class="pos">✓ tudo pago</span>`:''}</div>
     ${f.outTot||f.bud?`<p class="sub">Total do mês: ${brl(f.outTot + f.bud)}${f.pago?` · <span class="pos">já pago ${brl(f.pago)}</span>`:''}${!passado&&(f.aPagar+f.bud)>0?' · toque na bolinha quando pagar':''}</p>`:''}
@@ -3056,7 +3065,7 @@ function metasView(){
 /* ---------- atualização do app ----------
    A cada versão publicada, aumente APP_VERSION (e a versão do cache no sw.js).
    O app compara com o index.html publicado e, se mudou, mostra a faixa "Atualizar agora". */
-const APP_VERSION = '30';
+const APP_VERSION = '32';
 let ultimaChecagem = 0;
 async function versaoPublicada(){
   const r = await fetch(`./index.html?checar=${Date.now()}`, {cache:'no-store'});
@@ -3143,7 +3152,7 @@ function telaAcesso(motivo, depois){
       const r = await checarAcesso(cod);
       if(r.ok){
         localStorage.setItem(ACESSO_KEY, JSON.stringify({codigo:cod, status:r.status, valido_ate:r.valido_ate, nome:r.nome, plano:r.plano, checado:Date.now()}));
-        $('#sheetbg').classList.remove('open','intro'); render(); depois && depois();
+        $('#sheetbg').classList.remove('open','intro'); render(); depois && depois(); setTimeout(syncAoAbrir, 600);
       } else telaAcesso(r.status, depois);
     }catch(e){ $('#acMsg').textContent = 'Não consegui falar com o servidor. Verifique a internet.'; }
   };
@@ -3161,7 +3170,7 @@ async function verificarAcessoNaAbertura(depois){
   if(idade < 864e5 && !venceu) return depois();       // conferido há menos de 1 dia
   try{
     const r = await checarAcesso(sv.codigo);
-    if(r.ok){ localStorage.setItem(ACESSO_KEY, JSON.stringify({...sv, status:r.status, valido_ate:r.valido_ate, nome:r.nome, plano:r.plano, checado:Date.now()})); return depois(); }
+    if(r.ok){ localStorage.setItem(ACESSO_KEY, JSON.stringify({...sv, status:r.status, valido_ate:r.valido_ate, nome:r.nome, plano:r.plano, checado:Date.now()})); depois(); setTimeout(syncAoAbrir, 1200); return; }
     localStorage.setItem(ACESSO_KEY, JSON.stringify({...sv, status:r.status, checado:Date.now()}));
     telaAcesso(r.status, depois);
   }catch(e){
@@ -3176,6 +3185,139 @@ function acessoCard(){
   return `<div class="card"><h2>🔑 Seu acesso</h2>
     <p class="sub">${{ativo:'Assinatura ativa',cortesia:'Acesso cortesia',teste:'Período de teste'}[sv.status]||sv.status}${sv.valido_ate?` · válido até ${new Date(sv.valido_ate).toLocaleDateString('pt-BR')}`:''} · código ${mask}</p>
     <button class="btn sec" onclick="if(confirm('Sair deste código neste aparelho? Seus dados continuam aqui.')){localStorage.removeItem(ACESSO_KEY);telaAcesso('',()=>{})}">Usar outro código</button></div>`;
+}
+
+/* ---------- nuvem: os mesmos dados em vários aparelhos ----------
+   Os dados são criptografados AQUI (AES-256) com uma chave que sai do código + senha da pessoa.
+   O servidor só guarda o conteúdo embaralhado e um "resumo" da senha para conferir; não consegue ler nada. */
+const SYNC_KEY = 'cofrivo.sync';
+const syncCfg = () => { try{ return JSON.parse(localStorage.getItem(SYNC_KEY)||'null'); }catch(e){ return null; } };
+const setSyncCfg = c => c ? localStorage.setItem(SYNC_KEY, JSON.stringify(c)) : localStorage.removeItem(SYNC_KEY);
+function b64(buf){ const u = new Uint8Array(buf); let s=''; for(let i=0;i<u.length;i+=0x8000) s += String.fromCharCode.apply(null, u.subarray(i,i+0x8000)); return btoa(s); }
+const unb64 = s => Uint8Array.from(atob(s), ch=>ch.charCodeAt(0));
+async function derivarChaves(senha, codigo){
+  const enc = new TextEncoder(), base = await crypto.subtle.importKey('raw', enc.encode(senha), 'PBKDF2', false, ['deriveBits','deriveKey']);
+  const it = 150000;
+  const hash = await crypto.subtle.deriveBits({name:'PBKDF2', salt:enc.encode('cofrivo:auth:'+codigo), iterations:it, hash:'SHA-256'}, base, 256);
+  const key = await crypto.subtle.deriveKey({name:'PBKDF2', salt:enc.encode('cofrivo:chave:'+codigo), iterations:it, hash:'SHA-256'}, base, {name:'AES-GCM', length:256}, true, ['encrypt','decrypt']);
+  return {hash:b64(hash), chave:b64(await crypto.subtle.exportKey('raw', key))};
+}
+const chaveAES = raw => crypto.subtle.importKey('raw', unb64(raw), 'AES-GCM', false, ['encrypt','decrypt']);
+async function cifrar(obj, raw){ const iv = crypto.getRandomValues(new Uint8Array(12)); const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, await chaveAES(raw), new TextEncoder().encode(JSON.stringify(obj))); return b64(iv)+'.'+b64(ct); }
+async function decifrar(txt, raw){ const [iv,ct] = txt.split('.'); const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:unb64(iv)}, await chaveAES(raw), unb64(ct)); return JSON.parse(new TextDecoder().decode(pt)); }
+async function rpc(fn, body){
+  const r = await fetch(`${ACESSO_CFG.url}/rest/v1/rpc/${fn}`, {method:'POST', headers:{'Content-Type':'application/json','apikey':ACESSO_CFG.key, ...(ACESSO_CFG.key.startsWith('eyJ')?{'Authorization':`Bearer ${ACESSO_CFG.key}`}:{})}, body:JSON.stringify(body)});
+  if(!r.ok) throw new Error('servidor '+r.status);
+  return r.json();
+}
+const SYNC_ERROS = {senha:'Senha incorreta.', compartilhado:'Este é um código coletivo (cortesia para várias pessoas): ele não pode guardar dados na nuvem. Peça um código individual.', aparelho:'Este aparelho ainda não foi liberado para este código. Feche e abra o app para conferir o acesso.', acesso:'Seu acesso não está ativo.', grande:'Seus dados ficaram grandes demais para a nuvem.'};
+let syncTimer = null, syncOcupado = false;
+function syncAgendar(){ const c = syncCfg(); if(!c || !ACESSO_ON()) return; c.sujo = true; setSyncCfg(c); clearTimeout(syncTimer); syncTimer = setTimeout(syncEnviar, 4000); }
+async function syncEnviar(){
+  const c = syncCfg(); if(!c || syncOcupado || !navigator.onLine) return;
+  syncOcupado = true;
+  try{
+    const r = await rpc('sync_salvar', {p_codigo:c.codigo, p_dispositivo:dispositivoId(), p_senha_hash:c.hash, p_dados:await cifrar(db, c.chave), p_versao:c.versao||0});
+    if(r.ok){ const n = syncCfg(); if(n){ n.versao = r.versao; n.sujo = false; n.ultimo = Date.now(); setSyncCfg(n); } }
+    else if(r.erro==='conflito'){ syncOcupado = false; return syncPuxar(true); }
+    else if(r.erro==='senha'){ setSyncCfg(null); alert('A senha da nuvem foi trocada em outro aparelho. Ative a sincronização de novo em Mais → Dados.'); }
+  }catch(e){} finally { syncOcupado = false; }
+}
+async function syncPuxar(conflito){
+  const c = syncCfg(); if(!c || !ACESSO_ON() || !navigator.onLine) return;
+  try{
+    const r = await rpc('sync_carregar', {p_codigo:c.codigo, p_dispositivo:dispositivoId(), p_senha_hash:c.hash});
+    if(!r.ok || !r.existe) return;
+    if(!conflito && r.versao <= (c.versao||0)) return;           // nada novo
+    if(c.sujo) return telaConflito(r);                          // mudou aqui e lá: a pessoa escolhe
+    await aplicarNuvem(r);
+  }catch(e){}
+}
+async function aplicarNuvem(r){
+  const c = syncCfg();
+  const dados = await decifrar(r.dados, c.chave);
+  db = migrate(Object.assign(blank(), dados));
+  localStorage.setItem(KEY, JSON.stringify(db));                // sem reenviar
+  c.versao = r.versao; c.sujo = false; c.ultimo = Date.now(); setSyncCfg(c);
+  applyTheme(); render();
+}
+function telaConflito(r){
+  const quando = new Date(r.atualizado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  openSheet(`<h3>☁️ Qual versão manter? <button onclick="closeSheet()">Depois</button></h3>
+    <p class="sub">Seus dados mudaram <b>neste aparelho</b> e também <b>em outro</b> (em ${quando}). Escolha qual fica valendo:</p>
+    <button class="btn" id="cfNuvem">☁️ Usar a do outro aparelho</button>
+    <button class="btn sec" id="cfAqui">📱 Manter a deste aparelho</button>`);
+  $('#cfNuvem').onclick = async ()=>{ closeSheet(); await aplicarNuvem(r); };
+  $('#cfAqui').onclick = async ()=>{ const c = syncCfg(); c.versao = r.versao; c.sujo = true; setSyncCfg(c); closeSheet(); await syncEnviar(); };
+}
+async function syncAoAbrir(){
+  if(!ACESSO_ON()) return;
+  if(syncCfg()) return syncPuxar();
+  const sv = acessoSalvo(); if(!sv?.codigo || localStorage.getItem('cofrivo.sync.perguntado')===sv.codigo) return;
+  try{
+    const st_ = await rpc('sync_status', {p_codigo:sv.codigo, p_dispositivo:dispositivoId()});
+    if(st_.ok && st_.existe){ localStorage.setItem('cofrivo.sync.perguntado', sv.codigo); openNuvem(); }
+  }catch(e){}
+}
+async function openNuvem(){
+  if(!ACESSO_ON()) return;
+  const sv = acessoSalvo(); if(!sv?.codigo) return alert('Entre com seu código de acesso primeiro.');
+  const c = syncCfg();
+  if(c){
+    const ult = c.ultimo ? new Date(c.ultimo).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : 'ainda não';
+    return openSheet(`<h3>☁️ Sincronização ligada <button onclick="closeSheet()">Fechar</button></h3>
+      <p class="sub">Seus dados ficam guardados na nuvem, criptografados, e aparecem em qualquer aparelho com seu código e sua senha.</p>
+      <div class="need"><div class="line"><span>Última sincronização</span><b>${ult}</b></div>${c.sujo?'<div class="parts">Há mudanças esperando para subir.</div>':''}</div>
+      <button class="btn" onclick="closeSheet();syncEnviar().then(()=>syncPuxar()).then(()=>toastMsg('Sincronizado ☁️'))">Sincronizar agora</button>
+      <button class="btn danger" onclick="if(confirm('Desligar a sincronização neste aparelho? Os dados continuam aqui e na nuvem.')){setSyncCfg(null);closeSheet();render()}">Desligar neste aparelho</button>`);
+  }
+  openSheet(`<h3>☁️ Usar em vários aparelhos <button onclick="closeSheet()">Fechar</button></h3><p class="sub" id="nvMsg">Conferindo…</p>`);
+  let s;
+  try{ s = await rpc('sync_status', {p_codigo:sv.codigo, p_dispositivo:dispositivoId()}); }
+  catch(e){ $('#nvMsg').textContent = 'Sem conexão com o servidor agora. Tente de novo com internet.'; return; }
+  if(!s.ok){ $('#nvMsg').textContent = SYNC_ERROS[s.erro] || 'Não foi possível agora.'; return; }
+  const criar = !s.existe;
+  $('#sheet').innerHTML = `<h3>☁️ ${criar?'Guardar meus dados na nuvem':'Trazer meus dados da nuvem'} <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub">${criar
+      ? 'Crie uma senha. Com seu <b>código + essa senha</b>, seus dados aparecem em qualquer aparelho. Eles são criptografados no seu celular: <b>ninguém mais consegue ler</b>.'
+      : 'Já existem dados na nuvem para o seu código. Digite a sua senha para trazê-los para este aparelho.'}</p>
+    <label class="f"><span>Senha</span><input id="nvS1" type="password" autocomplete="${criar?'new-password':'current-password'}"></label>
+    ${criar?`<label class="f"><span>Repita a senha</span><input id="nvS2" type="password" autocomplete="new-password"></label>
+      <p class="hint">⚠️ Guarde essa senha. Se você esquecer, os dados da nuvem não podem ser recuperados (os deste aparelho continuam aqui).</p>`:''}
+    <button class="btn" id="nvOk">${criar?'Ativar e enviar meus dados':'Trazer meus dados'}</button>
+    ${criar?'':`<button class="btn sec" onclick="alert('Por segurança, ninguém consegue ver sua senha. Peça ao suporte para apagar os dados da nuvem do seu código; depois ative de novo com uma senha nova, a partir deste aparelho.')">Esqueci a senha</button>`}
+    <p class="hint" id="nvErro" style="color:var(--neg)"></p>`;
+  $('#nvOk').onclick = async ()=>{
+    const s1 = $('#nvS1').value;
+    if(s1.length < 6) return $('#nvErro').textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+    if(criar && s1 !== $('#nvS2').value) return $('#nvErro').textContent = 'As senhas não são iguais.';
+    $('#nvOk').textContent = 'Aguarde…';
+    try{
+      const k = await derivarChaves(s1, sv.codigo);
+      if(criar){
+        const r = await rpc('sync_salvar', {p_codigo:sv.codigo, p_dispositivo:dispositivoId(), p_senha_hash:k.hash, p_dados:await cifrar(db,k.chave), p_versao:0});
+        if(!r.ok){ $('#nvOk').textContent='Ativar e enviar meus dados'; return $('#nvErro').textContent = SYNC_ERROS[r.erro]||'Não foi possível.'; }
+        setSyncCfg({codigo:sv.codigo, hash:k.hash, chave:k.chave, versao:r.versao, sujo:false, ultimo:Date.now()});
+        closeSheet(); render(); toastMsg('Pronto! Seus dados estão na nuvem ☁️');
+      } else {
+        const r = await rpc('sync_carregar', {p_codigo:sv.codigo, p_dispositivo:dispositivoId(), p_senha_hash:k.hash});
+        if(!r.ok){ $('#nvOk').textContent='Trazer meus dados'; return $('#nvErro').textContent = SYNC_ERROS[r.erro]||'Não foi possível.'; }
+        const temAqui = db.tx.length || db.debts.length || db.salary;
+        if(temAqui && !confirm('Este aparelho já tem dados. Substituir pelos dados da nuvem?')){ $('#nvOk').textContent='Trazer meus dados'; return; }
+        setSyncCfg({codigo:sv.codigo, hash:k.hash, chave:k.chave, versao:0, sujo:false});
+        await aplicarNuvem(r); closeSheet(); toastMsg('Seus dados chegaram ☁️');
+      }
+    }catch(e){ $('#nvOk').textContent = criar?'Ativar e enviar meus dados':'Trazer meus dados'; $('#nvErro').textContent = 'Sem conexão com o servidor. Tente de novo.'; }
+  };
+}
+function toastMsg(m){ document.getElementById('pagoBar')?.remove(); const b = document.createElement('div'); b.id='pagoBar'; b.textContent = m; b.style.padding='10px 16px'; document.body.appendChild(b); setTimeout(()=>b.remove(), 3500); }
+function nuvemCard(){
+  if(!ACESSO_ON()) return '';
+  const c = syncCfg();
+  return `<div class="card"><h2>☁️ Usar em vários aparelhos</h2>
+    <p class="sub">${c?`Sincronização <b class="pos">ligada</b>${c.ultimo?` · última em ${new Date(c.ultimo).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`:''}`
+      :'Guarde seus dados na nuvem, criptografados, e acesse em outro celular ou no computador com seu código + senha.'}</p>
+    <button class="btn ${c?'sec':''}" onclick="openNuvem()">${c?'Ver sincronização':'Ativar'}</button></div>`;
 }
 
 /* ---------- instalar na tela inicial ----------
@@ -3332,9 +3474,10 @@ verificarAcessoNaAbertura(iniciarApp);
 // ao voltar para o app (ele pode ficar dias aberto em segundo plano): atualiza a data e confere o acesso
 setTimeout(()=>procurarAtualizacao(), 3000);
 document.addEventListener('visibilitychange', () => {
-  if(document.visibilityState !== 'visible') return;
+  if(document.visibilityState !== 'visible'){ if(syncCfg()?.sujo){ clearTimeout(syncTimer); syncEnviar(); } return; }
   procurarAtualizacao();
   if(atualizarHoje() && !$('#sheetbg').classList.contains('open')) render();
+  if(syncCfg()){ if(syncCfg().sujo) syncEnviar(); else syncPuxar(); }
   if(ACESSO_ON() && !$('#sheetbg').classList.contains('intro')) verificarAcessoNaAbertura(()=>{});
 });
 

@@ -95,7 +95,9 @@ function telaLogin(){
   $('#lgSenha').addEventListener('keydown',e=>{if(e.key==='Enter')entrar()});
 }
 async function carregar(){
-  try{ S.lista = await api('/rest/v1/acessos?select=*&order=criado_em.desc'); tela(); }
+  try{ S.lista = await api('/rest/v1/acessos?select=*&order=criado_em.desc');
+    S.nuvem = {}; try{ (await api('/rest/v1/dados_usuarios?select=codigo,atualizado_em')).forEach(n=>S.nuvem[n.codigo]=n.atualizado_em); }catch(e){} // tabela só existe depois do script 3
+    tela(); }
   catch(e){ if(String(e.message).includes('JWT')) return sair(); $('#app').innerHTML = `<div class="card">Não consegui carregar. ${esc(e.message)}<br><button onclick="sair()">Entrar de novo</button></div>`; }
 }
 function tela(){
@@ -141,14 +143,14 @@ function item(a){
     <div class="top"><div><span class="nome">${esc(a.nome||'(sem nome)')}</span> <span class="badge b-${a.est}">${{ativo:'ativo',teste:'teste',cortesia:'cortesia',vencido:'vencido',reembolsado:'reembolsado',cancelado:'cancelado',bloqueado:'bloqueado'}[a.est]}</span>
       <div class="m">${[a.email,a.telefone].filter(Boolean).map(esc).join(' · ')||'—'}</div></div>
       <div class="m" style="text-align:right">código <code>${esc(a.codigo)}</code><br>válido até <b>${a.valido_ate?dt(a.valido_ate):'sem vencimento'}</b></div></div>
-    <div class="m">${devs}/${a.max_dispositivos} aparelho(s) · último acesso ${a.ultimo_acesso?dt(a.ultimo_acesso):'nunca'} · criado em ${dt(a.criado_em)}${a.obs?' · '+esc(a.obs):''}</div>
+    <div class="m">${devTxt(a)}${S.nuvem?.[a.codigo]?` · ☁️ nuvem ${dt(S.nuvem[a.codigo])}`:''} · último acesso ${a.ultimo_acesso?dt(a.ultimo_acesso):'nunca'} · criado em ${dt(a.criado_em)}${a.obs?' · '+esc(a.obs):''}</div>
     <div class="acts">
       ${a.plano!=='cortesia'?`<button class="mini sec" onclick="renovar('${a.codigo}')">${a.plano==='anual'?'+1 ano':'+1 mês'}</button>`:''}
       ${['reembolsado','cancelado','bloqueado'].includes(a.status)?`<button class="mini sec" onclick="mudar('${a.codigo}','ativo')">Reativar</button>`
         :`<button class="mini danger" onclick="mudar('${a.codigo}','reembolsado','Reembolso: remover o acesso de ${esc(a.nome||a.codigo)}?')">Reembolsar</button>
           <button class="mini danger" onclick="mudar('${a.codigo}','cancelado','Cancelar a assinatura de ${esc(a.nome||a.codigo)}?')">Cancelar</button>
           <button class="mini danger" onclick="mudar('${a.codigo}','bloqueado','Pausar o acesso de ${esc(a.nome||a.codigo)}?')">Pausar</button>`}
-      ${devs?`<button class="mini sec" onclick="liberarAparelhos('${a.codigo}')">Liberar aparelhos</button>`:''}
+      <button class="mini sec" onclick="aparelhos('${a.codigo}')">📱 Aparelhos${devs?` (${devs})`:''}</button>
       <button class="mini sec" onclick="editar('${a.codigo}')">✏️ Editar</button>
       <button class="mini sec" onclick="copiarMsg('${a.codigo}')">Copiar mensagem</button>
       <button class="mini ghost" onclick="excluir('${a.codigo}')">Excluir</button>
@@ -204,7 +206,46 @@ async function salvarEdicao(c){
   try{ await patch(c, dados); fecharModal(); toast('Alterações salvas'); }catch(e){ alert('Não consegui salvar: '+e.message); }
 }
 async function mudar(c,status,pergunta){ if(pergunta && !confirm(pergunta)) return; await patch(c,{status}); toast('Pronto: '+status); }
-async function liberarAparelhos(c){ if(!confirm('Liberar os aparelhos deste código? A pessoa poderá entrar em um aparelho novo.')) return; await patch(c,{dispositivos:[]}); toast('Aparelhos liberados'); }
+/* ---------- aparelhos e nuvem de um código ---------- */
+const SEM_LIMITE = 999, COLETIVO = 10000;
+const devTxt = a => { const n = (a.dispositivos||[]).length;
+  return a.max_dispositivos>=COLETIVO ? `${n} aparelho(s) · código coletivo` : a.max_dispositivos>=SEM_LIMITE ? `${n} aparelho(s) · sem limite` : `${n}/${a.max_dispositivos} aparelho(s)`; };
+function aparelhos(c){
+  const a = S.lista.find(x=>x.codigo===c); if(!a) return;
+  const devs = a.dispositivos||[], nv = S.nuvem?.[c];
+  fecharModal();
+  const m = document.createElement('div'); m.id='modal';
+  m.innerHTML = `<div class="card mbox"><div class="top"><h2>📱 Aparelhos de ${esc(a.nome||a.codigo)}</h2><button class="ghost" onclick="fecharModal()">Fechar</button></div>
+    <p class="m">${devTxt(a)}. Cada celular, computador ou navegador diferente conta como um aparelho.</p>
+    ${devs.length ? devs.map((d,i)=>`<div class="item" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span>Aparelho ${i+1} <span class="m">· ${esc(String(d).slice(0,8))}</span></span>
+        <button class="mini danger" onclick="removerAparelho('${c}',${i})">Remover</button></div>`).join('')
+      : '<p class="hint">Nenhum aparelho entrou com este código ainda.</p>'}
+    <div class="acts">
+      ${a.max_dispositivos<SEM_LIMITE?`<button class="mini" onclick="maisAparelho('${c}')">+1 aparelho</button>
+      <button class="mini sec" onclick="limiteAparelhos('${c}',${SEM_LIMITE})">Sem limite</button>`
+      : a.max_dispositivos<COLETIVO?`<button class="mini sec" onclick="limiteAparelhos('${c}',Math.max(2,${devs.length}))">Voltar a ter limite</button>`:''}
+      ${devs.length?`<button class="mini sec" onclick="liberarAparelhos('${c}')">Liberar todos</button>`:''}
+    </div>
+    ${a.max_dispositivos<COLETIVO?`<h2 style="margin-top:18px">☁️ Dados na nuvem</h2>
+      ${nv?`<p class="m">A pessoa guarda os dados na nuvem (última atualização ${new Date(nv).toLocaleString('pt-BR')}). Os dados são criptografados: ninguém consegue ler, nem você.</p>
+        <p class="m">Se ela <b>esqueceu a senha</b>, apague os dados da nuvem; ela ativa de novo com uma senha nova, no aparelho que tem os dados.</p>
+        <div class="acts"><button class="mini danger" onclick="apagarNuvem('${c}')">Apagar dados da nuvem</button></div>`
+      : '<p class="m">Esta pessoa ainda não ativou a nuvem.</p>'}`:''}
+  </div>`;
+  document.body.appendChild(m);
+}
+async function salvarAparelhos(c, dados, msg){ try{ await patch(c, dados); aparelhos(c); toast(msg); }catch(e){ alert('Não consegui salvar: '+e.message); } }
+function removerAparelho(c, i){ const a = S.lista.find(x=>x.codigo===c); if(!confirm(`Remover o aparelho ${i+1}? Ele vai pedir o código de novo e só entra se houver vaga.`)) return;
+  salvarAparelhos(c, {dispositivos:(a.dispositivos||[]).filter((_,j)=>j!==i)}, 'Aparelho removido'); }
+function maisAparelho(c){ const a = S.lista.find(x=>x.codigo===c); salvarAparelhos(c, {max_dispositivos:a.max_dispositivos+1}, `Agora: ${a.max_dispositivos+1} aparelhos`); }
+function limiteAparelhos(c, n){ salvarAparelhos(c, {max_dispositivos:n}, n>=SEM_LIMITE?'Sem limite de aparelhos':`Limite: ${n} aparelhos`); }
+function liberarAparelhos(c){ if(!confirm('Liberar todos os aparelhos deste código? Cada um vai pedir o código de novo ao conferir o acesso.')) return; salvarAparelhos(c, {dispositivos:[]}, 'Aparelhos liberados'); }
+async function apagarNuvem(c){
+  if(!confirm('Apagar os dados da nuvem deste código? Os dados que estão nos aparelhos da pessoa continuam lá. Não dá para desfazer.')) return;
+  try{ await api(`/rest/v1/dados_usuarios?codigo=eq.${encodeURIComponent(c)}`,{method:'DELETE'}); delete S.nuvem[c]; tela(); aparelhos(c); toast('Dados da nuvem apagados'); }
+  catch(e){ alert('Não consegui apagar: '+e.message); }
+}
 async function excluir(c){ if(!confirm('Excluir este acesso de vez? (Para reembolso, prefira “Reembolsar”, que guarda o histórico.)')) return;
   await api(`/rest/v1/acessos?codigo=eq.${encodeURIComponent(c)}`,{method:'DELETE'}); S.lista=S.lista.filter(x=>x.codigo!==c); tela(); }
 async function copiarMsg(c){ const a=S.lista.find(x=>x.codigo===c); try{ await navigator.clipboard.writeText(msgCliente(a)); toast('Mensagem copiada'); }catch(e){ prompt('Copie a mensagem:', msgCliente(a)); } }

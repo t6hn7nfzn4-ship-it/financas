@@ -91,11 +91,46 @@ function telaLogin(){
     <div class="card" style="max-width:420px"><h2>Entrar</h2>
       <label><span>E-mail</span><input id="lgEmail" type="email" autocomplete="username"></label>
       <label><span>Senha</span><input id="lgSenha" type="password" autocomplete="current-password"></label>
-      <button onclick="entrar()">Entrar</button><p class="hint" id="lgMsg"></p></div>`;
+      <button onclick="entrar()">Entrar</button><p class="hint" id="lgMsg"></p>
+      <p class="m" style="margin-top:14px">Foi convidada(o) para administrar? <a href="#" onclick="telaCriarSenha();return false">Criar minha senha</a></p></div>`;
   $('#lgSenha').addEventListener('keydown',e=>{if(e.key==='Enter')entrar()});
 }
+function telaCriarSenha(){
+  $('#app').innerHTML = `<h1><img src="icon-light-64.png" alt="">Painel do Cofrivo</h1>
+    <div class="card" style="max-width:420px"><h2>Criar minha senha</h2>
+      <p class="m">Use o e-mail que foi liberado como administrador.</p>
+      <label><span>E-mail</span><input id="cdEmail" type="email" autocomplete="username"></label>
+      <label><span>Senha (mínimo 8 caracteres)</span><input id="cdS1" type="password" autocomplete="new-password"></label>
+      <label><span>Repita a senha</span><input id="cdS2" type="password" autocomplete="new-password"></label>
+      <button onclick="criarSenha()">Criar senha</button><p class="hint" id="cdMsg"></p>
+      <p class="m" style="margin-top:14px"><a href="#" onclick="telaLogin();return false">Voltar para entrar</a></p></div>`;
+}
+async function criarSenha(){
+  const email=$('#cdEmail').value.trim().toLowerCase(), s1=$('#cdS1').value;
+  if(!/^\S+@\S+\.\S+$/.test(email)) return $('#cdMsg').textContent='Digite um e-mail válido.';
+  if(s1.length<8) return $('#cdMsg').textContent='A senha precisa ter pelo menos 8 caracteres.';
+  if(s1!==$('#cdS2').value) return $('#cdMsg').textContent='As senhas não são iguais.';
+  $('#cdMsg').textContent='Criando…';
+  try{
+    const r = await fetch(CFG.url+'/auth/v1/signup',{method:'POST',headers:{'apikey':CFG.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:s1})});
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok){ const m = String(j.msg||j.message||j.error_description||'');
+      return $('#cdMsg').textContent = /registered|already/i.test(m) ? 'Este e-mail já tem senha. Volte e entre normalmente.'
+        : /disabled|not allowed/i.test(m) ? 'O cadastro está desligado no servidor. Peça para quem te convidou criar seu login no Supabase.' : 'Não consegui criar: '+m; }
+    if(j.access_token){ S.token=j.access_token; S.refresh=j.refresh_token; S.email=email; sessionStorage.setItem('cof.adm',JSON.stringify({t:S.token,r:S.refresh,e:email})); return carregar(); }
+    $('#app').innerHTML = `<h1><img src="icon-light-64.png" alt="">Painel do Cofrivo</h1><div class="card" style="max-width:420px"><h2>📧 Confirme seu e-mail</h2>
+      <p>Enviamos um e-mail para <b>${esc(email)}</b>. Abra e toque no link de confirmação; depois volte aqui e entre com seu e-mail e senha.</p>
+      <button onclick="telaLogin()">Ir para entrar</button></div>`;
+  }catch(e){ $('#cdMsg').textContent='Sem conexão com o servidor.'; }
+}
 async function carregar(){
-  try{ S.lista = await api('/rest/v1/acessos?select=*&order=criado_em.desc');
+  try{
+    S.admins = await api('/rest/v1/admins?select=*');
+    if(!S.admins.length){ // logou, mas o e-mail não está na lista de administradores
+      $('#app').innerHTML = `<h1><img src="icon-light-64.png" alt="">Painel do Cofrivo</h1><div class="card" style="max-width:420px"><h2>Sem permissão</h2>
+        <p>O e-mail <b>${esc(S.email)}</b> ainda não foi liberado como administrador. Peça para quem cuida do painel liberar.</p><button onclick="sair()">Sair</button></div>`;
+      return; }
+    S.lista = await api('/rest/v1/acessos?select=*&order=criado_em.desc');
     S.nuvem = {}; try{ (await api('/rest/v1/dados_usuarios?select=codigo,atualizado_em')).forEach(n=>S.nuvem[n.codigo]=n.atualizado_em); }catch(e){} // tabela só existe depois do script 3
     tela(); }
   catch(e){ if(String(e.message).includes('JWT')) return sair(); $('#app').innerHTML = `<div class="card">Não consegui carregar. ${esc(e.message)}<br><button onclick="sair()">Entrar de novo</button></div>`; }
@@ -108,7 +143,7 @@ function tela(){
   const b = S.busca.toLowerCase();
   const vis = L.filter(filtros[S.filtro]).filter(a=>!b || [a.nome,a.email,a.telefone,a.codigo,a.obs].join(' ').toLowerCase().includes(b));
   $('#app').innerHTML = `
-  <div class="top"><h1><img src="icon-light-64.png" alt="">Painel do Cofrivo</h1><button class="ghost" onclick="sair()">Sair (${esc(S.email)})</button></div>
+  <div class="top"><h1><img src="icon-light-64.png" alt="">Painel do Cofrivo</h1><div><button class="mini sec" onclick="administradores()">👑 Administradores (${(S.admins||[]).length})</button> <button class="ghost" onclick="sair()">Sair (${esc(S.email)})</button></div></div>
   <div class="stats">
     <div class="stat" style="background:var(--mint)"><small>Assinaturas ativas</small><b>${conta(a=>a.est==='ativo')}</b></div>
     <div class="stat" style="background:var(--butter)"><small>Vencem em 5 dias</small><b>${conta(em5)}</b></div>
@@ -206,6 +241,46 @@ async function salvarEdicao(c){
   try{ await patch(c, dados); fecharModal(); toast('Alterações salvas'); }catch(e){ alert('Não consegui salvar: '+e.message); }
 }
 async function mudar(c,status,pergunta){ if(pergunta && !confirm(pergunta)) return; await patch(c,{status}); toast('Pronto: '+status); }
+/* ---------- administradores: quem pode entrar e mexer no painel ---------- */
+const PAINEL_LINK = location.href.split('?')[0].split('#')[0];
+const msgAdmin = a => `Oi${a.nome?', '+a.nome.split(' ')[0]:''}! Liberei você como administrador(a) do painel do Cofrivo.\n\n1) Abra: ${PAINEL_LINK}\n2) Toque em "Criar minha senha" e use este e-mail: ${a.email}\n3) Confirme pelo link que chegar no seu e-mail e depois entre com seu e-mail e senha.`;
+function administradores(){
+  fecharModal();
+  const eu = S.email.toLowerCase();
+  const m = document.createElement('div'); m.id='modal';
+  m.innerHTML = `<div class="card mbox"><div class="top"><h2>👑 Administradores</h2><button class="ghost" onclick="fecharModal()">Fechar</button></div>
+    <p class="m">Quem está aqui entra no painel e pode fazer tudo: criar e editar códigos, reembolsar, liberar aparelhos, apagar dados da nuvem e liberar outros administradores.</p>
+    ${(S.admins||[]).map(a=>`<div class="item" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <div><b>${esc(a.nome||a.email)}</b>${a.email.toLowerCase()===eu?' <span class="badge b-cortesia">você</span>':''}<div class="m">${esc(a.email)}${a.adicionado_por?` · liberado por ${esc(a.adicionado_por)}`:''}${a.adicionado_em?` em ${dt(a.adicionado_em)}`:''}</div></div>
+      <div class="acts" style="margin:0">${a.email.toLowerCase()!==eu?`<button class="mini sec" onclick="copiarMsgAdmin('${esc(a.email)}')">Copiar convite</button>
+        <button class="mini danger" onclick="removerAdmin('${esc(a.email)}')">Remover</button>`:''}</div></div>`).join('')}
+    <h2 style="margin-top:16px">➕ Liberar novo administrador</h2>
+    <div class="row"><label><span>Nome</span><input id="adNome"></label><label><span>E-mail</span><input id="adEmail" type="email"></label></div>
+    <button onclick="addAdmin()">Liberar acesso ao painel</button>
+    <div id="adRes"></div></div>`;
+  document.body.appendChild(m);
+}
+async function addAdmin(){
+  const email = $('#adEmail').value.trim().toLowerCase(), nome = $('#adNome').value.trim()||null;
+  if(!/^\S+@\S+\.\S+$/.test(email)) return alert('Digite um e-mail válido.');
+  if((S.admins||[]).some(a=>a.email.toLowerCase()===email)) return alert('Este e-mail já é administrador.');
+  if(!confirm(`Liberar ${email} como administrador? Essa pessoa vai poder fazer tudo no painel.`)) return;
+  try{
+    const r = await api('/rest/v1/admins',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({email,nome,adicionado_por:S.email})});
+    S.admins.push((r&&r[0])||{email,nome,adicionado_por:S.email,adicionado_em:new Date().toISOString()}); tela(); administradores();
+    const a = S.admins.find(x=>x.email===email);
+    $('#adRes').innerHTML = `<p>✅ Liberado. Mande o convite:</p><div class="msg">${esc(msgAdmin(a))}</div>
+      <div class="acts"><button class="mini" onclick="copiarMsgAdmin('${esc(email)}')">Copiar convite</button></div>`;
+  }catch(e){ alert(/row-level|policy|permission/i.test(e.message)?'O servidor ainda não permite isso. Rode o arquivo 4-administradores.sql no Supabase.':'Não consegui liberar: '+e.message); }
+}
+async function removerAdmin(email){
+  if(!confirm(`Remover ${email} dos administradores? A pessoa perde o acesso ao painel na hora.`)) return;
+  try{ await api(`/rest/v1/admins?email=eq.${encodeURIComponent(email)}`,{method:'DELETE',headers:{Prefer:'return=representation'}});
+    S.admins = S.admins.filter(a=>a.email!==email); tela(); administradores(); toast('Administrador removido'); }
+  catch(e){ const m = e.message.match(/"message":"([^"]+)"/); alert('Não consegui remover: '+(m?m[1]:e.message)); }
+}
+async function copiarMsgAdmin(email){ const a = S.admins.find(x=>x.email===email); try{ await navigator.clipboard.writeText(msgAdmin(a)); toast('Convite copiado'); }catch(e){ prompt('Copie o convite:', msgAdmin(a)); } }
+
 /* ---------- aparelhos e nuvem de um código ---------- */
 const SEM_LIMITE = 999, COLETIVO = 10000;
 const devTxt = a => { const n = (a.dispositivos||[]).length;

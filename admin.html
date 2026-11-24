@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="icon-light-64.png">
+<title>Cofrivo · Painel de acessos</title>
+<style>
+:root{--bg:#fbf7f5;--card:#fff;--line:#f0e6ea;--ink:#2b2530;--ink2:#6e6573;--ink3:#a39aa8;--accent:#c94f7c;--soft:#fde4ec;--mint:#d4f1e2;--pink:#fcdde8;--butter:#fff2c9;--lilac:#e8e0fb;--pos:#2c8560;--neg:#c8435a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:16px}
+h1{font:700 22px ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;margin:8px 0;display:flex;align-items:center;gap:10px}
+h1 img{width:36px;height:36px;border-radius:9px}
+h2{font-size:16px;margin:0 0 8px}
+.card{background:var(--card);border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 2px 10px rgba(120,70,100,.07)}
+input,select,textarea{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+label{display:block;margin:8px 0}label span{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:3px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:var(--accent);color:#fff;font-weight:600}
+button.sec{background:var(--soft);color:var(--accent)}button.ghost{background:none;color:var(--ink2);padding:6px 8px}
+button.mini{padding:6px 10px;font-size:13px;font-weight:600}
+.danger{background:#fde2e5;color:var(--neg)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.stat{border-radius:14px;padding:10px 12px}.stat b{display:block;font-size:22px}
+.stat small{color:var(--ink2)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.chip{background:var(--bg);border:1px solid var(--line);color:var(--ink);font-weight:500;padding:6px 12px;border-radius:999px}
+.chip.on{background:var(--pink);border-color:var(--accent)}
+.item{border-top:1px solid var(--line);padding:12px 0}
+.item:first-child{border-top:0}
+.top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.nome{font-weight:650}.m{font-size:12.5px;color:var(--ink2)}
+.badge{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;font-weight:600}
+.b-ativo,.b-teste{background:var(--mint);color:var(--pos)}.b-cortesia{background:var(--lilac);color:#5b46b0}
+.b-vencido{background:var(--butter);color:#a86a00}.b-reembolsado,.b-cancelado,.b-bloqueado{background:#fde2e5;color:var(--neg)}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+code{background:var(--bg);padding:2px 6px;border-radius:6px;font-size:13px}
+.msg{white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:10px;font-size:13px}
+.hint{font-size:12.5px;color:var(--ink3)}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;display:none;z-index:9}
+</style>
+</head>
+<body><div class="wrap" id="app"></div><div id="toast"></div>
+<script>
+/* ===== Painel de acessos do Cofrivo =====
+   Use o mesmo endereço e a mesma chave pública do app (ACESSO_CFG no index.html). */
+const CFG = {url:'https://etcxpiwjmcjwwuyomceg.supabase.co', key:'sb_publishable_VQ-XW5YUXKc7jx_83GtK0g_k0Xm7QvV'};
+const APP_LINK = location.href.replace(/admin\.html.*$/,'');
+const S = {token:null, refresh:null, email:'', lista:[], filtro:'todos', busca:''};
+const $ = s => document.querySelector(s);
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dt = d => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
+const toast = m => { const t=$('#toast'); t.textContent=m; t.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display='none',2200); };
+const addMes = (d,n=1) => { const x = new Date(d && new Date(d)>new Date() ? d : Date.now()); x.setMonth(x.getMonth()+n); return x.toISOString(); };
+const addDias = n => new Date(Date.now()+n*864e5).toISOString();
+function novoCodigo(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r=()=>Array.from(crypto.getRandomValues(new Uint8Array(4)),b=>A[b%A.length]).join(''); return `COF-${r()}-${r()}`; }
+function estado(a){ if(['ativo','cortesia','teste'].includes(a.status) && a.valido_ate && new Date(a.valido_ate)<new Date()) return 'vencido'; return a.status; }
+
+async function api(path, opt={}){
+  const auth = S.token ? {'Authorization':'Bearer '+S.token} : CFG.key.startsWith('eyJ') ? {'Authorization':'Bearer '+CFG.key} : {};
+  const r = await fetch(CFG.url+path, {...opt, headers:{'apikey':CFG.key,...auth,'Content-Type':'application/json',...(opt.headers||{})}});
+  if(r.status===401 && S.refresh){ if(await renovarSessao()) return api(path,opt); }
+  if(!r.ok){ const t = await r.text(); throw new Error(t||r.status); }
+  return r.status===204 ? null : r.json();
+}
+async function renovarSessao(){
+  try{ const r = await fetch(CFG.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':CFG.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:S.refresh})});
+    if(!r.ok) return false; const j = await r.json(); S.token=j.access_token; S.refresh=j.refresh_token; sessionStorage.setItem('cof.adm',JSON.stringify({t:S.token,r:S.refresh,e:S.email})); return true; }catch(e){ return false; }
+}
+async function entrar(){
+  const email=$('#lgEmail').value.trim(), senha=$('#lgSenha').value;
+  $('#lgMsg').textContent='Entrando…';
+  const r = await fetch(CFG.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':CFG.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:senha})});
+  if(!r.ok){ $('#lgMsg').textContent='E-mail ou senha incorretos.'; return; }
+  const j = await r.json(); S.token=j.access_token; S.refresh=j.refresh_token; S.email=email;
+  sessionStorage.setItem('cof.adm',JSON.stringify({t:S.token,r:S.refresh,e:email}));
+  carregar();
+}
+function sair(){ sessionStorage.removeItem('cof.adm'); S.token=null; telaLogin(); }
+
+function telaConfig(){
+  $('#app').innerHTML = `<h1><img src="icon-light-64.png" alt="">Painel do Cofrivo</h1>
+    <div class="card"><h2>Falta conectar o servidor</h2><p>Preencha <code>CFG.url</code> e <code>CFG.key</code> no início deste arquivo com os dados do seu projeto Supabase (os mesmos do app).</p></div>`;
+}
+function telaLogin(){
+  $('#app').innerHTML = `<h1><img src="icon-light-64.png" alt="">Painel do Cofrivo</h1>
+    <div class="card" style="max-width:420px"><h2>Entrar</h2>
+      <label><span>E-mail</span><input id="lgEmail" type="email" autocomplete="username"></label>
+      <label><span>Senha</span><input id="lgSenha" type="password" autocomplete="current-password"></label>
+      <button onclick="entrar()">Entrar</button><p class="hint" id="lgMsg"></p></div>`;
+  $('#lgSenha').addEventListener('keydown',e=>{if(e.key==='Enter')entrar()});
+}
+async function carregar(){
+  try{ S.lista = await api('/rest/v1/acessos?select=*&order=criado_em.desc'); tela(); }
+  catch(e){ if(String(e.message).includes('JWT')) return sair(); $('#app').innerHTML = `<div class="card">Não consegui carregar. ${esc(e.message)}<br><button onclick="sair()">Entrar de novo</button></div>`; }
+}
+function tela(){
+  const L = S.lista.map(a=>({...a, est:estado(a)}));
+  const conta = f => L.filter(f).length;
+  const em5 = a => ['ativo','teste'].includes(a.est) && a.valido_ate && new Date(a.valido_ate) - new Date() < 5*864e5;
+  const filtros = {todos:()=>true, ativos:a=>['ativo','teste','cortesia'].includes(a.est), vencendo:em5, vencidos:a=>a.est==='vencido', encerrados:a=>['reembolsado','cancelado','bloqueado'].includes(a.est)};
+  const b = S.busca.toLowerCase();
+  const vis = L.filter(filtros[S.filtro]).filter(a=>!b || [a.nome,a.email,a.telefone,a.codigo,a.obs].join(' ').toLowerCase().includes(b));
+  $('#app').innerHTML = `
+  <div class="top"><h1><img src="icon-light-64.png" alt="">Painel do Cofrivo</h1><button class="ghost" onclick="sair()">Sair (${esc(S.email)})</button></div>
+  <div class="stats">
+    <div class="stat" style="background:var(--mint)"><small>Assinaturas ativas</small><b>${conta(a=>a.est==='ativo')}</b></div>
+    <div class="stat" style="background:var(--butter)"><small>Vencem em 5 dias</small><b>${conta(em5)}</b></div>
+    <div class="stat" style="background:var(--pink)"><small>Vencidas</small><b>${conta(a=>a.est==='vencido')}</b></div>
+    <div class="stat" style="background:var(--lilac)"><small>Cortesia / teste</small><b>${conta(a=>['cortesia','teste'].includes(a.est))}</b></div>
+  </div>
+  <div class="card"><h2>➕ Liberar acesso para alguém</h2>
+    <div class="row">
+      <label><span>Nome</span><input id="nNome"></label>
+      <label><span>E-mail</span><input id="nEmail" type="email"></label>
+      <label><span>WhatsApp</span><input id="nTel" inputmode="tel"></label>
+    </div>
+    <div class="row">
+      <label><span>Tipo</span><select id="nPlano"><option value="mensal">Assinatura mensal</option><option value="teste">Teste grátis (7 dias)</option><option value="cortesia">Cortesia (sem vencimento)</option></select></label>
+      <label><span>Aparelhos permitidos</span><input id="nMax" inputmode="numeric" value="2"></label>
+      <label><span>Observação</span><input id="nObs" placeholder="Ex.: comprou pelo Instagram"></label>
+    </div>
+    <button onclick="criar()">Gerar código de acesso</button>
+    <div id="nRes"></div>
+  </div>
+  <div class="card"><h2>👥 Acessos (${L.length})</h2>
+    <input placeholder="Buscar por nome, e-mail, código…" value="${esc(S.busca)}" oninput="S.busca=this.value;tela();this.focus();this.setSelectionRange(this.value.length,this.value.length)">
+    <div class="chips">${[['todos','Todos'],['ativos','Ativos'],['vencendo','Vencendo'],['vencidos','Vencidos'],['encerrados','Encerrados']].map(([k,l])=>`<button class="chip ${S.filtro===k?'on':''}" onclick="S.filtro='${k}';tela()">${l}</button>`).join('')}</div>
+    ${vis.length?vis.map(item).join(''):'<p class="hint">Nada por aqui.</p>'}
+  </div>
+  <div class="card"><h2>ℹ️ Desistência em 7 dias (CDC, art. 49)</h2>
+    <p class="m">Se a pessoa desistir da compra em até 7 dias, devolva o dinheiro e toque em <b>Reembolsar</b> no acesso dela. O app dela bloqueia na próxima vez que conferir o acesso (em até 24 horas com internet). Os dados financeiros ficam no celular dela e ela pode exportar um backup.</p></div>`;
+}
+function item(a){
+  const devs = (a.dispositivos||[]).length;
+  return `<div class="item">
+    <div class="top"><div><span class="nome">${esc(a.nome||'(sem nome)')}</span> <span class="badge b-${a.est}">${{ativo:'ativo',teste:'teste',cortesia:'cortesia',vencido:'vencido',reembolsado:'reembolsado',cancelado:'cancelado',bloqueado:'bloqueado'}[a.est]}</span>
+      <div class="m">${[a.email,a.telefone].filter(Boolean).map(esc).join(' · ')||'—'}</div></div>
+      <div class="m" style="text-align:right">código <code>${esc(a.codigo)}</code><br>válido até <b>${a.valido_ate?dt(a.valido_ate):'sem vencimento'}</b></div></div>
+    <div class="m">${devs}/${a.max_dispositivos} aparelho(s) · último acesso ${a.ultimo_acesso?dt(a.ultimo_acesso):'nunca'} · criado em ${dt(a.criado_em)}${a.obs?' · '+esc(a.obs):''}</div>
+    <div class="acts">
+      ${a.plano!=='cortesia'?`<button class="mini sec" onclick="renovar('${a.codigo}')">+1 mês</button>`:''}
+      ${['reembolsado','cancelado','bloqueado'].includes(a.status)?`<button class="mini sec" onclick="mudar('${a.codigo}','ativo')">Reativar</button>`
+        :`<button class="mini danger" onclick="mudar('${a.codigo}','reembolsado','Reembolso: remover o acesso de ${esc(a.nome||a.codigo)}?')">Reembolsar</button>
+          <button class="mini danger" onclick="mudar('${a.codigo}','cancelado','Cancelar a assinatura de ${esc(a.nome||a.codigo)}?')">Cancelar</button>
+          <button class="mini danger" onclick="mudar('${a.codigo}','bloqueado','Pausar o acesso de ${esc(a.nome||a.codigo)}?')">Pausar</button>`}
+      ${devs?`<button class="mini sec" onclick="liberarAparelhos('${a.codigo}')">Liberar aparelhos</button>`:''}
+      <button class="mini sec" onclick="copiarMsg('${a.codigo}')">Copiar mensagem</button>
+      <button class="mini ghost" onclick="excluir('${a.codigo}')">Excluir</button>
+    </div></div>`;
+}
+const msgCliente = a => `Oi${a.nome?', '+a.nome.split(' ')[0]:''}! 💗 Seu acesso ao Cofrivo está liberado.\n\n1) Abra: ${APP_LINK}\n   (no iPhone, abra pelo Safari e toque em Compartilhar → Adicionar à Tela de Início)\n2) Digite seu código: ${a.codigo}\n\nQualquer dúvida, é só me chamar.`;
+async function criar(){
+  const plano = $('#nPlano').value;
+  const a = {codigo:novoCodigo(), nome:$('#nNome').value.trim()||null, email:$('#nEmail').value.trim()||null, telefone:$('#nTel').value.trim()||null,
+    plano, status: plano==='cortesia'?'cortesia':plano==='teste'?'teste':'ativo',
+    valido_ate: plano==='mensal'?addMes(null):plano==='teste'?addDias(7):null,
+    max_dispositivos: Math.max(1,parseInt($('#nMax').value)||2), obs:$('#nObs').value.trim()||null};
+  try{
+    await api('/rest/v1/acessos',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(a)});
+    S.lista.unshift({...a,dispositivos:[],criado_em:new Date().toISOString()});
+    tela();
+    $('#nRes').innerHTML = `<p>✅ Código criado: <code>${a.codigo}</code></p><div class="msg">${esc(msgCliente(a))}</div>
+      <div class="acts"><button class="mini" onclick="copiarMsg('${a.codigo}')">Copiar mensagem</button>
+      ${a.telefone?`<a href="https://wa.me/${zap(a.telefone)}?text=${encodeURIComponent(msgCliente(a))}" target="_blank"><button class="mini sec">Enviar no WhatsApp</button></a>`:''}</div>`;
+  }catch(e){ alert('Não consegui criar: '+e.message); }
+}
+const zap = t => { let n=String(t).replace(/\D/g,''); if(n.length<=11) n='55'+n; return n; };
+async function patch(codigo, dados){
+  await api(`/rest/v1/acessos?codigo=eq.${encodeURIComponent(codigo)}`,{method:'PATCH',body:JSON.stringify({...dados,atualizado_em:new Date().toISOString()})});
+  Object.assign(S.lista.find(x=>x.codigo===codigo), dados); tela();
+}
+async function renovar(c){ const a=S.lista.find(x=>x.codigo===c); await patch(c,{valido_ate:addMes(a.valido_ate), status: a.status==='teste'?'ativo':a.status==='vencido'?'ativo':a.status, plano:'mensal'}); toast('Renovado até '+dt(S.lista.find(x=>x.codigo===c).valido_ate)); }
+async function mudar(c,status,pergunta){ if(pergunta && !confirm(pergunta)) return; await patch(c,{status}); toast('Pronto: '+status); }
+async function liberarAparelhos(c){ if(!confirm('Liberar os aparelhos deste código? A pessoa poderá entrar em um aparelho novo.')) return; await patch(c,{dispositivos:[]}); toast('Aparelhos liberados'); }
+async function excluir(c){ if(!confirm('Excluir este acesso de vez? (Para reembolso, prefira “Reembolsar”, que guarda o histórico.)')) return;
+  await api(`/rest/v1/acessos?codigo=eq.${encodeURIComponent(c)}`,{method:'DELETE'}); S.lista=S.lista.filter(x=>x.codigo!==c); tela(); }
+async function copiarMsg(c){ const a=S.lista.find(x=>x.codigo===c); try{ await navigator.clipboard.writeText(msgCliente(a)); toast('Mensagem copiada'); }catch(e){ prompt('Copie a mensagem:', msgCliente(a)); } }
+
+(function(){
+  if(!CFG.url || !CFG.key) return telaConfig();
+  const s = JSON.parse(sessionStorage.getItem('cof.adm')||'null');
+  if(s){ S.token=s.t; S.refresh=s.r; S.email=s.e; carregar(); } else telaLogin();
+})();
+</script>
+</body>
+</html>

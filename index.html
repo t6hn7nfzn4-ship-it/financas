@@ -57,6 +57,23 @@ body[data-mode="dark"] .xp .prog{background:var(--line)}
 body[data-mode="dark"] .garden rect:first-child{fill:#1f2a24}
 body[data-mode="dark"] .seg button.on{color:var(--ink)}
 .appicon{width:96px;height:96px;border-radius:22px;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.resumo .duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.resumo .duo > div{border-radius:16px;padding:12px 14px;background:rgba(255,255,255,.55)}
+body[data-mode="dark"] .resumo .duo > div{background:rgba(0,0,0,.25)}
+.resumo .duo small{display:block;font-size:12px;color:var(--ink2)}
+.resumo .duo b{display:block;font-size:22px;margin-top:2px;font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif}
+.dday.sm{width:30px;font-size:15px}
+details.porDia > summary{list-style:none;cursor:pointer}
+details.porDia > summary::-webkit-details-marker{display:none}
+details.porDia > summary h2{display:flex;justify-content:space-between}
+details.porDia > summary h2::after{content:"›";color:var(--ink3);transition:transform .2s}
+details.porDia[open] > summary h2::after{transform:rotate(90deg)}
+details.porDia > .card{box-shadow:none;border:1px solid var(--line);margin:12px 0 0}
+.per{font-size:16px;font-weight:600;color:var(--ink2);margin-left:4px}
+.duo2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 6px}.duo2>div{border-radius:14px;padding:10px 12px}.duo2 small{display:block;font-size:12px;color:var(--ink2)}.duo2 b{font-size:19px}
+.verdict{display:flex;gap:10px;align-items:center;border-radius:14px;padding:12px 14px;margin-top:8px;font-size:16px}.verdict span{font-size:24px}
+.pbars text{font-size:9px;fill:var(--ink3)}
+.meta details summary{color:var(--accent);font-size:14px;cursor:pointer}
 .modeopts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 10px}
 .introbox .steps{text-align:left;margin:0 6px 14px;color:var(--ink2)}
 .kbd{display:inline-block;min-width:22px;padding:0 6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);text-align:center;font-weight:700}
@@ -316,7 +333,7 @@ input.rate{width:58px;padding:6px 8px;font-size:14px;display:inline-block;margin
   <button data-v="lancar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Lançar</button>
   <button data-v="freio"><svg viewBox="0 0 24 24"><path d="M8 3h8l5 5v8l-5 5H8l-5-5V8z"/><path d="M8.5 12h7"/></svg>Freio</button>
   <button data-v="contas"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>Contas</button>
-  <button data-v="simular"><svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4 19a1 1 0 001 2h14a1 1 0 001-2l-6-10V3"/></svg>Simular</button>
+  <button data-v="simular"><svg viewBox="0 0 24 24"><path d="M4 20h16M6 16l4-5 3 3 5-7"/><circle cx="18" cy="7" r="1.5"/></svg>Planejar</button>
   <button data-v="mais"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>Mais</button>
 </nav>
 
@@ -499,7 +516,10 @@ resumo(){
     <button class="btn sec" onclick="openSalary()">Preencher meu salário à mão</button>
     <button class="btn sec" onclick="st.view='mais';st.maisTab='dados';render()">Colar dados que recebi</button>
     <button class="btn sec" style="background:none" onclick="showIntro(0)">Ver a introdução</button></div>`;
-  return `${st.month===THIS_MONTH?freioBanner():''}${monthHero(st.month)}${irBanner()}${cycleCard(st.month+'A')}${cycleCard(st.month+'B')}${gastosCard(st.month)}`;
+  return `${st.month===THIS_MONTH?freioBanner():''}${resumoMes(st.month)}${irBanner()}
+    <details class="card porDia" ${st.porDia?'open':''} ontoggle="st.porDia=this.open"><summary><h2>📅 Ver por dia de pagamento</h2><span class="sub">Quanto você precisa ter em cada dia em que cai dinheiro</span></summary>
+      ${monthHero(st.month)}${cycleCard(st.month+'A')}${cycleCard(st.month+'B')}</details>
+    ${gastosCard(st.month)}`;
   const instAll = m.outInst+m.outFolha;
   const pct = m.inc ? Math.round(m.outInst/m.inc*100) : null;
   const totalDebt = db.debts.reduce((s,d)=>s+debtRemaining(d,st.month),0);
@@ -631,6 +651,7 @@ ir(){
 dados(){
   const n =db.tx.length+db.fixed.length+db.debts.length;
   return `
+  ${acessoCard()}
   <div class="card"><h2>Colar dados</h2>
     <p class="sub">Mande suas faturas ou descreva seus gastos para o Claude. Ele devolve um bloco de texto (JSON). Cole aqui e toque em Importar.</p>
     <textarea id="paste" placeholder='{"debts":[{"desc":"Geladeira","creditor":"Nubank","value":250,"current":3,"total":10}]}'></textarea>
@@ -838,10 +859,10 @@ function openImovel(){
   const {F} = imovelCalc();
   const f = (id,label,val,hint='',type='decimal') => `<label class="f"><span>${label}</span><input id="${id}" ${type==='month'?'type="month"':`inputmode="${type}"`} value="${val}">${hint?`<div class="hint">${hint}</div>`:''}</label>`;
   const br = v => String(v).replace('.',',');
-  openSheet(`<h3>🏢 Apartamento <button onclick="closeSheet()">Fechar</button></h3>
-    <p class="sub" style="color:var(--ink2);font-size:13px;margin-top:-4px">Na fase de obra você paga juros sobre o que a Caixa já liberou para a construtora, mais seguros e tarifa. A parcela sobe conforme a obra avança. Depois das chaves começa a parcela "cheia".</p>
+  openSheet(`<h3>🏢 Imóvel financiado <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub" style="color:var(--ink2);font-size:13px;margin-top:-4px">Na fase de obra você paga juros sobre o que o banco já liberou para a construtora, mais seguros e tarifa. A parcela sobe conforme a obra avança. Depois das chaves começa a parcela "cheia".</p>
     <div class="row">${f('im_val','Parcela paga (R$)',br(im.parcelaRef))}${f('im_ref','no mês',im.ref,'','month')}</div>
-    <div class="row">${f('im_pct','% da obra hoje',br(im.obraPct),'Veja no app Habitação Caixa')}${f('im_fim','Previsão das chaves',im.fimObra,'','month')}</div>
+    <div class="row">${f('im_pct','% da obra hoje',br(im.obraPct),'Veja no app do seu banco')}${f('im_fim','Previsão das chaves',im.fimObra,'','month')}</div>
     <div class="row">${f('im_juros','Juros nominais ao ano (%)',br(im.juros),'Está no contrato')}${f('im_tr','TR estimada ao ano (%)',br(im.tr??2),'Correção do saldo; usamos para cima')}</div>
     <div class="row">${f('im_tx','Seguros + tarifa (R$/mês)',im.financiado&&im.taxasAuto!==false?'':br(im.taxas),im.financiado?`Vazio = calcular pela parcela (~${brl(imovelCalc().im.taxas)})`:'')}<div></div></div>
     <div class="row">${f('im_fin','Valor financiado (R$)',im.financiado?br(im.financiado):'','Deixe vazio para estimar')}${f('im_prazo','Prazo (meses)',im.prazo,'','numeric')}</div>
@@ -861,7 +882,7 @@ function saveImovel(){
   db.imovel = im; closeSheet(); save();
 }
 function imovelCard(){
-  if(!db.imovel) return `<div class="card"><h2>🏢 Financiamento do apartamento</h2><p class="sub">Ainda não cadastrado</p><button class="btn sec" onclick="openImovel()">Cadastrar</button></div>`;
+  if(!db.imovel) return `<button class="btn sec" onclick="openImovel()">🏢 + Tenho um imóvel financiado (opcional)</button>`;
   const im = {...IMOVEL_DEFAULT,...db.imovel};
   const pts = []; for(let k=0;k<=diffM(THIS_MONTH,im.fimObra)+3;k+=1){const M=addM(THIS_MONTH,k);const p=imovelFor(M);if(p)pts.push([M,p])}
   const show = pts.filter((x,i)=>i%3===0||x[1].fase==='sac'&&pts[i-1]&&pts[i-1][1].fase==='obra').slice(0,8);
@@ -908,7 +929,7 @@ function eventsRaw(M){ // tudo que entra e sai no mês M, com data e chave
     // os dias de férias já foram pagos antes: o salário do dia 5 seguinte vem menor
     if(c) c.descontos.filter(x=>x.mes===M).forEach(x=>ev.push({key:`ferdesc:${f.id}:${M}`,date:payDate(M,PAY().A),nominal:`${M}-${pad(PAY().A)}`,
       label:`Desconto no salário: ${x.dias} dias de férias já pagos`,sub:'sai do próximo salário',v:-x.valor,icon:'🏖️',tap:"st.view='simular';st.simTab='ferias';render()",auto:true}))});
-  if(m.imv) ev.push({key:`imovel:${M}`,date:dt(db.imovel.day||20),label:db.imovel.nome||'Apartamento (Caixa)',
+  if(m.imv) ev.push({key:`imovel:${M}`,date:dt(db.imovel.day||20),label:db.imovel.nome||'Imóvel financiado',
     sub:m.imv.real?'valor real':m.imv.fase==='obra'?`fase de obra · ~${Math.round(m.imv.pct)}% da obra · estimativa`:`após as chaves (SAC) · estimativa`,
     v:-m.imv.value,icon:'🏢',tap:'openImovel()'});
   m.fixed.forEach(f=>ev.push({key:`fx:${f.id}:${M}`,date:dt(f.day),label:f.desc,v:f.type==='in'?f.value:-f.value,icon:f.type==='in'?'💰':'🏠',tap:`openTx('${f.id}',true)`}));
@@ -1141,11 +1162,7 @@ VIEWS.sim = function(){
    Referências (nov/2026): BC — parcelado do cartão ~9,3% a.m. (média), rotativo ~15–16% a.m. (média);
    cheque especial: teto legal de 8% a.m. (Res. CMN 4.765/2019); IOF de crédito para PF: 0,38% + até 3% ao ano. */
 const RATE_DEFAULT = {parc:10, rot:16, cheque:8};
-const RATE_BANKS = {
-  'Santander': {parc:10, rot:16},
-  'Itaú':      {parc:10, rot:16, cheque:8},
-  'Carrefour': {parc:13, rot:20},
-};
+const RATE_BANKS = {}; // taxas específicas de cada pessoa ficam em db.rates (editáveis no app)
 const IOF_MAX = 0.0338; // 0,38% fixo + até 3% — usamos o máximo
 function rateFor(creditor,type){
   const r = (db.rates||{})[creditor] || RATE_BANKS[creditor] || {};
@@ -1329,7 +1346,8 @@ VIEWS.plano = function(){
   const rowsCmp = p.rows;
   const jurosTot = r2(p.steps.reduce((t,s)=>t+s.opt.juros,0));
   const cands = candidates();
-  const banks = [...new Set([...cands.map(c=>c.e.creditor), ...Object.keys(RATE_BANKS)])];
+  // só os bancos/credores que a própria pessoa cadastrou (dívidas + taxas que ela ajustou)
+  const banks = [...new Set([...db.debts.filter(d=>d.kind!=='consignado').map(d=>d.creditor), ...Object.keys(db.rates||{})].filter(Boolean))];
   const resCell = v => `<span class="${v<0?'neg':'pos'}">${v<0?'falta':'sobra'} ${brl(Math.abs(v))}</span>`;
   return `
   <div class="card hero"><span class="emoji">🧭</span>
@@ -1376,9 +1394,10 @@ VIEWS.plano = function(){
   <div class="card"><h2>⚙️ Juros usados</h2>
     <p class="sub">Estimativas por mês, arredondadas para cima. Se a fatura ou o app do banco mostrar a taxa real (CET), coloque aqui.</p>
     <table class="simtab"><thead><tr><th>Banco</th><th>Parcelar</th><th>Rotativo</th><th>Cheque esp.</th></tr></thead><tbody>
+    ${banks.length?'':`<tr><td colspan="4" class="m">Quando você cadastrar cartões e empréstimos, eles aparecem aqui. Até lá, valem as taxas padrão: parcelar ${RATE_DEFAULT.parc}%, rotativo ${RATE_DEFAULT.rot}%, cheque especial ${RATE_DEFAULT.cheque}% ao mês.</td></tr>`}
     ${banks.map(b=>`<tr><td><b>${esc(b)}</b></td>${['parc','rot','cheque'].map(t=>`<td><input class="rate" inputmode="decimal" value="${String(rateFor(b,t)).replace('.',',')}" onchange="setRate('${esc(b)}','${t}',this.value)">%</td>`).join('')}</tr>`).join('')}
     </tbody></table>
-    <div class="hint" style="margin-top:8px">De onde vêm: média do Banco Central para o cartão parcelado (~9,3% a.m.) e para o rotativo (~15–16% a.m.); teto legal do cheque especial (8% a.m.); IOF de até 3,38%. Para o Carrefour usei uma taxa maior, porque cartões de loja costumam cobrar mais. Juros do rotativo + encargos não podem passar de 100% da dívida (Lei 14.690/2023).</div>
+    <div class="hint" style="margin-top:8px">De onde vêm: média do Banco Central para o cartão parcelado (~9,3% a.m.) e para o rotativo (~15–16% a.m.); teto legal do cheque especial (8% a.m.); IOF de até 3,38%. Cartões de loja costumam cobrar mais: se for o seu caso, aumente a taxa aqui. Juros do rotativo + encargos não podem passar de 100% da dívida (Lei 14.690/2023).</div>
   </div>`;
 };
 function togglePaid(key){
@@ -1632,6 +1651,7 @@ function normalize(data){
   if(data.rates && typeof data.rates==='object') out.rates = data.rates;
   if(data.imovel && parseMoney(data.imovel.parcelaRef)>0) out.imovel = {...IMOVEL_DEFAULT,...data.imovel};
   if(data.freio && typeof data.freio==='object') out.freio = data.freio;
+  if(Array.isArray(data.metas)) out.metas = data.metas;
   if(data.perfil && ['f','m','n'].includes(data.perfil.genero)) out.perfil = {genero:data.perfil.genero};
   if(Array.isArray(data.ferias)) out.ferias = data.ferias.filter(f=>/^\d{4}-\d{2}-\d{2}$/.test(f.start||'')&&f.dias>0).map(f=>({id:f.id||uid(),start:f.start,dias:+f.dias,abono:+f.abono||0}));
   if(data.salary && parseMoney(data.salary.gross)>0){
@@ -1655,6 +1675,7 @@ function merge(data,replace){
   if(out.imovel) db.imovel = out.imovel;
   if(out.ferias) db.ferias = out.ferias;
   if(out.freio) db.freio = out.freio;
+  if(out.metas) db.metas = out.metas;
   if(out.perfil) db.perfil = out.perfil;
   if(!n) return alert('Nada válido para importar.'+(errs.length?'\nIgnorados: '+errs.join(', '):''));
   if(replace) db = out;
@@ -1687,7 +1708,7 @@ function wipe(){if(confirm('Apagar TODOS os dados deste aparelho? Isso não pode
 /* ---------- categorias ---------- */
 const CAT_ICONS = {'Mercado':'🛒','iFood/delivery':'🛵','Restaurantes':'🍽️','Transporte (Uber/99)':'🚗','Transporte':'🚗','Vestuário':'👗','Assinaturas':'📺',
   'Lazer':'🎉','Beleza e cuidados':'💅','Cuidados pessoais':'💅','Saúde':'🩺','Educação':'📚','Moradia':'🏠','Contas da casa':'💡','Compras':'🛍️','Presentes':'🎁',
-  'Pets':'🐾','Alimentação':'🍽️','Outros':'📦','Cartões e parcelas':'💳','Consignados (folha)':'🏦','Apartamento':'🏢',
+  'Pets':'🐾','Alimentação':'🍽️','Outros':'📦','Cartões e parcelas':'💳','Consignados (folha)':'🏦','Apartamento':'🏢','Imóvel financiado':'🏢',
   'Salário':'💰','Freela/extra':'✨','Rendimentos':'📈','Reembolso':'↩️'};
 const catIcon = c => CAT_ICONS[c] || '📦';
 function gastosPorCategoria(M){
@@ -1695,7 +1716,7 @@ function gastosPorCategoria(M){
   const add = (c,v) => { if(v>0) cats[c] = r2((cats[c]||0)+v); };
   m.tx.filter(t=>t.type==='out').forEach(t=>add(t.cat,t.value));
   m.fixed.filter(t=>t.type==='out').forEach(t=>add(t.cat,t.value));
-  if(m.imv) add('Apartamento',m.imv.value);
+  if(m.imv) add('Imóvel financiado',m.imv.value);
   add('Cartões e parcelas', m.outInst);
   add('Consignados (folha)', m.outFolha);
   return Object.entries(cats).sort((a,b)=>b[1]-a[1]);
@@ -1704,7 +1725,7 @@ function gastosCard(M){
   const list = gastosPorCategoria(M), tot = list.reduce((t,[,v])=>t+v,0);
   if(!list.length) return '';
   const max = list[0][1];
-  const sozinho = list.filter(([c])=>!['Cartões e parcelas','Consignados (folha)','Apartamento','Moradia','Contas da casa'].includes(c));
+  const sozinho = list.filter(([c])=>!['Cartões e parcelas','Consignados (folha)','Apartamento','Imóvel financiado','Moradia','Contas da casa'].includes(c));
   return `<div class="card"><h2>📊 Para onde vai seu dinheiro</h2>
     <p class="sub">Gastos de ${mLabel(M,{month:'long'})} por categoria · total ${brl(tot)}</p>
     ${list.map(([c,v])=>`<div class="catrow" title="${esc(c)}: ${brl(v)} (${Math.round(v/tot*100)}%)"><span>${catIcon(c)} ${esc(c)}</span><span class="v">${brl(v)} · <b>${Math.round(v/tot*100)}%</b></span>
@@ -1788,10 +1809,10 @@ VIEWS.contas = function(){
 /* ---------- Simular ---------- */
 const segTabs = (cur,key,opts) => `<div class="seg" style="margin:12px 0">${opts.map(([v,l])=>`<button class="${cur===v?'on':''}" onclick="st.${key}='${v}';window.scrollTo(0,0);render()">${l}</button>`).join('')}</div>`;
 VIEWS.simular = function(){
-  st.simTab = st.simTab||'plano';
-  return segTabs(st.simTab,'simTab',[['plano','🧭 Plano'],['parcelar','🧪 E se…'],['ferias','🏖️ Férias']])
+  st.simTab = st.simTab||'guardar';
+  return `<div class="seg scroll" style="margin:12px 0">${[['guardar','🐷 Guardar'],['metas','🎯 Metas'],['plano','🧭 Sair do vermelho'],['parcelar','🧪 E se…'],['ferias','🏖️ Férias']].map(([v,l])=>`<button class="${st.simTab===v?'on':''}" onclick="st.simTab='${v}';window.scrollTo(0,0);render()">${l}</button>`).join('')}</div>`
     + `<p class="hint" style="margin:-4px 2px 4px">Nada aqui muda seus dados reais. Ganhos são calculados para menos, dívidas para mais.</p>`
-    + (st.simTab==='plano' ? VIEWS.plano() : st.simTab==='parcelar' ? VIEWS.sim() : feriasCard());
+    + (st.simTab==='guardar' ? guardarView() : st.simTab==='metas' ? metasView() : st.simTab==='plano' ? VIEWS.plano() : st.simTab==='parcelar' ? VIEWS.sim() : feriasCard());
 };
 
 /* ---------- Mais ---------- */
@@ -2515,6 +2536,352 @@ function showIdOnly(){
     ${idButtons("endIntro()")}</div>`;
 }
 
+/* ---------- resumo do mês: entradas x contas, separados ---------- */
+let MF_MEMO = null; // cache usado pelo planejamento (muitos meses seguidos)
+function monthFlow(M, depth=0){
+  if(MF_MEMO && MF_MEMO[M]) return MF_MEMO[M];
+  const b = db.balance, paid = db.paid||{}, bAt = b ? (b.at||b.date+'T00:00:00') : '', bm = b?.date.slice(0,7);
+  const ev = events(M).map(e=>({...e, paid:!!paid[e.key], done: !!b && (e.date<=b.date || (!!paid[e.key] && paid[e.key]<bAt))}));
+  const byDate = (x,y) => x.date.localeCompare(y.date);
+  const ins = ev.filter(e=>e.v>0).sort(byDate), outs = ev.filter(e=>e.v<0).sort(byDate);
+  const inTot = r2(ins.reduce((t,e)=>t+e.v,0)), outTot = r2(outs.reduce((t,e)=>t-e.v,0));
+  const dim = +lastDay(M).slice(8);
+  const bud = db.budget>0 ? ceil2(M===bm ? db.budget*(dim-+b.date.slice(8))/dim : db.budget) : 0;
+  let start = null, end = null;
+  if(b && M>=bm && depth<60){
+    if(M===bm){ start = b.value; end = r2(start + ev.filter(e=>!e.done).reduce((t,e)=>t+e.v,0) - bud); }
+    else { start = monthFlow(addM(M,-1), depth+1).end; end = r2(start + inTot - outTot - bud); }
+  }
+  const aPagar = r2(outs.filter(e=>!e.paid && !e.done).reduce((t,e)=>t-e.v,0));
+  const pago = r2(outTot - aPagar);
+  const res = {M, ins, outs, inTot, outTot, bud, start, end, aPagar, pago, isBalMonth: b && M===bm};
+  if(MF_MEMO) MF_MEMO[M] = res;
+  return res;
+}
+function resumoMes(M){
+  const f = monthFlow(M), nome = mLabel(M,{month:'long'}), dif = r2(f.inTot - f.outTot - f.bud);
+  const linha = e => {
+    const st_ = e.v>0 ? (e.done?'já recebido':e.tag||'previsto') : (e.paid?'pago ✓':e.done?'já pago':e.late?'atrasada':'a pagar');
+    const chk = e.v<0 && !e.done && !e.auto;
+    return `<li class="${(e.paid||e.done)?'done':''}">
+      ${chk?`<button class="chk ${e.paid?'on':''}" onclick="togglePaid('${e.key}')" aria-label="Marcar como paga">${e.paid?'✓':''}</button>`:`<span class="dot">${e.icon||(e.v>0?'💰':'💳')}</span>`}
+      <div class="dday sm">${e.date.slice(8)}<small>${wd(e.date)}</small></div>
+      <div class="main tap" onclick="${e.tap||''}"><div class="t">${esc(e.label)}</div><div class="m">${e.sub?esc(e.sub)+' · ':''}${st_}</div></div>
+      <div class="amt ${e.v>0?'pos':''}">${e.v>0?'+':'−'} ${brl(Math.abs(e.v))}</div></li>`;
+  };
+  return `
+  <div class="card hero resumo">
+    <div class="label">Resumo de ${nome}</div>
+    <div class="duo">
+      <div class="t-mint"><small>💰 Vai entrar</small><b class="pos">${brl(f.inTot)}</b></div>
+      <div class="t-pink"><small>💳 Contas do mês</small><b>${brl(f.outTot + f.bud)}</b></div>
+    </div>
+    <div class="result ${dif<0?'bad':'good'}" style="margin-top:10px"><span>Só ${nome}: ${dif<0?'as contas passam das entradas em':'sobra'}</span><b>${brl(Math.abs(dif))}</b></div>
+    ${f.start!=null?`<div class="need" style="margin-top:10px">
+      <div class="line"><span>${f.isBalMonth?`Na conta em ${dLabel(db.balance.date)}`:`Começa ${nome} com`}</span><b class="${f.start<0?'neg':''}">${brl(f.start)}</b></div>
+      <div class="line big2"><span>Previsão para o fim de ${nome}</span><b class="${f.end<0?'neg':'pos'}">${brl(f.end)}</b></div>
+      <div class="parts">${f.isBalMonth?'Conta só o que ainda vai acontecer depois do saldo que você informou.':`Inclui o que sobrou ou faltou dos meses anteriores.`}</div></div>`
+      : !db.balance ? `<button class="btn sec" onclick="openBalance()">Informar quanto tenho na conta hoje</button>`:''}
+  </div>
+  <div class="card"><div class="grouphead"><h2>💰 Entradas de ${nome}</h2><span class="pos">${brl(f.inTot)}</span></div>
+    ${f.ins.length?`<ul class="list">${f.ins.map(linha).join('')}</ul>`:'<div class="empty">Nenhuma entrada prevista.</div>'}
+  </div>
+  <div class="card"><div class="grouphead"><h2>💳 Contas de ${nome}</h2><span>${brl(f.outTot + f.bud)}</span></div>
+    <p class="sub">${f.pago?`Já pago ${brl(f.pago)} · `:''}<b>Falta pagar ${brl(f.aPagar + f.bud)}</b> · toque na bolinha quando pagar</p>
+    ${f.outs.length?`<ul class="list">${f.outs.map(linha).join('')}</ul>`:'<div class="empty">Nenhuma conta neste mês.</div>'}
+    ${f.bud?`<div class="hint" style="margin-top:6px">+ ${brl(f.bud)} de gastos do dia a dia (estimativa)</div>`:''}
+  </div>`;
+}
+
+/* ======================= PLANEJAR: guardar dinheiro e metas =======================
+   Tudo calculado em cima da projeção mês a mês (entradas para menos, contas para mais).
+   "Sem ficar apertada(o)": sempre sobra um colchão na conta e nunca se guarda tudo o que sobra. */
+function projMeses(n=24){
+  MF_MEMO = {};
+  try{
+    const out = []; let saldo = null;
+    for(let i=0;i<n;i++){
+      const M = addM(THIS_MONTH,i), f = monthFlow(M);
+      const sai = r2(f.outTot+f.bud), sobra = r2(f.inTot-sai);
+      saldo = f.end!=null ? f.end : r2((saldo??0)+sobra);
+      out.push({M, i, entra:f.inTot, sai, sobra, saldo});
+    }
+    return out;
+  } finally { MF_MEMO = null; }
+}
+const floor10 = v => Math.max(0, Math.floor(v/10)*10);
+function colchao(P){ // dinheiro que sempre fica na conta: 10% da renda média, no mínimo R$ 200
+  const media = P.slice(0,6).reduce((t,p)=>t+p.entra,0)/Math.max(1,Math.min(6,P.length));
+  return Math.max(200, Math.round(media*0.10/50)*50);
+}
+const minFut = (P,i) => Math.min(...P.slice(i).map(p=>p.saldo));
+function fimDividas(M){ // dívidas cuja última parcela foi no mês anterior: o dinheiro fica livre a partir de M
+  const prev = addM(M,-1);
+  return db.debts.filter(d=>d.total>1 && debtEnd(d)===prev).map(d=>({nome:d.desc, credor:d.creditor, valor:d.value, folha:d.kind==='consignado'}));
+}
+function planoGuardar(){
+  const P = projMeses(24), cx = colchao(P);
+  // 1) a partir de quando dá: primeiro mês em que a conta fica acima do colchão daí em diante
+  const i0 = P.findIndex((p,i)=>minFut(P,i) >= cx);
+  const is13 = p => ['11','12'].includes(p.M.slice(5));
+  let X = 0, fases = [];
+  P.forEach(p=>{ p.guardar = 0; });
+  if(i0>=0){
+    // 2) valor FIXO por mês (70% da sobra típica, sem contar os meses do 13º)
+    const reg = P.slice(i0).filter(p=>!is13(p)).map(p=>p.sobra).sort((a,b)=>a-b);
+    const med = reg.length ? reg[Math.floor(reg.length/2)] : 0;
+    X = floor10(0.7*med);
+    const cabe = x => P.slice(i0).every((p,k)=> p.saldo - x*(k+1) >= cx);
+    while(X>0 && !cabe(X)) X -= 10;
+    // 3) bônus nos meses do 13º
+    let acum = 0;
+    P.forEach((p,i)=>{
+      if(i<i0) return;
+      let s = X;
+      if(is13(p)){ const extra = floor10(Math.min(0.7*(p.sobra - X), minFut(P,i) - acum - X - cx)); if(extra>0){ s += extra; p.bonus = extra; } }
+      p.guardar = s; acum += s;
+    });
+    if(X>0) fases.push({de:P[i0].M, ate:P[P.length-1].M, v:X});
+  }
+  let guardado = 0; P.forEach(p=>{ guardado += p.guardar; p.guardadoAcum = guardado; });
+  const primeiro = P.find(p=>p.guardar>0);
+  const bonus = P.filter(p=>p.bonus);
+  const negativos = P.filter(p=>p.saldo<0);
+  const pior = P.reduce((a,b)=>b.saldo<a.saldo?b:a, P[0]);
+  const fixosMes = P[0] ? P[0].sai : 0;
+  const reserva = Math.ceil(fixosMes*3/100)*100;
+  const chegaReserva = P.find(p=>p.guardadoAcum>=reserva);
+  return {P, cx, primeiro, X, bonus, fases, negativos, pior, reserva, chegaReserva, em12:P[11]?.guardadoAcum||0, em24:P[23]?.guardadoAcum||0};
+}
+function barrasSaldo(P, extra){ // gráfico: saldo previsto no fim de cada mês (verde acima de zero, rosa abaixo)
+  const W=340, H=150, n=P.length, bw=(W-20)/n, vals=P.map(p=>extra?extra(p):p.saldo);
+  const mx = Math.max(1,...vals.map(Math.abs)), zero = 75;
+  const y = v => zero - v/mx*62;
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="pbars" role="img" aria-label="Saldo previsto na conta, mês a mês">
+    <line x1="10" x2="${W-10}" y1="${zero}" y2="${zero}" stroke="var(--line)"/>`;
+  vals.forEach((v,i)=>{ const x=10+i*bw+1, h=Math.max(1.5,Math.abs(y(v)-zero));
+    s += `<rect x="${x}" y="${v>=0?zero-h:zero}" width="${Math.max(2,bw-2)}" height="${h}" rx="2" fill="${v>=0?'var(--pos)':'var(--neg)'}" opacity="${v>=0?.55:.65}"><title>${mLabel(P[i].M,{month:'short',year:'numeric'})}: ${brl(v)}</title></rect>`;
+    if(i%3===0) s += `<text x="${x+bw/2}" y="${H-4}" text-anchor="middle">${mShort(P[i].M)}${P[i].M.slice(5)==='01'?"'"+P[i].M.slice(2,4):''}</text>`; });
+  return s+'</svg>';
+}
+function guardarView(){
+  if(!db.salary && !db.tx.length) return `<div class="card"><div class="empty">Primeiro cadastre seu salário (ou suba seu holerite) para o Cofrivo planejar. 💗</div>
+    <button class="btn" onclick="openHolerite()">📄 Subir holerite</button><button class="btn sec" onclick="openSalary()">Preencher salário</button></div>`;
+  const G = planoGuardar(), P = G.P;
+  const pedirDiaADia = !(db.budget>0) ? `<div class="alert" style="background:var(--butter)" onclick="openBalance()"><span class="ico">🛒</span><div><b>Falta uma informação importante</b><span>Quanto você gasta por mês com mercado, transporte, lazer…? Sem isso, o plano fica otimista. Toque para informar.</span></div></div>` : '';
+  const timeline = [];
+  P.forEach(p=>{ const f = fimDividas(p.M); if(f.length) timeline.push({M:p.M, f}); });
+  const linhaTempo = timeline.slice(0,8).map(t=>`<li><div class="dday sm">${mShort(t.M)}<small>${t.M.slice(0,4)}</small></div><div class="main"><div class="t">🎉 Acaba: ${t.f.map(x=>esc(x.nome)).join(', ')}</div><div class="m">sobram + ${brl(t.f.reduce((s,x)=>s+x.valor,0))} por mês a partir daqui</div></div></li>`).join('');
+  const comecou = G.primeiro;
+  const hero = comecou && comecou.i===0
+    ? `<div class="big pos">${brl(G.X||comecou.guardar)}<span class="per">/mês</span></div><p class="sub" style="margin:4px 0 0">É quanto você pode guardar <b>todo mês a partir de agora</b>, sem ficar no aperto.</p>`
+    : comecou
+    ? `<div class="big">${mLabel(comecou.M,{month:'long',year:'numeric'})}</div><p class="sub" style="margin:4px 0 0">É quando você consegue <b>começar a guardar</b>${G.X?` <b>${brl(G.X)} por mês</b>`:''} sem ficar no aperto. Até lá, o foco é colocar as contas em dia.</p>`
+    : `<div class="big neg">Ainda não</div><p class="sub" style="margin:4px 0 0">Nos próximos 24 meses as contas não deixam sobra para guardar. Veja abaixo como mudar isso.</p>`;
+  const passosDivida = (G.negativos.length || (comecou && comecou.i>0)) ? (()=>{
+    const p = suggestPlanCached(), passos = [];
+    if(G.negativos.length) passos.push(`A conta fica no vermelho em <b>${G.negativos.length} ${G.negativos.length===1?'mês':'meses'}</b>; o pior é <b>${mLabel(G.pior.M,{month:'long',year:'numeric'})}</b> (${brl(G.pior.saldo)}).`);
+    if(p.steps.length) passos.push(`Renegocie ou parcele primeiro o que tem <b>juros mais altos</b>: ${p.steps.map(s=>`${esc(s.e.label)} (${esc(s.e.creditor)}) em ${s.opt.n}×`).join('; ')}. <a href="#" onclick="st.simTab='plano';render();return false">Ver plano completo</a>`);
+    passos.push(`<b>Evite novas compras parceladas</b> até ${comecou?mLabel(comecou.M,{month:'long',year:'numeric'}):'as contas fecharem no azul'}. Cada parcela nova empurra a data em que você começa a guardar.`);
+    if(G.negativos.length){ const meses = Math.max(1, G.pior.i+1), corte = Math.ceil(-G.pior.saldo/meses/10)*10;
+      passos.push(`Se você gastar <b>${brl(corte)} a menos por mês</b> até ${mLabel(G.pior.M,{month:'long'})}, não chega a ficar no vermelho.`); }
+    if(timeline.length) passos.push(`Quando cada dívida acabar, <b>guarde o valor que era da parcela</b>, e não gaste. É o jeito mais fácil de começar.`);
+    return `<div class="card"><h2>🧭 Primeiro: sair do aperto</h2><ol class="steps">${passos.map(x=>`<li>${x}</li>`).join('')}</ol></div>`;
+  })() : '';
+  return `
+  ${pedirDiaADia}
+  <div class="card hero"><span class="emoji">🐷</span>
+    <div class="label">Guardar dinheiro</div>${hero}
+  </div>
+  ${(G.fases.length||G.bonus.length)?`<div class="card"><h2>📆 Quanto guardar</h2>
+    <ul class="list">${G.fases.map(f=>`<li><span class="dot">🐷</span><div class="main"><div class="t">Todo mês, a partir de ${mLabel(f.de,{month:'long',year:'numeric'})}</div><div class="m">separe assim que o salário cair</div></div><div class="amt pos">${brl(f.v)}</div></li>`).join('')}
+      ${G.bonus.slice(0,4).map(p=>`<li><span class="dot">🎁</span><div class="main"><div class="t">Bônus em ${mLabel(p.M,{month:'long',year:'numeric'})}</div><div class="m">parte do 13º: guarde a mais</div></div><div class="amt pos">+ ${brl(p.bonus)}</div></li>`).join('')}</ul>
+    <div class="duo2"><div class="t-mint"><small>Em 12 meses</small><b>${brl(G.em12)}</b></div><div class="t-lilac"><small>Em 24 meses</small><b>${brl(G.em24)}</b></div></div>
+    <p class="hint">Sempre fica um colchão de <b>${brl(G.cx)}</b> na conta para imprevistos, e você nunca guarda tudo o que sobra (no máximo 70%).</p>
+    <p class="sub" style="margin-top:8px">🛟 <b>Reserva de emergência</b> (3 meses de contas): ${brl(G.reserva)}. ${G.chegaReserva?`Você chega lá em <b>${mLabel(G.chegaReserva.M,{month:'long',year:'numeric'})}</b>.`:'Ainda não dá para chegar nela em 24 meses: siga os passos acima primeiro.'}</p></div>`:''}
+  ${passosDivida}
+  <div class="card"><h2>📊 Seu saldo mês a mês</h2>
+    <p class="sub">Quanto deve ter na conta no fim de cada mês (verde: sobra · rosa: falta). Toque nas barras.</p>
+    <div class="chartbox">${barrasSaldo(P)}</div></div>
+  ${linhaTempo?`<div class="card"><h2>🎉 Quando as dívidas acabam</h2><ul class="list">${linhaTempo}</ul></div>`:''}
+  <p class="hint" style="text-align:center">Projeção com o que está no app hoje. Entradas sempre para menos, contas para mais.</p>`;
+}
+
+/* ---------- metas: compra ou viagem ---------- */
+function avaliarMeta(m){
+  const P = projMeses(36), cx = colchao(P);
+  const iD = Math.max(0, diffM(THIS_MONTH, m.data.slice(0,7)));
+  const guardado = m.guardado||0, valor = Math.max(0, m.valor - guardado);
+  const impacto = (n, i0) => j => { // quanto a compra tira do saldo no mês j
+    if(j < i0) return 0;
+    if(!n || n<=1) return valor;
+    const pagas = Math.min(n, j - i0 + (m.primeiraNoMes?1:0));
+    return valor/n*Math.max(0,pagas);
+  };
+  const minDepois = (n,i0) => Math.min(...P.slice(i0).map((p,k)=>p.saldo - impacto(n,i0)(i0+k)));
+  const n = m.forma==='parcelado' ? (m.parcelas||1) : 1;
+  const sobraMin = minDepois(n, iD);
+  const ok = sobraMin >= cx, apertado = ok && sobraMin < cx*2;
+  let quando = null;
+  if(!ok) for(let i=iD+1;i<P.length;i++){ if(minDepois(n,i) >= cx){ quando = P[i].M; break; } }
+  const meses = iD+1, falta = Math.max(0, cx - sobraMin);
+  const porMes = Math.ceil(falta/meses/10)*10;
+  let parcelaOk = null;
+  if(!ok) for(const k of [2,3,4,5,6,8,10,12]){ if(minDepois(k,iD) >= cx){ parcelaOk = k; break; } }
+  return {P, cx, iD, ok, apertado, quando, porMes, falta, parcelaOk, sobraMin, saldoNaData:P[iD]?.saldo, n, valorRestante:valor,
+    serie: p => p.i<iD ? p.saldo : p.saldo - impacto(n,iD)(p.i)};
+}
+function openMetaCompra(id){
+  const m = id ? (db.metas||[]).find(x=>x.id===id) : {nome:'',valor:'',data:`${addM(THIS_MONTH,3)}-15`,forma:'avista',parcelas:6,guardado:0,tipo:'compra'};
+  const br = v => v===''||v==null ? '' : String(v).replace('.',',');
+  openSheet(`<h3>${id?'Editar meta':'🎯 Nova meta'} <button onclick="closeSheet()">Fechar</button></h3>
+    <div class="seg" id="mtTipo"><button data-t="compra" class="${m.tipo!=='viagem'?'on':''}" onclick="segPick(this)">🛍️ Compra</button><button data-t="viagem" class="${m.tipo==='viagem'?'on':''}" onclick="segPick(this)">✈️ Viagem</button></div>
+    <label class="f"><span>O que você quer?</span><input id="mtNome" value="${esc(m.nome)}" placeholder="Ex.: celular novo, viagem para a praia"></label>
+    <div class="row"><label class="f"><span>Valor total (R$)</span><input id="mtValor" inputmode="decimal" value="${br(m.valor)}"></label>
+      <label class="f"><span>Quando?</span><input id="mtData" type="date" value="${m.data}"></label></div>
+    <div class="seg" id="mtForma"><button data-t="avista" class="${m.forma!=='parcelado'?'on':''}" onclick="segPick(this);$('#mtParcBox').style.display='none'">À vista</button><button data-t="parcelado" class="${m.forma==='parcelado'?'on':''}" onclick="segPick(this);$('#mtParcBox').style.display=''">Parcelado</button></div>
+    <div class="row" id="mtParcBox" style="${m.forma==='parcelado'?'':'display:none'}"><label class="f"><span>Em quantas vezes (sem juros)</span><input id="mtParc" inputmode="numeric" value="${m.parcelas||6}"></label><div></div></div>
+    <label class="f"><span>Já guardei para isso (R$)</span><input id="mtGuard" inputmode="decimal" value="${br(m.guardado||0)}"></label>
+    <button class="btn" onclick="saveMeta2('${id||''}')">Ver se dá</button>
+    ${id?`<button class="btn danger" onclick="if(confirm('Apagar essa meta?')){db.metas=db.metas.filter(x=>x.id!=='${id}');closeSheet();save()}">Apagar meta</button>`:''}`);
+}
+function saveMeta2(id){
+  const nome = $('#mtNome').value.trim(), valor = r2(parseMoney($('#mtValor').value)||0), data = $('#mtData').value;
+  if(!nome || !(valor>0) || !data) return alert('Preencha o que é, o valor e a data.');
+  const m = {id:id||uid(), nome, valor, data, tipo:$('#mtTipo .on').dataset.t, forma:$('#mtForma .on').dataset.t,
+    parcelas:Math.max(1,parseInt($('#mtParc').value)||1), guardado:r2(parseMoney($('#mtGuard').value)||0)};
+  db.metas = db.metas||[];
+  if(id) db.metas[db.metas.findIndex(x=>x.id===id)] = m; else db.metas.push(m);
+  st.metaAberta = m.id; closeSheet(); save();
+}
+function guardarNaMeta(id){
+  const m = db.metas.find(x=>x.id===id); const v = prompt(`Quanto você guardou agora para “${m.nome}”? (R$)`); if(v==null) return;
+  const n = r2(parseMoney(v)||0); if(n>0){ m.guardado = r2((m.guardado||0)+n); save(); }
+}
+function metaCard(m){
+  const A = avaliarMeta(m), d = new Date(m.data+'T12:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const pct = Math.min(100, Math.round((m.guardado||0)/m.valor*100));
+  const verdict = A.ok ? (A.apertado ? ['⚠️','Dá, mas fica apertado','butter'] : ['✅','Dá para fazer!','mint']) : ['⏳','Ainda não dá nessa data','pink'];
+  const oQueFazer = [];
+  if(!A.ok){
+    if(A.quando) oQueFazer.push(`<b>Adiar para ${mLabel(A.quando,{month:'long',year:'numeric'})}</b>: nessa data já cabe, sem ficar no aperto.`);
+    const rendaMedia = A.P.slice(0,6).reduce((t,p)=>t+p.entra,0)/6;
+    if(A.porMes>0 && A.porMes <= rendaMedia*0.3) oQueFazer.push(`<b>Guardar ou economizar ${brl(A.porMes)} por mês</b> até a data. Faltam ${brl(A.falta)} no total.`);
+    else if(A.porMes>0) oQueFazer.push(`Nessa data faltariam <b>${brl(A.falta)}</b>: é muito para juntar em ${A.iD+1} ${A.iD?'meses':'mês'}. O melhor é adiar.`);
+    const ver = A.P.findIndex(p=>p.saldo<0);
+    if(ver>=0 && ver<=A.iD+2) oQueFazer.push(`Suas contas já ficam no vermelho perto dessa data. Veja <a href="#" onclick="st.simTab='plano';render();return false">Sair do vermelho</a> primeiro.`);
+    if(A.parcelaOk && m.forma!=='parcelado') oQueFazer.push(`<b>Parcelar em ${A.parcelaOk}× sem juros</b> (${brl(A.valorRestante/A.parcelaOk)} por mês) já cabe no seu orçamento.`);
+    if(!A.quando && !A.parcelaOk) oQueFazer.push(`Com as contas de hoje, ela não cabe nos próximos 3 anos. Primeiro siga o plano de <a href="#" onclick="st.simTab='guardar';render();return false">guardar dinheiro</a>.`);
+  } else if(A.apertado) oQueFazer.push(`Depois da compra, a conta fica com pouca folga (${brl(A.sobraMin)} no pior mês). Guardar um pouco antes deixa tudo mais tranquilo.`);
+  else oQueFazer.push(`Mesmo depois da compra, sobra pelo menos <b>${brl(A.sobraMin)}</b> na conta no pior mês.`);
+  return `<div class="card meta">
+    <div class="grouphead"><h2>${m.tipo==='viagem'?'✈️':'🛍️'} ${esc(m.nome)}</h2><button class="today" onclick="openMetaCompra('${m.id}')">editar</button></div>
+    <p class="sub">${brl(m.valor)} · ${d} · ${m.forma==='parcelado'?`${m.parcelas}× de ${brl(m.valor/m.parcelas)}`:'à vista'}</p>
+    <div class="verdict t-${verdict[2]}"><span>${verdict[0]}</span><b>${verdict[1]}</b></div>
+    <ul class="tips" style="margin-top:8px">${oQueFazer.map(x=>`<li>${x}</li>`).join('')}</ul>
+    <div class="line" style="display:flex;justify-content:space-between;margin-top:10px;font-size:13px"><span>Já guardado</span><b>${brl(m.guardado||0)} de ${brl(m.valor)}</b></div>
+    <div class="prog" style="height:10px"><i style="width:${pct}%"></i></div>
+    <button class="btn sec" onclick="guardarNaMeta('${m.id}')">🐷 Guardei dinheiro para isso</button>
+    <details style="margin-top:8px"><summary>Ver como fica sua conta com essa meta</summary>
+      <div class="chartbox">${barrasSaldo(A.P.slice(0,Math.min(36,Math.max(12,A.iD+12))), A.serie)}</div>
+      <p class="hint">Saldo previsto no fim de cada mês já descontando a meta. Fica sempre um colchão de ${brl(A.cx)}.</p></details>
+  </div>`;
+}
+function metasView(){
+  const L = db.metas||[];
+  return `<div class="card hero"><span class="emoji">🎯</span><div class="label">Metas de compra e viagem</div>
+      <h2 style="font-size:20px;margin:2px 0 6px">Quer comprar algo ou viajar?</h2>
+      <p class="sub" style="margin:0">Diga o que é, quanto custa e quando. O Cofrivo olha suas entradas e dívidas e diz <b>se dá</b>, <b>quando dá</b> e <b>o que fazer</b> para dar.</p>
+      <button class="btn" style="margin-top:12px" onclick="openMetaCompra()">+ Nova meta</button></div>
+    ${L.length?L.map(metaCard).join(''):'<div class="card"><div class="empty">Nenhuma meta ainda.</div></div>'}`;
+}
+/* ---------- controle de acesso (assinatura) ----------
+   Enquanto ACESSO_CFG.url estiver vazio, o app funciona livre (como hoje).
+   Com o servidor configurado: a pessoa digita o código de acesso uma vez; o app confere no servidor
+   ao abrir (no máximo 1x por dia) e funciona sem internet por até 7 dias desde a última conferência.
+   Se o acesso for removido (reembolso, cancelamento, vencido), o app bloqueia, mas os dados continuam
+   no celular e a pessoa pode exportar um backup. */
+const ACESSO_CFG = {url:'https://etcxpiwjmcjwwuyomceg.supabase.co', key:'sb_publishable_VQ-XW5YUXKc7jx_83GtK0g_k0Xm7QvV'}; // preenchido depois que o Supabase for criado (a chave "anon/publishable" é pública por natureza)
+const ACESSO_KEY = 'cofrivo.acesso', DEV_KEY = 'cofrivo.dispositivo';
+const ACESSO_ON = () => !!(ACESSO_CFG.url && ACESSO_CFG.key);
+const acessoSalvo = () => { try { return JSON.parse(localStorage.getItem(ACESSO_KEY)||'null'); } catch(e){ return null; } };
+function dispositivoId(){
+  let id = localStorage.getItem(DEV_KEY);
+  if(!id){ id = (crypto.randomUUID ? crypto.randomUUID() : uid()+uid()+uid()); localStorage.setItem(DEV_KEY,id); }
+  return id;
+}
+async function checarAcesso(codigo){
+  const r = await fetch(`${ACESSO_CFG.url}/rest/v1/rpc/checar_acesso`, {method:'POST',
+    // chave nova (sb_publishable_…) vai só no "apikey"; a antiga (anon, começa com eyJ) também pode ir no Authorization
+    headers:{'Content-Type':'application/json','apikey':ACESSO_CFG.key, ...(ACESSO_CFG.key.startsWith('eyJ')?{'Authorization':`Bearer ${ACESSO_CFG.key}`}:{})},
+    body: JSON.stringify({p_codigo:codigo, p_dispositivo:dispositivoId()})});
+  if(!r.ok) throw new Error('servidor '+r.status);
+  return r.json();
+}
+const ACESSO_MSG = {
+  invalido:   ['🔑','Código não encontrado','Confira se digitou certinho (letras e números). Se você acabou de comprar, o código chega no seu e-mail ou WhatsApp.'],
+  reembolsado:['💗','Seu acesso foi encerrado','A compra foi reembolsada, então o acesso ao Cofrivo foi encerrado. Seus dados continuam neste celular: você pode exportar um backup.'],
+  cancelado:  ['💗','Sua assinatura foi cancelada','O acesso ao Cofrivo foi encerrado. Seus dados continuam neste celular: você pode exportar um backup. Se quiser voltar, é só assinar de novo.'],
+  bloqueado:  ['🔒','Acesso pausado','Seu acesso está pausado. Fale com quem te vendeu o Cofrivo. Seus dados continuam neste celular.'],
+  vencido:    ['📅','Sua mensalidade venceu','Renove a assinatura para continuar usando. Seus dados continuam aqui, guardados neste celular.'],
+  limite:     ['📱','Código em uso em outros aparelhos','Este código já está sendo usado no número máximo de aparelhos. Fale com o suporte para liberar.'],
+  offline:    ['📶','Preciso de internet rapidinho','Faz mais de 7 dias que o app não confere seu acesso. Conecte-se à internet e toque em “Tentar de novo”.'],
+  erro:       ['⚠️','Não consegui conferir agora','O servidor não respondeu. Tente de novo em instantes.'],
+};
+function telaAcesso(motivo, depois){
+  const [ico,t,txt] = ACESSO_MSG[motivo] || ['🔑','Bem-vinda(o) ao Cofrivo','Digite o código de acesso que você recebeu na compra.'];
+  const sv = acessoSalvo();
+  $('#sheetbg').classList.add('open','intro');
+  $('#sheet').innerHTML = `<div class="introbox">
+    <div class="introico">${motivo?ico:appIcon()}</div><h2>${motivo?t:'Bem-vinda(o) ao Cofrivo'}</h2><p>${motivo?txt:'Digite o código de acesso que você recebeu na compra.'}</p>
+    ${motivo==='offline'||motivo==='erro'?`<button class="btn" id="acTentar">Tentar de novo</button>`:''}
+    ${motivo!=='offline'&&motivo!=='erro'?`<label class="f" style="text-align:left"><span>Código de acesso</span>
+      <input id="acCodigo" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="Ex.: COF-AB12-CD34" value="${motivo==='invalido'||!sv?'':esc(sv.codigo||'')}" style="text-transform:uppercase;letter-spacing:1px;text-align:center;font-size:18px"></label>
+      <button class="btn" id="acEntrar">Entrar</button>`:''}
+    ${['reembolsado','cancelado','bloqueado','vencido','limite'].includes(motivo) && (db.tx.length||db.debts.length||db.salary)?`<button class="btn sec" onclick="exportData()">💾 Exportar meus dados (backup)</button>`:''}
+    <p class="hint" id="acMsg" style="text-align:center;margin-top:8px"></p></div>`;
+  const entrar = async () => {
+    const cod = ($('#acCodigo')?.value || sv?.codigo || '').trim().toUpperCase();
+    if(!cod){ $('#acMsg').textContent = 'Digite seu código.'; return; }
+    $('#acMsg').textContent = 'Conferindo…';
+    try{
+      const r = await checarAcesso(cod);
+      if(r.ok){
+        localStorage.setItem(ACESSO_KEY, JSON.stringify({codigo:cod, status:r.status, valido_ate:r.valido_ate, nome:r.nome, plano:r.plano, checado:Date.now()}));
+        $('#sheetbg').classList.remove('open','intro'); render(); depois && depois();
+      } else telaAcesso(r.status, depois);
+    }catch(e){ $('#acMsg').textContent = 'Não consegui falar com o servidor. Verifique a internet.'; }
+  };
+  $('#acEntrar')?.addEventListener('click', entrar);
+  $('#acCodigo')?.addEventListener('keydown', e=>{ if(e.key==='Enter') entrar(); });
+  $('#acTentar')?.addEventListener('click', entrar);
+}
+async function verificarAcessoNaAbertura(depois){
+  if(!ACESSO_ON()) return depois();
+  const sv = acessoSalvo();
+  if(!sv?.codigo) return telaAcesso('', depois);
+  const idade = Date.now() - (sv.checado||0);
+  const venceu = sv.valido_ate && new Date(sv.valido_ate) < new Date();
+  if(idade < 864e5 && !venceu) return depois();       // conferido há menos de 1 dia
+  try{
+    const r = await checarAcesso(sv.codigo);
+    if(r.ok){ localStorage.setItem(ACESSO_KEY, JSON.stringify({...sv, status:r.status, valido_ate:r.valido_ate, nome:r.nome, plano:r.plano, checado:Date.now()})); return depois(); }
+    localStorage.setItem(ACESSO_KEY, JSON.stringify({...sv, status:r.status, checado:Date.now()}));
+    telaAcesso(r.status, depois);
+  }catch(e){
+    if(idade < 7*864e5 && !venceu) return depois();   // sem internet: funciona por até 7 dias
+    telaAcesso('offline', depois);
+  }
+}
+function acessoCard(){
+  if(!ACESSO_ON()) return '';
+  const sv = acessoSalvo(); if(!sv) return '';
+  const mask = sv.codigo ? sv.codigo.replace(/.(?=.{4})/g,'•') : '';
+  return `<div class="card"><h2>🔑 Seu acesso</h2>
+    <p class="sub">${{ativo:'Assinatura ativa',cortesia:'Acesso cortesia',teste:'Período de teste'}[sv.status]||sv.status}${sv.valido_ate?` · válido até ${new Date(sv.valido_ate).toLocaleDateString('pt-BR')}`:''} · código ${mask}</p>
+    <button class="btn sec" onclick="if(confirm('Sair deste código neste aparelho? Seus dados continuam aqui.')){localStorage.removeItem(ACESSO_KEY);telaAcesso('',()=>{})}">Usar outro código</button></div>`;
+}
+
 /* ---------- instalar na tela inicial ----------
    Android/Chrome/Edge: o navegador permite mostrar o pedido de instalação (beforeinstallprompt).
    iPhone/iPad: a Apple não permite pedir por código; mostramos o passo a passo do Safari. */
@@ -2561,7 +2928,7 @@ const INTRO = [
   ['🏠','Início','Mostra as próximas datas: quando cai o seu dinheiro e <b>quanto você precisa ter</b> em cada dia de pagamento.<br><br>Verde = vai sobrar. Rosado = vai faltar.'],
   ['➕','Lançar','Aqui entra <b>o que é real</b>: o salário que caiu, um gasto, uma fatura nova, uma conta que você pagou.<br><br>O que não foi lançado aparece como <b>previsto</b>: ganhos sempre calculados para menos, dívidas para mais.'],
   ['🛑','Freio','Bateu vontade de comprar? Toque em <b>“Tô com vontade de comprar”</b>. O item vai para o Cofre com um cadeado, e você decide com calma depois.<br><br>Sem culpa, sem punição: cada passo conta como vitória. 💗'],
-  ['🧪','Simular','Teste sem medo: e se eu parcelar essa fatura? E se eu tirar férias em dezembro?<br><br><b>Nada do que você testa muda seus dados reais.</b>'],
+  ['📈','Planejar','Descubra <b>quanto dá para guardar</b> por mês (ou como sair das dívidas para começar) e se aquela <b>compra ou viagem</b> cabe no seu bolso, e quando.<br><br>Também dá para testar: e se eu parcelar essa fatura? <b>Nada do que você testa muda seus dados reais.</b>'],
   ['🚀','Vamos começar?','Escolha como quer começar. Você pode fazer os outros depois.<br><br>O manual completo fica em <b>Mais → 📖 Ajuda</b>.'],
 ];
 let introStep = 0;
@@ -2615,7 +2982,7 @@ const MANUAL = [
     <li><b>🔁 Nova conta fixa</b>: algo que se repete todo mês (aluguel, internet).</li>
     <li><b>✅ Paguei uma conta</b>: toque na bolinha. O “Falta pagar” diminui na hora.</li></ul>`],
   ['💳','Contas',`<p>Tudo o que você paga: contas fixas, apartamento, dívidas por banco e consignados (descontados no salário). Toque em qualquer item para editar ou excluir.</p>
-    <p>No <b>🏢 Apartamento</b>, atualize todo mês o valor que a Caixa cobrou. A projeção se ajusta sozinha.</p>`],
+    <p>No <b>🏢 Imóvel financiado</b>, atualize todo mês o valor que o banco cobrou. A projeção se ajusta sozinha.</p>`],
   ['🛑','Freio (compras por impulso)',`<ul>
     <li><b>Tô com vontade de comprar</b>: anote o item, o preço, a loja e o que está sentindo. Ele vai para o <b>Cofre</b> com cadeado (48h por padrão).</li>
     <li>Ao lado do preço aparece quantas <b>horas de trabalho</b> aquilo custa.</li>
@@ -2659,7 +3026,10 @@ $('#gotoday').onclick=()=>{st.month=THIS_MONTH;render()};
 
 render();
 applyTheme();
-if(!localStorage.getItem(INTRO_KEY)) showIntro(0); else if(!db.perfil) showIdOnly(); else setTimeout(()=>maybeInstall(),2500);
+function iniciarApp(){
+  if(!localStorage.getItem(INTRO_KEY)) showIntro(0); else if(!db.perfil) showIdOnly(); else setTimeout(()=>maybeInstall(),2500);
+}
+verificarAcessoNaAbertura(iniciarApp);
 
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js');
 </script>

@@ -74,9 +74,15 @@ details.porDia > .card{box-shadow:none;border:1px solid var(--line);margin:12px 
 .verdict{display:flex;gap:10px;align-items:center;border-radius:14px;padding:12px 14px;margin-top:8px;font-size:16px}.verdict span{font-size:24px}
 .pbars text{font-size:9px;fill:var(--ink3)}
 .meta details summary{color:var(--accent);font-size:14px;cursor:pointer}
+#pagoBar{position:fixed;left:50%;bottom:calc(82px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:29;display:flex;align-items:center;gap:10px;
+  background:var(--ink);color:var(--bg);border-radius:999px;padding:8px 8px 8px 16px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25);white-space:nowrap;animation:up .3s ease both}
+#pagoBar button{background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600}
+.list .amt small{display:block;font-weight:600}
 #updBar{position:fixed;left:50%;bottom:calc(82px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;
   background:var(--ink);color:var(--bg);border-radius:999px;padding:11px 18px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25);white-space:nowrap;animation:up .4s ease both}
 #updBar b{color:var(--accent-soft);margin-left:4px}
+/* textos das listas quebram linha em vez de cortar com "…" (mais fácil de ler) */
+.list .t{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.3}
 .modeopts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 10px}
 .introbox .steps{text-align:left;margin:0 6px 14px;color:var(--ink2)}
 .kbd{display:inline-block;min-width:22px;padding:0 6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);text-align:center;font-weight:700}
@@ -171,7 +177,7 @@ header{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0 8px}
 .list li:first-child{border-top:0}
 .list li.tap{cursor:pointer}
 .list .main{flex:1;min-width:0}
-.list .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list .t{white-space:normal;overflow-wrap:anywhere;line-height:1.3}
 .list .m{font-size:12px;color:var(--ink2)}
 .list .amt{font-weight:600;white-space:nowrap;text-align:right}
 .list .amt small{display:block;font-weight:400;font-size:12px;color:var(--ink3)}
@@ -528,7 +534,10 @@ resumo(){
     <button class="btn sec" onclick="openSalary()">Preencher meu salário à mão</button>
     <button class="btn sec" onclick="st.view='mais';st.maisTab='dados';render()">Colar dados que recebi</button>
     <button class="btn sec" style="background:none" onclick="showIntro(0)">Ver a introdução</button></div>`;
-  return `${st.month===THIS_MONTH?freioBanner():''}${resumoMes(st.month)}${irBanner()}
+  const modo = st.resumoModo||'resumo';
+  const abas = `<div class="seg" style="margin:12px 0 0">${[['resumo','📋 Resumo'],['pxr','📊 Previsto × Real']].map(([v,l])=>`<button class="${modo===v?'on':''}" onclick="st.resumoModo='${v}';render()">${l}</button>`).join('')}</div>`;
+  if(modo==='pxr') return `${abas}${prevRealView(st.month)}`;
+  return `${st.month===THIS_MONTH?freioBanner():''}${abas}${resumoMes(st.month)}${irBanner()}
     <details class="card porDia" ${st.porDia?'open':''} ontoggle="st.porDia=this.open"><summary><h2>📅 Ver por dia de pagamento</h2><span class="sub">Quanto você precisa ter em cada dia em que cai dinheiro</span></summary>
       ${monthHero(st.month)}${cycleCard(st.month+'A')}${cycleCard(st.month+'B')}</details>
     ${gastosCard(st.month)}`;
@@ -953,6 +962,8 @@ function eventsRaw(M){ // tudo que entra e sai no mês M, com data e chave
     tap:`openCartao('${cd.id}','${M}')`, fatura:true, creditor:cd.nome, kind:'cartao'}); });
   m.tx.filter(t=>!t.cartao).forEach(t=>ev.push({key:`tx:${t.id}`,date:t.date,label:t.desc,v:t.type==='in'?t.value:-t.value,icon:t.type==='in'?'💰':'🛍️',tap:`openTx('${t.id}')`}));
   m.inst.forEach(d=>ev.push({key:`debt:${d.id}:${M}`,date:dt(d.day),label:d.desc,sub:`${d.creditor}${d.total>1?` · parcela ${d.n}/${d.total}`:''}`,v:-d.value,icon:'💳',tap:`openDebt('${d.id}')`,debtId:d.id,creditor:d.creditor,kind:d.kind,dtotal:d.total}));
+  const pv = db.pagoValor||{}; // pagou outro valor: vale o real (e guarda o previsto)
+  ev.forEach(e=>{ if(pv[e.key]!=null && e.v<0){ e.prev = -e.v; e.v = -pv[e.key]; } });
   return SIM ? applySim(ev,M) : ev;
 }
 function cycleEvents(id){
@@ -960,7 +971,8 @@ function cycleEvents(id){
   [c.M, addM(c.M,1)].forEach(M=>events(M).forEach(e=>{ if(cycleOf(e.nominal||e.date)===id) ev.push(e) }));
   if(db.budget>0){
     let v = db.budget/2;
-    if(b && b.date>=c.from && b.date<=c.to) v = v*daysBetween(b.date,c.to)/(daysBetween(c.from,c.to)+1);
+    const ref = b ? b.date : TODAY;
+    if(ref>=c.from && ref<=c.to) v = v*daysBetween(ref,c.to)/(daysBetween(c.from,c.to)+1);
     v = ceil2(v); // gasto: arredonda para mais
     if(v>0) ev.push({key:`bud:${id}`,date:c.to,label:'Gastos do dia a dia (estimativa)',v:-v,icon:'🛒',tap:'openBalance()',budget:true});
   }
@@ -968,7 +980,7 @@ function cycleEvents(id){
   ev.forEach(e=>{
     e.paid = !!paid[e.key];
     const bAt = b ? (b.at || b.date+'T00:00:00') : '';
-    e.done = !!b && (e.date<=b.date || (e.paid && paid[e.key]<bAt)); // já está dentro do saldo informado
+    e.done = b ? (e.date<=b.date || (e.paid && paid[e.key]<bAt)) : e.date<TODAY; // já aconteceu (está no saldo)
     e.late = e.v<0 && !e.paid && !e.done && !e.budget && e.date<TODAY;
   });
   return ev.sort((x,y)=>(y.v>0)-(x.v>0) || x.date.localeCompare(y.date));
@@ -978,7 +990,7 @@ function plan(id){
   const b = db.balance;
   let start, opening = 0, fromBalance = false;
   if(b){ start = cycleOf(b.date); if(id<start) return {past:true,c:cycleInfo(id),ev:cycleEvents(id)}; opening = b.value; fromBalance = true; }
-  else start = id.slice(0,7)+'A';
+  else { start = cycleOf(TODAY); if(id<start) return {past:true,c:cycleInfo(id),ev:cycleEvents(id)}; }
   for(let cur=start; cur<id; cur=nextCycle(cur)){ opening = r2(opening+evSum(cycleEvents(cur))); fromBalance = false; }
   if(!b && id<start) opening = 0;
   const ev = cycleEvents(id);
@@ -1168,7 +1180,20 @@ VIEWS.sim = function(){
           <div><small>Como está</small>${res(b.closing)}</div>
           <div><small>Simulado</small><b>${res(a.closing)}</b></div>
         </div></div>`}).join('')}
-    ${active?`<div class="result ${diff<0?'bad':'good'}"><span>Em ${dLabel(lastB.c.to)}, a simulação deixa você com</span><b>${diff<0?'−':'+'} ${brl(Math.abs(diff))}</b></div>
+    ${(()=>{ // resumo: o pior momento antes e depois, e quanto AINDA falta se não resolver
+      const vb = before.filter(x=>!x.past), va = after.filter(x=>!x.past); if(!vb.length) return '';
+      const pior = L => L.reduce((a,x)=>x.closing<a.closing?x:a, L[0]);
+      const pb = pior(vb), pa = pior(va), dia = x => dLabel(x.c.pay>=TODAY?x.c.pay:TODAY);
+      const txt = x => x.closing<0 ? `<b class="neg">falta ${brl(-x.closing)}</b> em ${dia(x)}` : `<b class="pos">tudo no azul</b>`;
+      const quantos = va.filter(x=>x.closing<0).length;
+      return `<div class="need" style="margin:10px 0">
+        <div class="line"><span>Como está hoje</span><span>${txt(pb)}</span></div>
+        ${active?`<div class="line"><span>Com a simulação</span><span>${txt(pa)}</span></div>`:''}</div>
+        ${active?(pa.closing<0
+          ? `<div class="result bad"><span>Mesmo assim, ainda vai faltar (${quantos} ${quantos===1?'pagamento':'pagamentos'} no vermelho; o pior em ${dia(pa)})</span><b>${brl(-pa.closing)}</b></div>`
+          : `<div class="result good"><span>Com isso, nenhum pagamento fica no vermelho. No pior momento sobra</span><b>${brl(pa.closing)}</b></div>`):''}`;
+    })()}
+    ${active?`<p class="hint" style="margin:6px 0 0">Diferença até ${dLabel(lastB.c.to)}: ${diff<0?'−':'+'} ${brl(Math.abs(diff))} em relação a hoje.</p>
       <button class="btn sec" onclick="simClear()">Limpar simulação</button>`:''}
   </div>
   ${groups.map(g=>`<div class="card"><h2>📌 Contas até ${dLabel(g.s.c.to)}</h2><p class="sub">Pagamento do dia ${+g.s.c.pay.slice(8)} · vencem de ${dLabel(g.s.c.from)} a ${dLabel(g.s.c.to)}</p>${g.bills.map(billRow).join('')}</div>`).join('')
@@ -1420,8 +1445,33 @@ VIEWS.plano = function(){
 };
 function togglePaid(key){
   db.paid = db.paid||{};
-  if(db.paid[key]) delete db.paid[key]; else db.paid[key] = new Date().toISOString();
-  save();
+  if(db.paid[key]){ delete db.paid[key]; if(db.pagoValor) delete db.pagoValor[key]; save(); return; }
+  db.paid[key] = new Date().toISOString(); save();
+  avisoPago(key);
+}
+function acharEvento(key){ const M = (key.match(/\d{4}-\d{2}/)||[THIS_MONTH])[0]; return events(M).find(e=>e.key===key) || events(addM(M,1)).find(e=>e.key===key); }
+function avisoPago(key){
+  const e = acharEvento(key); if(!e) return;
+  document.getElementById('pagoBar')?.remove();
+  const b = document.createElement('div'); b.id='pagoBar';
+  b.innerHTML = `✓ Paga · ${brl(-e.v)} <button onclick="openPagoValor('${key}')">Pagou outro valor?</button>`;
+  document.body.appendChild(b); clearTimeout(avisoPago.t); avisoPago.t = setTimeout(()=>b.remove(), 6000);
+}
+function openPagoValor(key){
+  document.getElementById('pagoBar')?.remove();
+  const e = acharEvento(key); if(!e) return;
+  const prev = e.prev ?? -e.v;
+  openSheet(`<h3>Quanto você pagou? <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub">${esc(e.label)} · previsto ${brl(prev)}</p>
+    <label class="f"><span>Valor pago de verdade (R$)</span><input id="pvVal" inputmode="decimal" value="${String(-e.v).replace('.',',')}"></label>
+    <button class="btn" onclick="savePagoValor('${key}',${prev})">Salvar</button>`);
+}
+function savePagoValor(key, prev){
+  const n = r2(parseMoney($('#pvVal').value)); if(!(n>=0)) return alert('Valor inválido.');
+  db.pagoValor = db.pagoValor||{};
+  if(Math.abs(n-prev)<0.005) delete db.pagoValor[key]; else db.pagoValor[key] = n;
+  db.paid = db.paid||{}; if(!db.paid[key]) db.paid[key] = new Date().toISOString();
+  closeSheet(); save();
 }
 function openBalance(){
   const b = db.balance || {value:0,date:TODAY};
@@ -1470,8 +1520,16 @@ function openPay(key){
     <button class="btn" onclick="savePayReal('${key}')">Salvar</button>
     <button class="btn sec" onclick="openSalary()">Editar configuração do salário</button>`);
 }
+// guarda quanto o app tinha previsto, para comparar depois (Previsto × Real)
+function snapPrevisto(M,key){
+  const s = db.salary; if(!s) return;
+  const p = salaryFor(M)?.pays.find(x=>x.key===key); if(!p) return;
+  s.previsto = s.previsto||{}; s.previsto[M] = s.previsto[M]||{};
+  if(s.previsto[M][key]==null) s.previsto[M][key] = Math.max(0, Math.floor(p.raw));
+}
 function savePayReal(key){
   const v = $('#preal').value.trim(), s = db.salary;
+  if(v!=='') snapPrevisto(st.month,key);
   s.actual = s.actual||{}; const a = s.actual[st.month] = s.actual[st.month]||{};
   if(v===''){delete a[key]} else {const n=r2(parseMoney(v)); if(!(n>=0)) return alert('Valor inválido.'); a[key]=n}
   if(!Object.keys(a).length) delete s.actual[st.month];
@@ -1666,6 +1724,7 @@ function normalize(data){
   if(data.irDates && typeof data.irDates==='object') out.irDates = data.irDates;
   if(data.balance && /^\d{4}-\d{2}-\d{2}$/.test(data.balance.date||'') && isFinite(+data.balance.value)) out.balance = {value:+data.balance.value,date:data.balance.date,...(data.balance.at?{at:data.balance.at}:{})};
   if(data.paid && typeof data.paid==='object') out.paid = data.paid;
+  if(data.pagoValor && typeof data.pagoValor==='object') out.pagoValor = data.pagoValor;
   if(data.budget>0) out.budget = num(data.budget);
   if(data.rates && typeof data.rates==='object') out.rates = data.rates;
   if(data.imovel && parseMoney(data.imovel.parcelaRef)>0) out.imovel = {...IMOVEL_DEFAULT,...data.imovel};
@@ -1679,7 +1738,7 @@ function normalize(data){
     out.salary = {gross:num(s.gross), advPct:s.advPct!=null?Number(s.advPct):40, deps:parseInt(s.deps)||0,
       vtValue:num(s.vtValue||0), vr:num(s.vr||0), others:(s.others||[]).map(o=>({desc:o.desc,value:num(o.value)})),
       since:s.since||THIS_MONTH, decimo:s.decimo!==false, actual:s.actual||{}};
-    ['tipo','diaA','diaB','irNoAdiant','folhaFecha','feriasSaldo','valorA','valorB'].forEach(k=>{ if(s[k]!==undefined) out.salary[k]=s[k]; });
+    ['tipo','diaA','diaB','irNoAdiant','folhaFecha','feriasSaldo','valorA','valorB','previsto'].forEach(k=>{ if(s[k]!==undefined) out.salary[k]=s[k]; });
     if(out.salary.diaA===undefined) migrate({salary:out.salary});
   }
   return {out,errs};
@@ -1691,6 +1750,7 @@ function merge(data,replace){
   if(out.irDates) db.irDates = {...(db.irDates||{}),...out.irDates};
   if(out.balance) db.balance = out.balance;
   if(out.paid) db.paid = replace ? out.paid : {...(db.paid||{}), ...out.paid};
+  if(out.pagoValor) db.pagoValor = replace ? out.pagoValor : {...(db.pagoValor||{}), ...out.pagoValor};
   if(out.budget) db.budget = out.budget;
   if(out.rates) db.rates = {...(db.rates||{}),...out.rates};
   if(out.imovel) db.imovel = out.imovel;
@@ -1773,6 +1833,7 @@ function saveRealPay(){
   const s = db.salary; s.actual = s.actual||{};
   document.querySelectorAll('#sheet input[data-k]').forEach(inp=>{
     const M=inp.dataset.m, k=inp.dataset.k, v=inp.value.trim();
+    if(v!=='') snapPrevisto(M,k);
     s.actual[M] = s.actual[M]||{};
     if(v==='') delete s.actual[M][k]; else { const n=r2(parseMoney(v)); if(n>=0) s.actual[M][k]=n; }
     if(!Object.keys(s.actual[M]).length) delete s.actual[M];
@@ -2614,6 +2675,7 @@ function aplicarHolerites(){
       const M = h.dataPag.slice(0,7), d = +h.dataPag.slice(8);
       const key = h.tipo==='13' ? (M.slice(5)==='11'?'d1':'d2') : h.tipo==='adiantamento' ? 'p20' : h.tipo==='salario' ? 'p5' : null;
       if(!key) return;
+      snapPrevisto(M,key);
       (db.salary.actual[M] = db.salary.actual[M]||{})[key] = h.liquido;
     });
   }
@@ -2662,10 +2724,14 @@ function monthFlow(M, depth=0){
   const ins = ev.filter(e=>e.v>0).sort(byDate), outs = ev.filter(e=>e.v<0).sort(byDate);
   const inTot = r2(ins.reduce((t,e)=>t+e.v,0)), outTot = r2(outs.reduce((t,e)=>t-e.v,0));
   const dim = +lastDay(M).slice(8);
-  const bud = db.budget>0 ? ceil2(M===bm ? db.budget*(dim-+b.date.slice(8))/dim : db.budget) : 0;
+  const refDia = b && M===bm ? +b.date.slice(8) : (!b && M===THIS_MONTH ? +TODAY.slice(8) : 0);
+  const bud = db.budget>0 ? ceil2(refDia ? db.budget*(dim-refDia)/dim : db.budget) : 0;
   let start = null, end = null;
   if(b && M>=bm && depth<60){
     if(M===bm){ start = b.value; end = r2(start + ev.filter(e=>!e.done).reduce((t,e)=>t+e.v,0) - bud); }
+    else { start = monthFlow(addM(M,-1), depth+1).end; end = r2(start + inTot - outTot - bud); }
+  } else if(!b && M>=THIS_MONTH && depth<60){ // sem saldo informado: parte de R$ 0 hoje e leva a sobra para o mês seguinte
+    if(M===THIS_MONTH){ start = 0; end = r2(ev.filter(e=>!e.done).reduce((t,e)=>t+e.v,0) - bud); }
     else { start = monthFlow(addM(M,-1), depth+1).end; end = r2(start + inTot - outTot - bud); }
   }
   const aPagar = r2(outs.filter(e=>!e.paid && !e.done).reduce((t,e)=>t-e.v,0));
@@ -2677,7 +2743,9 @@ function monthFlow(M, depth=0){
 function resumoMes(M){
   const f = monthFlow(M), nome = mLabel(M,{month:'long'}), dif = r2(f.inTot - f.outTot - f.bud);
   const linha = e => {
-    const st_ = e.v>0 ? (e.done?'já recebido':e.tag||'previsto') : (e.paid?'pago ✓':e.done?'já pago':e.late?'atrasada':'a pagar');
+    const ajustar = ' · <span style="color:var(--accent)">toque para ajustar ✏️</span>';
+    const st_ = e.v>0 ? (e.done?'já recebido':(e.tag==='valor real'?'valor real'+ajustar:'previsto'+ajustar))
+      : (e.paid?'pago ✓':e.done?'já pago':e.late?'atrasada':(e.fatura&&!/real/.test(e.sub||'')?'a pagar'+ajustar:'a pagar'));
     const chk = e.v<0 && !e.done && !e.auto;
     return `<li class="${(e.paid||e.done)?'done':''}">
       ${chk?`<button class="chk ${e.paid?'on':''}" onclick="togglePaid('${e.key}')" aria-label="Marcar como paga">${e.paid?'✓':''}</button>`:`<span class="dot">${e.icon||(e.v>0?'💰':'💳')}</span>`}
@@ -2698,12 +2766,14 @@ function resumoMes(M){
   const semRegistro = passado && f.inTot===0;
   const conta = semRegistro ? `<p class="sub" style="margin:10px 0 0">O Cofrivo não tem os registros completos deste mês.</p>` : passado ? `<div class="result ${dif<0?'bad':'good'}" style="margin-top:10px"><span>Em ${nome}: ${dif<0?'saiu mais do que entrou':'entrou mais do que saiu'}</span><b>${brl(Math.abs(dif))}</b></div>`
     : f.start!=null ? `<div class="need" style="margin-top:10px">
-        ${L(f.isBalMonth?`👛 Na conta em ${dLabel(db.balance.date)}`:`👛 Começa ${nome} com`, brl(f.start), f.start<0?'neg':'')}
+        ${L(f.isBalMonth?`👛 Na conta em ${dLabel(db.balance.date)}`:(!db.balance&&M===THIS_MONTH)?`👛 Na conta hoje <small class="neg">(não informado)</small>`:`👛 Começa ${nome} com`, brl(f.start), f.start<0?'neg':'')}
         ${L('➕ Ainda vai entrar', '+ '+brl(inFut), 'pos')}
         ${L('➖ Ainda falta pagar', '− '+brl(outFut))}
         ${pagoDepois?L('➖ Já pago depois do saldo informado', '− '+brl(pagoDepois)):''}
         <div class="line big2"><span>= No fim de ${nome}</span><b class="${f.end<0?'neg':'pos'}">${brl(f.end)}</b></div>
-        ${f.isBalMonth?`<div class="parts">Está errado? <a href="#" onclick="openBalance();return false">Atualize quanto tem na conta hoje</a>.</div>`:'<div class="parts">Inclui o que sobrou ou faltou nos meses anteriores.</div>'}</div>`
+        ${f.isBalMonth?`<div class="parts">Está errado? <a href="#" onclick="openBalance();return false">Atualize quanto tem na conta hoje</a>.</div>`
+          :(!db.balance&&M===THIS_MONTH)?`<div class="parts">Estou considerando R$ 0 na conta hoje. <a href="#" onclick="openBalance();return false">Informe o valor real</a> para a previsão ficar certa.</div>`
+          :'<div class="parts">Inclui o que sobrou ou faltou nos meses anteriores.</div>'}</div>`
     : `<div class="need" style="margin-top:10px">
         ${L('➕ Ainda vai entrar', '+ '+brl(inFut), 'pos')}
         ${L('➖ Ainda falta pagar', '− '+brl(outFut))}
@@ -2729,6 +2799,54 @@ function resumoMes(M){
     ${f.outs.length?`<ul class="list">${f.outs.map(linha).join('')}</ul>`:'<div class="empty">Nenhuma conta neste mês.</div>'}
     ${f.bud?`<div class="hint" style="margin-top:6px">+ ${brl(f.bud)} de gastos do dia a dia (estimativa)</div>`:''}
   </div>`;
+}
+
+/* ---------- Previsto × Real ---------- */
+function prevRealView(M){
+  const f = monthFlow(M), s = salaryFor(M), snap = db.salary?.previsto?.[M] || {}, nome = mLabel(M,{month:'long'});
+  const rowsIn = f.ins.map(e=>{
+    let prev = null, real = null;
+    if(e.key.startsWith('sal:')){ const k = e.key.split(':')[1], p = s?.pays.find(x=>x.key===k);
+      prev = snap[k] ?? (p ? Math.max(0,Math.floor(p.raw)) : null); real = p?.real ? p.value : (e.done ? prev : null); }
+    else if(e.key.startsWith('tx:')) real = e.v;            // lançado por você = real (não estava previsto)
+    else { prev = e.v; real = e.done ? e.v : null; }
+    return {e, prev, real};
+  });
+  const rowsOut = f.outs.filter(e=>!e.auto).map(e=>{
+    let prev = e.prev ?? -e.v, real = null;
+    if(e.fatura){ const cd = cartoes().find(c=>e.key===`fat:${c.id}:${M}`); const ft = cd ? faturaTotal(cd,M) : null;
+      // previsto = soma das compras lançadas; se não há compras lançadas, a fatura informada é o próprio previsto
+      prev = ft && ft.soma>0 ? ft.soma : prev;
+      real = (e.paid||e.done) ? -e.v : (ft?.real && ft.soma>0 ? ft.total : null); }
+    else if(e.key.startsWith('tx:')){ prev = null; real = -e.v; }
+    else real = (e.paid||e.done) ? -e.v : null;
+    return {e, prev, real};
+  });
+  // gastos do dia a dia: planejado (estimativa) × lançado no mês (débito e cartão)
+  const gastoReal = r2(db.tx.filter(t=>t.type==='out' && t.date.slice(0,7)===M).reduce((a,t)=>a+t.value,0));
+  const comp = L => L.filter(r=>r.prev!=null && r.real!=null);
+  const dIn = r2(comp(rowsIn).reduce((a,r)=>a+r.real-r.prev,0)), dOut = r2(comp(rowsOut).filter(r=>!r.e.key.startsWith('tx:')).reduce((a,r)=>a+r.real-r.prev,0));
+  const extrasIn = r2(rowsIn.filter(r=>r.prev==null).reduce((a,r)=>a+r.real,0));
+  const saldo = r2(dIn - dOut + extrasIn);
+  const dif = (v, inv) => { if(Math.abs(v)<0.005) return '<small>igual</small>'; const bom = inv ? v<0 : v>0; return `<small class="${bom?'pos':'neg'}">${v>0?'+':'−'}${brl(Math.abs(v))}</small>`; };
+  const linha = (r, saida) => `<li class="tap" onclick="${r.e.tap||''}"><div class="dday sm">${r.e.date.slice(8)}<small>${wd(r.e.date)}</small></div>
+    <div class="main"><div class="t">${esc(r.e.label)}</div><div class="m">${r.prev!=null?`previsto ${brl(r.prev)}`:'não estava previsto'}</div></div>
+    <div class="amt">${r.real!=null?brl(r.real):'<span style="color:var(--ink3)">ainda não</span>'}${r.prev!=null&&r.real!=null?dif(r.real-r.prev, saida):''}</div></li>`;
+  const frase = (comp(rowsIn).length || comp(rowsOut).length || extrasIn)
+    ? `Em ${nome} ${!comp(rowsIn).length?'as entradas ainda não caíram':Math.abs(dIn)<0.005?'entrou exatamente o previsto':dIn>0?`entrou <b class="pos">${brl(dIn)} a mais</b> do que o previsto`:`entrou <b class="neg">${brl(-dIn)} a menos</b> do que o previsto`}${extrasIn?` (+ ${brl(extrasIn)} que não estavam previstos)`:''} e as contas ${dOut>0?`custaram <b class="neg">${brl(dOut)} a mais</b>`:dOut<0?`custaram <b class="pos">${brl(-dOut)} a menos</b>`:'saíram <b>como previsto</b>'}.`
+    : `Ainda não há valores reais em ${nome} para comparar. Conforme o dinheiro cai e você paga as contas, a comparação aparece aqui.`;
+  return `
+  <div class="card hero"><span class="emoji">📊</span><div class="label">Previsto × Real · ${nome}</div>
+    <p style="margin:6px 0 0;font-size:15px">${frase}</p>
+    ${(comp(rowsIn).length||comp(rowsOut).length||extrasIn)?`<div class="result ${saldo<0?'bad':'good'}" style="margin-top:10px"><span>No balanço, em relação ao previsto</span><b>${saldo<0?'−':'+'} ${brl(Math.abs(saldo))}</b></div>`:''}
+    <p class="hint" style="margin-top:8px">Toque em qualquer item para corrigir o valor. Ao marcar uma conta como paga, você pode informar se pagou outro valor.</p>
+  </div>
+  <div class="card"><h2>💰 Entradas</h2>${rowsIn.length?`<ul class="list">${rowsIn.map(r=>linha(r,false)).join('')}</ul>`:'<div class="empty">Nenhuma entrada.</div>'}</div>
+  <div class="card"><h2>💳 Contas</h2>${rowsOut.length?`<ul class="list">${rowsOut.map(r=>linha(r,true)).join('')}</ul>`:'<div class="empty">Nenhuma conta.</div>'}</div>
+  ${db.budget>0||gastoReal?`<div class="card"><h2>🛒 Gastos do dia a dia</h2>
+    <div class="need"><div class="line"><span>Planejado (estimativa)</span><b>${db.budget>0?brl(db.budget):'—'}</b></div>
+    <div class="line"><span>Lançado no mês</span><b>${brl(gastoReal)}</b></div>
+    ${db.budget>0?`<div class="line big2"><span>${gastoReal>db.budget?'Passou do planejado':'Ainda dentro do planejado'}</span><b class="${gastoReal>db.budget?'neg':'pos'}">${brl(Math.abs(db.budget-gastoReal))}</b></div>`:''}</div></div>`:''}`;
 }
 
 /* ======================= PLANEJAR: guardar dinheiro e metas =======================
@@ -2938,7 +3056,7 @@ function metasView(){
 /* ---------- atualização do app ----------
    A cada versão publicada, aumente APP_VERSION (e a versão do cache no sw.js).
    O app compara com o index.html publicado e, se mudou, mostra a faixa "Atualizar agora". */
-const APP_VERSION = '28';
+const APP_VERSION = '30';
 let ultimaChecagem = 0;
 async function versaoPublicada(){
   const r = await fetch(`./index.html?checar=${Date.now()}`, {cache:'no-store'});

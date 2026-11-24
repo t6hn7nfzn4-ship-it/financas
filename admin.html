@@ -39,6 +39,8 @@ button.mini{padding:6px 10px;font-size:13px;font-weight:600}
 code{background:var(--bg);padding:2px 6px;border-radius:6px;font-size:13px}
 .msg{white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:10px;font-size:13px}
 .hint{font-size:12.5px;color:var(--ink3)}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-start;justify-content:center;padding:30px 12px;overflow:auto;z-index:20}
+#modal .mbox{width:100%;max-width:640px;margin:0}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;display:none;z-index:9}
 </style>
 </head>
@@ -118,7 +120,7 @@ function tela(){
       <label><span>WhatsApp</span><input id="nTel" inputmode="tel"></label>
     </div>
     <div class="row">
-      <label><span>Tipo</span><select id="nPlano"><option value="mensal">Assinatura mensal</option><option value="teste">Teste grátis (7 dias)</option><option value="cortesia">Cortesia (sem vencimento)</option></select></label>
+      <label><span>Tipo</span><select id="nPlano"><option value="mensal">Assinatura mensal</option><option value="anual">Assinatura anual</option><option value="teste">Teste grátis (7 dias)</option><option value="cortesia">Cortesia (sem vencimento)</option></select></label>
       <label><span>Aparelhos permitidos</span><input id="nMax" inputmode="numeric" value="2"></label>
       <label><span>Observação</span><input id="nObs" placeholder="Ex.: comprou pelo Instagram"></label>
     </div>
@@ -141,12 +143,13 @@ function item(a){
       <div class="m" style="text-align:right">código <code>${esc(a.codigo)}</code><br>válido até <b>${a.valido_ate?dt(a.valido_ate):'sem vencimento'}</b></div></div>
     <div class="m">${devs}/${a.max_dispositivos} aparelho(s) · último acesso ${a.ultimo_acesso?dt(a.ultimo_acesso):'nunca'} · criado em ${dt(a.criado_em)}${a.obs?' · '+esc(a.obs):''}</div>
     <div class="acts">
-      ${a.plano!=='cortesia'?`<button class="mini sec" onclick="renovar('${a.codigo}')">+1 mês</button>`:''}
+      ${a.plano!=='cortesia'?`<button class="mini sec" onclick="renovar('${a.codigo}')">${a.plano==='anual'?'+1 ano':'+1 mês'}</button>`:''}
       ${['reembolsado','cancelado','bloqueado'].includes(a.status)?`<button class="mini sec" onclick="mudar('${a.codigo}','ativo')">Reativar</button>`
         :`<button class="mini danger" onclick="mudar('${a.codigo}','reembolsado','Reembolso: remover o acesso de ${esc(a.nome||a.codigo)}?')">Reembolsar</button>
           <button class="mini danger" onclick="mudar('${a.codigo}','cancelado','Cancelar a assinatura de ${esc(a.nome||a.codigo)}?')">Cancelar</button>
           <button class="mini danger" onclick="mudar('${a.codigo}','bloqueado','Pausar o acesso de ${esc(a.nome||a.codigo)}?')">Pausar</button>`}
       ${devs?`<button class="mini sec" onclick="liberarAparelhos('${a.codigo}')">Liberar aparelhos</button>`:''}
+      <button class="mini sec" onclick="editar('${a.codigo}')">✏️ Editar</button>
       <button class="mini sec" onclick="copiarMsg('${a.codigo}')">Copiar mensagem</button>
       <button class="mini ghost" onclick="excluir('${a.codigo}')">Excluir</button>
     </div></div>`;
@@ -156,7 +159,7 @@ async function criar(){
   const plano = $('#nPlano').value;
   const a = {codigo:novoCodigo(), nome:$('#nNome').value.trim()||null, email:$('#nEmail').value.trim()||null, telefone:$('#nTel').value.trim()||null,
     plano, status: plano==='cortesia'?'cortesia':plano==='teste'?'teste':'ativo',
-    valido_ate: plano==='mensal'?addMes(null):plano==='teste'?addDias(7):null,
+    valido_ate: plano==='mensal'?addMes(null):plano==='anual'?addMes(null,12):plano==='teste'?addDias(7):null,
     max_dispositivos: Math.max(1,parseInt($('#nMax').value)||2), obs:$('#nObs').value.trim()||null};
   try{
     await api('/rest/v1/acessos',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(a)});
@@ -172,7 +175,34 @@ async function patch(codigo, dados){
   await api(`/rest/v1/acessos?codigo=eq.${encodeURIComponent(codigo)}`,{method:'PATCH',body:JSON.stringify({...dados,atualizado_em:new Date().toISOString()})});
   Object.assign(S.lista.find(x=>x.codigo===codigo), dados); tela();
 }
-async function renovar(c){ const a=S.lista.find(x=>x.codigo===c); await patch(c,{valido_ate:addMes(a.valido_ate), status: a.status==='teste'?'ativo':a.status==='vencido'?'ativo':a.status, plano:'mensal'}); toast('Renovado até '+dt(S.lista.find(x=>x.codigo===c).valido_ate)); }
+async function renovar(c){ const a=S.lista.find(x=>x.codigo===c); const anual=a.plano==='anual'; await patch(c,{valido_ate:addMes(a.valido_ate, anual?12:1), status: a.status==='teste'?'ativo':a.status==='vencido'?'ativo':a.status, plano: anual?'anual':'mensal'}); toast('Renovado até '+dt(S.lista.find(x=>x.codigo===c).valido_ate)); }
+function editar(c){
+  const a = S.lista.find(x=>x.codigo===c); if(!a) return;
+  const d = a.valido_ate ? new Date(a.valido_ate).toISOString().slice(0,10) : '';
+  const opt = (v,l,cur) => `<option value="${v}" ${cur===v?'selected':''}>${l}</option>`;
+  const m = document.createElement('div'); m.id='modal';
+  m.innerHTML = `<div class="card mbox"><div class="top"><h2>✏️ Editar ${esc(a.nome||a.codigo)}</h2><button class="ghost" onclick="fecharModal()">Fechar</button></div>
+    <p class="m">Código <code>${esc(a.codigo)}</code></p>
+    <div class="row"><label><span>Nome</span><input id="eNome" value="${esc(a.nome||'')}"></label>
+      <label><span>E-mail</span><input id="eEmail" type="email" value="${esc(a.email||'')}"></label>
+      <label><span>WhatsApp</span><input id="eTel" value="${esc(a.telefone||'')}"></label></div>
+    <div class="row"><label><span>Plano</span><select id="ePlano">${opt('mensal','Assinatura mensal',a.plano)}${opt('anual','Assinatura anual',a.plano)}${opt('teste','Teste grátis',a.plano)}${opt('cortesia','Cortesia',a.plano)}</select></label>
+      <label><span>Situação</span><select id="eStatus">${opt('ativo','Ativo',a.status)}${opt('teste','Teste',a.status)}${opt('cortesia','Cortesia',a.status)}${opt('bloqueado','Pausado',a.status)}${opt('cancelado','Cancelado',a.status)}${opt('reembolsado','Reembolsado',a.status)}</select></label></div>
+    <div class="row"><label><span>Válido até (vazio = sem vencimento)</span><input id="eVal" type="date" value="${d}"></label>
+      <label><span>Aparelhos permitidos</span><input id="eMax" inputmode="numeric" value="${a.max_dispositivos}"></label></div>
+    <label><span>Observação</span><input id="eObs" value="${esc(a.obs||'')}"></label>
+    <div class="acts"><button onclick="salvarEdicao('${a.codigo}')">Salvar</button><button class="sec" onclick="fecharModal()">Cancelar</button></div></div>`;
+  document.body.appendChild(m);
+  $('#ePlano').onchange = e => { if(e.target.value==='cortesia'){ $('#eStatus').value='cortesia'; $('#eVal').value=''; } else if(e.target.value==='teste') $('#eStatus').value='teste'; else if(['cortesia','teste'].includes($('#eStatus').value)) $('#eStatus').value='ativo'; };
+}
+function fecharModal(){ $('#modal')?.remove(); }
+async function salvarEdicao(c){
+  const v = $('#eVal').value;
+  const dados = {nome:$('#eNome').value.trim()||null, email:$('#eEmail').value.trim()||null, telefone:$('#eTel').value.trim()||null,
+    plano:$('#ePlano').value, status:$('#eStatus').value, valido_ate: v ? new Date(v+'T23:59:59').toISOString() : null,
+    max_dispositivos: Math.max(1, parseInt($('#eMax').value)||1), obs:$('#eObs').value.trim()||null};
+  try{ await patch(c, dados); fecharModal(); toast('Alterações salvas'); }catch(e){ alert('Não consegui salvar: '+e.message); }
+}
 async function mudar(c,status,pergunta){ if(pergunta && !confirm(pergunta)) return; await patch(c,{status}); toast('Pronto: '+status); }
 async function liberarAparelhos(c){ if(!confirm('Liberar os aparelhos deste código? A pessoa poderá entrar em um aparelho novo.')) return; await patch(c,{dispositivos:[]}); toast('Aparelhos liberados'); }
 async function excluir(c){ if(!confirm('Excluir este acesso de vez? (Para reembolso, prefira “Reembolsar”, que guarda o histórico.)')) return;

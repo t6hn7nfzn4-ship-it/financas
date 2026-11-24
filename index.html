@@ -2766,15 +2766,16 @@ function resumoMes(M){
   const carryTxt = f.isBalMonth ? `que você tem na conta (informado em ${dLabel(db.balance.date)})`
     : `que sobraram de ${mLabel(addM(M,-1),{month:'long'})}`;
   const fimSemSaldo = r2(inFut - outFut - pagoDepois);
+  const saldoMes = r2((f.start||0) + inFut); // sobra do mês anterior + o que ainda entra = de onde saem as contas
   const L = (t,v,cls='') => `<div class="line"><span>${t}</span><b class="${cls}">${v}</b></div>`;
   const prox = !passado && f.end!=null && f.end>0 ? monthFlow(addM(M,1)) : null;
   const aviso = prox && prox.end!=null && prox.end<0 ? `<div class="alert" style="background:var(--butter);margin:10px 0 0;cursor:default"><span class="ico">⚠️</span><div><b>Esse dinheiro já tem destino</b><span>As contas de ${mLabel(addM(M,1),{month:'long'})} vão precisar dele: mesmo usando tudo, ainda faltam ${brl(-prox.end)} lá.</span></div></div>` : '';
   const semRegistro = passado && f.inTot===0;
   const conta = semRegistro ? `<p class="sub" style="margin:10px 0 0">O Cofrivo não tem os registros completos deste mês.</p>` : passado ? `<div class="result ${dif<0?'bad':'good'}" style="margin-top:10px"><span>Em ${nome}: ${dif<0?'saiu mais do que entrou':'entrou mais do que saiu'}</span><b>${brl(Math.abs(dif))}</b></div>`
     : f.start!=null ? `<div class="need" style="margin-top:10px">
-        ${L(f.isBalMonth?`👛 Na conta em ${dLabel(db.balance.date)}`:(!db.balance&&M===THIS_MONTH)?`👛 Na conta hoje <small class="neg">(não informado)</small>`:`👛 Começa ${nome} com`, brl(f.start), f.start<0?'neg':'')}
-        ${L('➕ Ainda vai entrar', '+ '+brl(inFut), 'pos')}
-        ${L('➖ Ainda falta pagar', '− '+brl(outFut))}
+        <div class="line big2"><span>💰 Saldo de ${nome}</span><b class="${saldoMes<0?'neg':'pos'}">${brl(saldoMes)}</b></div>
+        <div class="parts">${f.isBalMonth?`${brl(f.start)} na conta em ${dLabel(db.balance.date)}`:(!db.balance&&M===THIS_MONTH)?`R$ 0 na conta hoje (não informado)`:`${f.start<0?'−':''}${brl(Math.abs(f.start))} ${f.start<0?'que faltaram':'que sobraram'} de ${mLabel(addM(M,-1),{month:'long'})}`} ${inFut?`+ ${brl(inFut)} que ainda vão entrar`:''}</div>
+        ${L('➖ Contas que ainda faltam pagar', '− '+brl(outFut))}
         ${pagoDepois?L('➖ Já pago depois do saldo informado', '− '+brl(pagoDepois)):''}
         <div class="line big2"><span>= No fim de ${nome}</span><b class="${f.end<0?'neg':'pos'}">${brl(f.end)}</b></div>
         ${f.isBalMonth?`<div class="parts">Está errado? <a href="#" onclick="openBalance();return false">Atualize quanto tem na conta hoje</a>.</div>`
@@ -2790,17 +2791,18 @@ function resumoMes(M){
   <div class="card hero resumo">
     <div class="label">${passado?`Resumo de ${nome} (já passou)`:temPassado?`${nome[0].toUpperCase()+nome.slice(1)}: daqui para a frente`:`Resumo de ${nome}`}</div>
     <div class="duo">
-      <div class="t-mint"><small>💰 ${passado?'Entrou':carry!=null?'Vai ter':temPassado?'Ainda vai entrar':'Vai entrar'}</small><b class="pos">${brl(passado?f.inTot:inFut+Math.max(carry||0,0))}</b></div>
+      <div class="t-mint"><small>💰 ${passado?'Entrou':carry!=null?'Saldo de '+nome:temPassado?'Ainda vai entrar':'Vai entrar'}</small><b class="pos">${brl(passado?f.inTot:inFut+Math.max(carry||0,0))}</b></div>
       <div class="t-pink"><small>💳 ${passado?'Saiu':temPassado?'Ainda falta pagar':'Precisa pagar'}</small><b>${brl(passado?f.outTot:outFut+pagoDepois+Math.max(-(carry||0),0))}</b></div>
     </div>
-    ${carry?`<p class="sub" style="margin:8px 0 0">${carry>0?`💰 Inclui <b>${brl(carry)}</b> ${carryTxt}.`:`💳 Inclui <b>${brl(-carry)}</b> que ${f.isBalMonth||(!db.balance&&M===THIS_MONTH)?'estão negativos na conta hoje':`faltaram em ${mLabel(addM(M,-1),{month:'long'})}`}.`}</p>`:''}
+    ${carry<0?`<p class="sub" style="margin:8px 0 0">${carry>0?'':`💳 Inclui <b>${brl(-carry)}</b> que ${f.isBalMonth||(!db.balance&&M===THIS_MONTH)?'estão negativos na conta hoje':`faltaram em ${mLabel(addM(M,-1),{month:'long'})}`}.`}</p>`:''}
     <div style="display:none">
     </div>
     ${temPassado&&!passado?`<p class="sub" style="margin:8px 0 0">Já aconteceu em ${nome}: recebido ${brl(inJa)} · pago ${brl(outJa)}. Isso não entra na conta acima, porque já saiu ou entrou da sua conta.</p>`:''}
     ${conta}${aviso}
   </div>
-  <div class="card"><div class="grouphead"><h2>💰 Entradas de ${nome}</h2>${passado?`<span class="pos">${brl(f.inTot)}</span>`:inFut>0?`<span class="pos">a receber ${brl(inFut)}</span>`:f.inTot?`<span class="pos">✓ tudo recebido</span>`:''}</div>
-    ${f.inTot&&!passado?`<p class="sub">Total do mês: ${brl(f.inTot)}${inJa?` · já recebido ${brl(inJa)}`:''}</p>`:''}
+  <div class="card"><div class="grouphead"><h2>💰 Entradas de ${nome}</h2>${passado?`<span class="pos">${brl(f.inTot)}</span>`:carry>0?`<span class="pos">${brl(saldoMes)}</span>`:inFut>0?`<span class="pos">a receber ${brl(inFut)}</span>`:f.inTot?`<span class="pos">✓ tudo recebido</span>`:''}</div>
+    ${!passado&&carry>0?`<p class="sub">Saldo de ${nome}: ${brl(saldoMes)} = ${brl(carry)} ${f.isBalMonth?'na conta':`de ${mLabel(addM(M,-1),{month:'long'})}`} + ${brl(inFut)} a receber${inJa?` · já recebido ${brl(inJa)}`:''}</p>`
+      : f.inTot&&!passado?`<p class="sub">Total do mês: ${brl(f.inTot)}${inJa?` · já recebido ${brl(inJa)}`:''}</p>`:''}
     ${(f.ins.length||carry>0)?`<ul class="list">${carry>0?`<li><span class="dot">👛</span><div class="main"><div class="t">${f.isBalMonth?'Já na conta':`Sobra de ${mLabel(addM(M,-1),{month:'long'})}`}</div><div class="m">${f.isBalMonth?carryTxt:`o que sobrar de ${mLabel(addM(M,-1),{month:'long'})} · diminui a cada gasto lançado lá`}</div></div><div class="amt pos">+ ${brl(carry)}</div></li>`:''}${f.ins.map(linha).join('')}</ul>`:'<div class="empty">Nenhuma entrada prevista.</div>'}
   </div>
   <div class="card"><div class="grouphead"><h2>💳 Contas de ${nome}</h2>${passado?`<span>${brl(f.outTot)}</span>`:(f.aPagar+f.bud)>0?`<span class="neg">falta ${brl(f.aPagar+f.bud)}</span>`:f.outTot?`<span class="pos">✓ tudo pago</span>`:''}</div>
@@ -2850,7 +2852,7 @@ function prevRealView(M){
     ${(comp(rowsIn).length||comp(rowsOut).length||extrasIn)?`<div class="result ${saldo<0?'bad':'good'}" style="margin-top:10px"><span>No balanço, em relação ao previsto</span><b>${saldo<0?'−':'+'} ${brl(Math.abs(saldo))}</b></div>`:''}
     <p class="hint" style="margin-top:8px">Toque em qualquer item para corrigir o valor. Ao marcar uma conta como paga, você pode informar se pagou outro valor.</p>
   </div>
-  <div class="card"><h2>💰 Entradas</h2>${rowsIn.length?`<ul class="list">${rowsIn.map(r=>linha(r,false)).join('')}</ul>`:'<div class="empty">Nenhuma entrada.</div>'}</div>
+  <div class="card"><h2>💰 Entradas</h2>${M>THIS_MONTH&&f.start>0?`<p class="sub">Além destas, ${nome} começa com <b>${brl(f.start)}</b> que sobraram de ${mLabel(addM(M,-1),{month:'long'})}.</p>`:''}${rowsIn.length?`<ul class="list">${rowsIn.map(r=>linha(r,false)).join('')}</ul>`:'<div class="empty">Nenhuma entrada.</div>'}</div>
   <div class="card"><h2>💳 Contas</h2>${rowsOut.length?`<ul class="list">${rowsOut.map(r=>linha(r,true)).join('')}</ul>`:'<div class="empty">Nenhuma conta.</div>'}</div>
   ${db.budget>0||gastoReal?`<div class="card"><h2>🛒 Gastos do dia a dia</h2>
     <div class="need"><div class="line"><span>Planejado (estimativa)</span><b>${db.budget>0?brl(db.budget):'—'}</b></div>

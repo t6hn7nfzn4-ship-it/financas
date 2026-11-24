@@ -2717,11 +2717,12 @@ function resumoMes(M){
     ${temPassado&&!passado?`<p class="sub" style="margin:8px 0 0">Já aconteceu em ${nome}: recebido ${brl(inJa)} · pago ${brl(outJa)}. Isso não entra na conta acima, porque já saiu ou entrou da sua conta.</p>`:''}
     ${conta}${aviso}
   </div>
-  <div class="card"><div class="grouphead"><h2>💰 Entradas de ${nome}</h2><span class="pos">${brl(f.inTot)}</span></div>
+  <div class="card"><div class="grouphead"><h2>💰 Entradas de ${nome}</h2>${passado?`<span class="pos">${brl(f.inTot)}</span>`:inFut>0?`<span class="pos">a receber ${brl(inFut)}</span>`:f.inTot?`<span class="pos">✓ tudo recebido</span>`:''}</div>
+    ${f.inTot&&!passado?`<p class="sub">Total do mês: ${brl(f.inTot)}${inJa?` · já recebido ${brl(inJa)}`:''}</p>`:''}
     ${f.ins.length?`<ul class="list">${f.ins.map(linha).join('')}</ul>`:'<div class="empty">Nenhuma entrada prevista.</div>'}
   </div>
-  <div class="card"><div class="grouphead"><h2>💳 Contas de ${nome}</h2><span>${brl(f.outTot + f.bud)}</span></div>
-    <p class="sub">${f.pago?`Já pago ${brl(f.pago)} · `:''}<b>Falta pagar ${brl(f.aPagar + f.bud)}</b> · toque na bolinha quando pagar</p>
+  <div class="card"><div class="grouphead"><h2>💳 Contas de ${nome}</h2>${passado?`<span>${brl(f.outTot)}</span>`:(f.aPagar+f.bud)>0?`<span class="neg">falta ${brl(f.aPagar+f.bud)}</span>`:f.outTot?`<span class="pos">✓ tudo pago</span>`:''}</div>
+    ${f.outTot||f.bud?`<p class="sub">Total do mês: ${brl(f.outTot + f.bud)}${f.pago?` · <span class="pos">já pago ${brl(f.pago)}</span>`:''}${!passado&&(f.aPagar+f.bud)>0?' · toque na bolinha quando pagar':''}</p>`:''}
     ${f.outs.length?`<ul class="list">${f.outs.map(linha).join('')}</ul>`:'<div class="empty">Nenhuma conta neste mês.</div>'}
     ${f.bud?`<div class="hint" style="margin-top:6px">+ ${brl(f.bud)} de gastos do dia a dia (estimativa)</div>`:''}
   </div>`;

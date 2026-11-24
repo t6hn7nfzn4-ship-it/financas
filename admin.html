@@ -112,7 +112,7 @@ async function criarSenha(){
   if(s1!==$('#cdS2').value) return $('#cdMsg').textContent='As senhas não são iguais.';
   $('#cdMsg').textContent='Criando…';
   try{
-    const r = await fetch(CFG.url+'/auth/v1/signup',{method:'POST',headers:{'apikey':CFG.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:s1})});
+    const r = await fetch(CFG.url+'/auth/v1/signup?redirect_to='+encodeURIComponent(PAINEL_LINK),{method:'POST',headers:{'apikey':CFG.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:s1})});
     const j = await r.json().catch(()=>({}));
     if(!r.ok){ const m = String(j.msg||j.message||j.error_description||'');
       return $('#cdMsg').textContent = /registered|already/i.test(m) ? 'Este e-mail já tem senha. Volte e entre normalmente.'
@@ -327,6 +327,16 @@ async function copiarMsg(c){ const a=S.lista.find(x=>x.codigo===c); try{ await n
 
 (function(){
   if(!CFG.url || !CFG.key) return telaConfig();
+  // voltou do link de confirmação do e-mail: já entra direto
+  const h = new URLSearchParams(location.hash.slice(1));
+  if(h.get('access_token')){
+    history.replaceState(null,'',location.pathname);
+    try{ const p = JSON.parse(atob(h.get('access_token').split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+      S.token=h.get('access_token'); S.refresh=h.get('refresh_token'); S.email=p.email||'';
+      sessionStorage.setItem('cof.adm',JSON.stringify({t:S.token,r:S.refresh,e:S.email})); toast('E-mail confirmado ✅'); return carregar(); }catch(e){}
+  }
+  if(h.get('error')){ history.replaceState(null,'',location.pathname); telaLogin();
+    $('#lgMsg').textContent = /expired|invalid/i.test(h.get('error_code')||h.get('error_description')||'') ? 'O link de confirmação expirou ou já foi usado. Tente entrar com seu e-mail e senha.' : 'Não deu certo pelo link. Tente entrar com seu e-mail e senha.'; return; }
   const s = JSON.parse(sessionStorage.getItem('cof.adm')||'null');
   if(s){ S.token=s.t; S.refresh=s.r; S.email=s.e; carregar(); } else telaLogin();
 })();

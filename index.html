@@ -784,7 +784,15 @@ function saveTx(id,isFixed){
     if(id){const i=db.fixed.findIndex(f=>f.id===id);rec.end=db.fixed[i].end;db.fixed[i]=rec}else db.fixed.push(rec);
   } else {
     const rec = {id:id||uid(),type,desc,value,cat,date,ded,nf,...pag, at:(id&&db.tx.find(t=>t.id===id)?.at)||new Date().toISOString()};
+    // demonstrativo na hora: como o fim do mês mudou com esse lançamento
+    const card = cartao && cartoes().find(c=>c.id===cartao), Mi = card ? faturaDe(card,date) : date.slice(0,7);
+    const antes = !id && Mi>=THIS_MONTH ? monthFlow(Mi).end : null;
     if(id){const i=db.tx.findIndex(t=>t.id===id);db.tx[i]=rec}else db.tx.push(rec);
+    closeSheet(); save();
+    st.extM = date.slice(0,7);
+    if(antes!=null){ const depois = monthFlow(Mi).end, nm = mLabel(Mi,{month:'long'});
+      toastMsg(`${type==='in'?'💰 Entrada':'🛒 Saída'} lançada: ${type==='in'?'+':'−'} ${brl(value)}${card?` (fatura de ${nm})`:''} · fim de ${nm}: ${brl(antes)} → ${brl(depois)}`); }
+    return;
   }
   closeSheet(); save();
 }
@@ -1880,13 +1888,45 @@ VIEWS.lancar = function(){
       <div class="main"><div class="t">${esc(e.label)}</div><div class="m">${e.sub?esc(e.sub)+' · ':''}${e.paid?'paga ✓':e.late?'<b class="neg">atrasada</b>':'vence '+dLabel(e.date)}</div></div>
       <div class="amt">${brl(-e.v)}</div></li>`).join('')}</ul>`:'<div class="empty">Nenhuma conta para os próximos dias 🎉</div>'}
   </div>
-  <div class="card"><h2>📒 Lançado em ${mLabel(THIS_MONTH,{month:'long'})}</h2>
-    ${reals.length||txs.length?`<ul class="list">
-      ${reals.map(p=>`<li class="tap" onclick="openRealPay()"><span class="dot">💰</span><div class="main"><div class="t">${p.label}</div><div class="m">${dLabel(p.date)} · valor real</div></div><div class="amt pos">+ ${brl(p.value)}</div></li>`).join('')}
-      ${txs.map(t=>`<li class="tap" onclick="openTx('${t.id}')"><span class="dot">${catIcon(t.cat)}</span><div class="main"><div class="t">${esc(t.desc)}</div><div class="m">${esc(t.cat)} · ${dLabel(t.date)}${t.cartao?` · 💳 ${esc(cartoes().find(c=>c.id===t.cartao)?.nome||'cartão')}${t.parcelas>1?` em ${t.parcelas}×`:''} · vai na fatura`:''}</div></div><div class="amt ${t.type==='in'?'pos':''}">${t.type==='in'?'+':'−'} ${brl(t.value)}</div></li>`).join('')}
-    </ul>`:'<div class="empty">Nada lançado este mês ainda.</div>'}
-  </div>`;
+  ${extratoCard()}`;
 };
+
+/* ---------- extrato: o que você lançou (entradas e saídas novas) ---------- */
+function extratoCard(){
+  const M = st.extM || THIS_MONTH, F = st.extF || 'tudo', nome = mLabel(M,{month:'long'});
+  const sal = salaryFor(M), reals = sal ? sal.pays.filter(p=>p.real) : [];
+  const nomeCart = id => cartoes().find(c=>c.id===id)?.nome || 'cartão';
+  const novo = at => at && (Date.now() - new Date(at)) < 2*864e5;
+  const itens = [
+    ...reals.map(p=>({date:p.date, ent:true, v:p.value, t:p.label, m:'salário · valor real', ico:'💰', tap:'openRealPay()'})),
+    ...db.tx.filter(t=>t.date.slice(0,7)===M).map(t=>({date:t.date, ent:t.type==='in', v:t.value, t:t.desc, at:t.at, cart:t.cartao, ico:catIcon(t.cat), tap:`openTx('${t.id}')`,
+      m:`${t.cat}${t.cartao?` · 💳 ${nomeCart(t.cartao)}${t.parcelas>1?` em ${t.parcelas}×`:''} · vai na fatura de ${mLabel(faturaDe(cartoes().find(c=>c.id===t.cartao)||{fecha:1,vence:1},t.date),{month:'short'})}`:''}`}))
+  ].sort((a,b)=>b.date.localeCompare(a.date) || String(b.at||'').localeCompare(String(a.at||'')));
+  const ent = itens.filter(i=>i.ent), sai = itens.filter(i=>!i.ent);
+  const tEnt = r2(ent.reduce((s,i)=>s+i.v,0)), tSai = r2(sai.reduce((s,i)=>s+i.v,0)), tCart = r2(sai.filter(i=>i.cart).reduce((s,i)=>s+i.v,0));
+  const res = r2(tEnt - tSai);
+  const vis = F==='ent' ? ent : F==='sai' ? sai : itens;
+  let dia = '';
+  const linhas = vis.map(i=>{ const cab = i.date!==dia ? `<li class="dayhead" style="padding:8px 2px 2px;border:0"><b class="m">${dLabel(i.date)} · ${wd(i.date)}</b></li>` : ''; dia = i.date;
+    return cab+`<li class="tap" onclick="${i.tap}"><span class="dot">${i.ico}</span><div class="main"><div class="t">${esc(i.t)}${novo(i.at)?' <span class="badge pink">novo</span>':''}</div><div class="m">${esc(i.m)}</div></div><div class="amt ${i.ent?'pos':''}">${i.ent?'+':'−'} ${brl(i.v)}</div></li>`; }).join('');
+  const f = M>=THIS_MONTH ? monthFlow(M) : null;
+  const chip = (k,l) => `<button class="chip ${F===k?'on':''}" onclick="st.extF='${k}';render()">${l}</button>`;
+  return `<div class="card" id="extrato">
+    <div class="grouphead"><h2>🧾 Extrato de ${nome}</h2>
+      <span><button class="chip" onclick="st.extM=addM('${M}',-1);render()" aria-label="Mês anterior">◀</button> <button class="chip" ${M>=addM(THIS_MONTH,1)?'disabled':''} onclick="st.extM=addM('${M}',1);render()" aria-label="Próximo mês">▶</button></span></div>
+    <p class="sub">Tudo o que você lançou: entradas e saídas novas.</p>
+    ${itens.length?`<div class="need">
+      <div class="line"><span>➕ Entradas (${ent.length})</span><b class="pos">+ ${brl(tEnt)}</b></div>
+      <div class="line"><span>➖ Saídas (${sai.length})</span><b>− ${brl(tSai)}</b></div>
+      ${tCart?`<div class="parts">Das saídas, ${brl(tCart)} foram no cartão: não saem da conta agora, entram na fatura.</div>`:''}
+      <div class="line big2"><span>= ${res<0?'Saiu mais':'Sobrou'}</span><b class="${res<0?'neg':'pos'}">${brl(Math.abs(res))}</b></div>
+      ${f&&f.end!=null?`<div class="parts">Com tudo isso, ${nome} termina com <b class="${f.end<0?'neg':'pos'}">${brl(f.end)}</b> (previsão atual).</div>`:''}
+    </div>
+    <div class="chips" style="margin:10px 0 4px">${chip('tudo','Tudo')}${chip('ent',`Entradas (${ent.length})`)}${chip('sai',`Saídas (${sai.length})`)}</div>
+    ${vis.length?`<ul class="list">${linhas}</ul>`:'<div class="empty">Nada aqui.</div>'}`
+    :`<div class="empty">Nada lançado em ${nome}.</div>`}
+  </div>`;
+}
 
 /* ---------- Contas: tudo que você paga ---------- */
 /* ---------- cartões de crédito: fatura automática ----------
@@ -3083,7 +3123,7 @@ function metasView(){
 /* ---------- atualização do app ----------
    A cada versão publicada, aumente APP_VERSION (e a versão do cache no sw.js).
    O app compara com o index.html publicado e, se mudou, mostra a faixa "Atualizar agora". */
-const APP_VERSION = '33';
+const APP_VERSION = '34';
 let ultimaChecagem = 0;
 async function versaoPublicada(){
   const r = await fetch(`./index.html?checar=${Date.now()}`, {cache:'no-store'});
@@ -3328,7 +3368,7 @@ async function openNuvem(){
     }catch(e){ $('#nvOk').textContent = criar?'Ativar e enviar meus dados':'Trazer meus dados'; $('#nvErro').textContent = 'Sem conexão com o servidor. Tente de novo.'; }
   };
 }
-function toastMsg(m){ document.getElementById('pagoBar')?.remove(); const b = document.createElement('div'); b.id='pagoBar'; b.textContent = m; b.style.padding='10px 16px'; document.body.appendChild(b); setTimeout(()=>b.remove(), 3500); }
+function toastMsg(m){ document.getElementById('pagoBar')?.remove(); const b = document.createElement('div'); b.id='pagoBar'; b.textContent = m; b.style.padding='10px 16px'; document.body.appendChild(b); setTimeout(()=>b.remove(), 6000); }
 function nuvemCard(){
   if(!ACESSO_ON()) return '';
   const c = syncCfg();

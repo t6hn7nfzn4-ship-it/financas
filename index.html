@@ -599,7 +599,7 @@ lanc(){
   </div>
   <div class="card"><div class="grouphead"><h2>Parcelas do mês</h2><span>${brl(m.outInst)}</span></div>
     <p class="sub">Vêm da aba Dívidas</p>
-    ${m.inst.length?`<ul class="list">${m.inst.map(d=>`<li class="tap" onclick="openDebt('${d.id}')"><div class="main"><div class="t">${esc(d.desc)}</div><div class="m">${esc(d.creditor)} · ${d.n}/${d.total}</div></div><div class="amt">− ${brl(d.value)}</div></li>`).join('')}</ul>`:'<div class="empty">Nenhuma parcela neste mês.</div>'}
+    ${m.inst.length?`<ul class="list">${m.inst.map(d=>`<li class="tap" onclick="openDebt('${d.id}')"><div class="main"><div class="t">${esc(d.desc)}</div><div class="m">${esc(d.creditor)} · ${d.n}/${d.total}${dividaNoCartao(d)?` · 💳 na fatura ${esc(cartoes().find(c=>c.id===d.cartao).nome)}`:''}</div></div><div class="amt">− ${brl(d.value)}</div></li>`).join('')}</ul>`:'<div class="empty">Nenhuma parcela neste mês.</div>'}
   </div>`;
 },
 
@@ -805,16 +805,21 @@ function openDebt(id){
       <label class="f"><span>Onde / credor</span><input id="dcred" list="credlist" value="${esc(d?.creditor)}" placeholder="Ex.: Nubank"><datalist id="credlist">${creditors.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></label>
       <label class="f"><span>Tipo</span><select id="dkind">${Object.entries(KINDS).map(([k,v])=>`<option value="${k}" ${d?.kind===k?'selected':''}>${v}</option>`).join('')}</select></label>
     </div>
+    <label class="f"><span>Como paga</span><select id="dcart">
+      <option value="">Boleto, débito, Pix ou desconto em folha</option>
+      ${cartoes().map(c=>`<option value="${c.id}" ${d?.cartao===c.id?'selected':''}>💳 No cartão ${esc(c.nome)} (entra na fatura)</option>`).join('')}
+    </select></label>
+    ${cartoes().length?'':`<div class="hint">Para parcelar no cartão, cadastre o cartão em Contas → 💳 Cartões.</div>`}
     <div class="row">
       <label class="f"><span>Valor da parcela (R$)</span><input id="dval" inputmode="decimal" value="${d?String(d.value).replace('.',','):''}" placeholder="0,00"></label>
-      <label class="f"><span>Dia do vencimento</span><input id="dday" inputmode="numeric" value="${d?.day||''}" placeholder="Ex.: 7"></label>
+      <label class="f" id="ddayWrap"><span>Dia do vencimento</span><input id="dday" inputmode="numeric" value="${d?.day||''}" placeholder="Ex.: 7"></label>
     </div>
     <div class="row3">
       <label class="f"><span>Parcela nº</span><input id="dcur" inputmode="numeric" value="${cur}"></label>
       <label class="f"><span>de (total)</span><input id="dtot" inputmode="numeric" value="${d?.total||''}" placeholder="10"></label>
       <label class="f"><span>no mês</span><input id="dref" type="month" value="${ref}"></label>
     </div>
-    <div class="hint">Ex.: na fatura de novembro aparece “3/10” → parcela 3 de 10 no mês de novembro.</div>
+    <div class="hint" id="dhint">Ex.: na fatura de novembro aparece “3/10” → parcela 3 de 10 no mês de novembro.</div>
     <div class="preview" id="dprev"></div>
     <button class="btn" onclick="saveDebt('${id||''}')">Salvar</button>
     ${d?`<button class="btn danger" onclick="delDebt('${id}')">Excluir</button>`:''}`);
@@ -825,6 +830,11 @@ function openDebt(id){
     $('#dprev').innerHTML=`Começou em <b>${mShortY(first)}</b>, termina em <b>${mShortY(end)}</b>.<br>Faltam <b>${t-c+1}</b> parcelas (contando a de ${mShort(r)}) = <b>${brl(v*(t-c+1))}</b> · total da compra ${brl(v*t)}`;
   };
   ['#dval','#dcur','#dtot','#dref'].forEach(s=>$(s).addEventListener('input',upd)); upd();
+  const cartVis = () => { const c = cartoes().find(x=>x.id===$('#dcart').value);
+    $('#ddayWrap').style.display = c ? 'none' : '';
+    $('#dhint').textContent = c ? `“no mês” = mês da fatura do ${c.nome} em que aparece essa parcela (vence dia ${c.vence}). Ex.: na fatura de novembro aparece “3/10” → parcela 3 de 10 em novembro.`
+      : 'Ex.: na fatura de novembro aparece “3/10” → parcela 3 de 10 no mês de novembro.'; };
+  $('#dcart').addEventListener('change', cartVis); cartVis();
   if(!d) setTimeout(()=>$('#ddesc')?.focus(),50);
 }
 function saveDebt(id){
@@ -835,7 +845,8 @@ function saveDebt(id){
   if(!(total>=1&&cur>=1&&cur<=total)) return alert('Confira a parcela atual e o total (ex.: 3 de 10).');
   if(!ref) return alert('Informe o mês.');
   const day = Math.min(31,Math.max(0,parseInt($('#dday').value)||0)) || null;
-  const rec = {id:id||uid(),desc,creditor,kind,value,total,day,firstMonth:addM(ref,-(cur-1))};
+  const cartao = $('#dcart')?.value || '';
+  const rec = {id:id||uid(),desc,creditor,kind,value,total,day,firstMonth:addM(ref,-(cur-1)),...(cartao?{cartao}:{})};
   if(id){const i=db.debts.findIndex(x=>x.id===id);db.debts[i]=rec}else db.debts.push(rec);
   closeSheet(); save();
 }
@@ -962,7 +973,7 @@ function eventsRaw(M){ // tudo que entra e sai no mês M, com data e chave
     label:`Fatura ${cd.nome}`, sub: ft.real ? 'valor real da fatura' : `prevista · ${ft.itens.length} item(ns)`, v:-ft.total, icon:'💳',
     tap:`openCartao('${cd.id}','${M}')`, fatura:true, creditor:cd.nome, kind:'cartao'}); });
   m.tx.filter(t=>!t.cartao).forEach(t=>ev.push({key:`tx:${t.id}`,date:t.date,label:t.desc,v:t.type==='in'?t.value:-t.value,icon:t.type==='in'?'💰':'🛍️',tap:`openTx('${t.id}')`,at:t.at}));
-  m.inst.forEach(d=>ev.push({key:`debt:${d.id}:${M}`,date:dt(d.day),label:d.desc,sub:`${d.creditor}${d.total>1?` · parcela ${d.n}/${d.total}`:''}`,v:-d.value,icon:'💳',tap:`openDebt('${d.id}')`,debtId:d.id,creditor:d.creditor,kind:d.kind,dtotal:d.total}));
+  m.inst.filter(d=>!dividaNoCartao(d)).forEach(d=>ev.push({key:`debt:${d.id}:${M}`,date:dt(d.day),label:d.desc,sub:`${d.creditor}${d.total>1?` · parcela ${d.n}/${d.total}`:''}`,v:-d.value,icon:'💳',tap:`openDebt('${d.id}')`,debtId:d.id,creditor:d.creditor,kind:d.kind,dtotal:d.total}));
   const pv = db.pagoValor||{}; // pagou outro valor: vale o real (e guarda o previsto)
   ev.forEach(e=>{ if(pv[e.key]!=null && e.v<0){ e.prev = -e.v; e.v = -pv[e.key]; } });
   return SIM ? applySim(ev,M) : ev;
@@ -1710,17 +1721,17 @@ function normalize(data){
     let first = d.firstMonth;
     if(!first && d.current) first = addM(d.refMonth||THIS_MONTH,-(parseInt(d.current)-1));
     if(!d.desc||!(value>0)||!(total>=1)||!/^\d{4}-\d{2}$/.test(first||'')) return errs.push(`dívida ${i+1} (${d.desc||'?'})`);
-    out.debts.push({id:d.id||uid(),desc:d.desc,creditor:d.creditor||'Outros',kind:KINDS[d.kind]?d.kind:'cartao',value,total,day:parseInt(d.day)||null,firstMonth:first});
+    out.debts.push({id:d.id||uid(),desc:d.desc,creditor:d.creditor||'Outros',kind:KINDS[d.kind]?d.kind:'cartao',value,total,day:parseInt(d.day)||null,firstMonth:first,...(d.cartao?{cartao:d.cartao}:{})});
   });
   (data.tx||[]).forEach((t,i)=>{
     const value=num(t.value);
     if(!t.desc||!(value>0)||!/^\d{4}-\d{2}-\d{2}$/.test(t.date||'')) return errs.push(`lançamento ${i+1} (${t.desc||'?'})`);
-    out.tx.push({id:t.id||uid(),type:t.type==='in'?'in':'out',desc:t.desc,value,date:t.date,cat:t.cat||'Outros',ded:t.ded||'',nf:!!t.nf,...(t.at?{at:t.at}:{})});
+    out.tx.push({id:t.id||uid(),type:t.type==='in'?'in':'out',desc:t.desc,value,date:t.date,cat:t.cat||'Outros',ded:t.ded||'',nf:!!t.nf,...(t.at?{at:t.at}:{}),...(t.cartao?{cartao:t.cartao,parcelas:parseInt(t.parcelas)||1}:{})});
   });
   (data.fixed||[]).forEach((f,i)=>{
     const value=num(f.value);
     if(!f.desc||!(value>0)||!/^\d{4}-\d{2}$/.test(f.start||'')) return errs.push(`fixo ${i+1} (${f.desc||'?'})`);
-    out.fixed.push({id:f.id||uid(),type:f.type==='in'?'in':'out',desc:f.desc,value,cat:f.cat||'Outros',start:f.start,day:f.day?+f.day:null,end:f.end||null,ded:f.ded||'',nf:!!f.nf});
+    out.fixed.push({id:f.id||uid(),type:f.type==='in'?'in':'out',desc:f.desc,value,cat:f.cat||'Outros',start:f.start,day:f.day?+f.day:null,end:f.end||null,ded:f.ded||'',nf:!!f.nf,...(f.cartao?{cartao:f.cartao}:{})});
   });
   if(data.irDates && typeof data.irDates==='object') out.irDates = data.irDates;
   if(data.balance && /^\d{4}-\d{2}-\d{2}$/.test(data.balance.date||'') && isFinite(+data.balance.value)) out.balance = {value:+data.balance.value,date:data.balance.date,...(data.balance.at?{at:data.balance.at}:{})};
@@ -1882,6 +1893,7 @@ VIEWS.lancar = function(){
    Compra no cartão não sai da conta no dia: entra na fatura (pelo dia de fechamento) e sai no vencimento.
    Compra feita ANTES do dia de fechamento entra na fatura que fecha naquele mês; no dia do fechamento ou depois, vai para a próxima. */
 const cartoes = () => db.cartoes || [];
+const dividaNoCartao = d => !!d.cartao && cartoes().some(c=>c.id===d.cartao); // parcela vai dentro da fatura, não como conta separada
 function faturaDe(card, date){ // em que mês vence a fatura de uma compra feita em "date"
   const d = +date.slice(8), M = date.slice(0,7);
   const fechaM = d < card.fecha ? M : addM(M,1);
@@ -1894,6 +1906,9 @@ function faturaItens(card, M){
     const n = Math.max(1, t.parcelas||1), m0 = faturaDe(card, t.date);
     const base = Math.floor(t.value/n*100)/100, resto = r2(t.value - base*n);
     for(let k=0;k<n;k++) if(addM(m0,k)===M) out.push({desc:t.desc, cat:t.cat, data:t.date, k:k+1, n, v:r2(base+(k===0?resto:0)), id:t.id});
+  });
+  db.debts.filter(d=>d.cartao===card.id && debtActive(d,M)).forEach(d=>{ // dívidas/parcelamentos lançados como "no cartão"
+    out.push({desc:d.desc, cat:'Cartões e parcelas', data:faturaVence(card,M), k:instNo(d,M), n:d.total, v:d.value, id:d.id, divida:true});
   });
   db.fixed.filter(f=>f.cartao===card.id && f.type==='out').forEach(f=>{ // assinaturas no cartão
     for(const mm of [addM(M,-2), addM(M,-1), M]){
@@ -1947,10 +1962,11 @@ function saveCartao(id){
   closeSheet(); save();
 }
 function delCartao(id){
-  const usados = db.tx.filter(t=>t.cartao===id).length + db.fixed.filter(f=>f.cartao===id).length;
+  const usados = db.tx.filter(t=>t.cartao===id).length + db.fixed.filter(f=>f.cartao===id).length + db.debts.filter(d=>d.cartao===id).length;
   if(!confirm(`Excluir este cartão?${usados?` As ${usados} compras dele passam a contar como débito/Pix.`:''}`)) return;
   db.tx.forEach(t=>{ if(t.cartao===id){ delete t.cartao; delete t.parcelas; } });
   db.fixed.forEach(f=>{ if(f.cartao===id) delete f.cartao; });
+  db.debts.forEach(d=>{ if(d.cartao===id) delete d.cartao; });
   db.cartoes = cartoes().filter(c=>c.id!==id); closeSheet(); save();
 }
 function cartoesCard(){
@@ -3067,7 +3083,7 @@ function metasView(){
 /* ---------- atualização do app ----------
    A cada versão publicada, aumente APP_VERSION (e a versão do cache no sw.js).
    O app compara com o index.html publicado e, se mudou, mostra a faixa "Atualizar agora". */
-const APP_VERSION = '32';
+const APP_VERSION = '33';
 let ultimaChecagem = 0;
 async function versaoPublicada(){
   const r = await fetch(`./index.html?checar=${Date.now()}`, {cache:'no-store'});

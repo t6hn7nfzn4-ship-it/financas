@@ -1158,7 +1158,11 @@ VIEWS.sim = function(){
   SIM_BILLS = {};
   const groups = ids.map(id=>{const s=cycleSum(id);return s.past?null:{s,bills:s.bills.filter(e=>!e.paid)}}).filter(g=>g&&g.bills.length);
   groups.forEach(g=>g.bills.forEach(e=>SIM_BILLS[e.key]=e));
-  Object.keys(simState).forEach(k=>{if(!SIM_BILLS[k]) delete simState[k]});
+  // visão por mês: as contas em aberto do mês escolhido também podem ser simuladas
+  const porMes = st.simModo==='mes', MS = st.simM && st.simM>=THIS_MONTH ? st.simM : THIS_MONTH;
+  const mBills = porMes ? monthFlow(MS).outs.filter(e=>!e.paid && !e.done && !e.auto && !e.budget) : [];
+  mBills.forEach(e=>SIM_BILLS[e.key]=e);
+  Object.keys(simState).forEach(k=>{if(!SIM_BILLS[k] && !porMes) delete simState[k]});
   const active = Object.keys(simState).length;
   const before = ids.map(id=>cycleSum(id));
   const after = withSim(simState,()=>ids.map(id=>cycleSum(id)));
@@ -1178,12 +1182,44 @@ VIEWS.sim = function(){
   const res = v => `<span class="${v<0?'neg':'pos'}">${v<0?'falta':'sobra'} ${brl(Math.abs(v))}</span>`;
   const lastB = before[before.length-1], lastA = after[after.length-1];
   const diff = r2(lastA.closing-lastB.closing);
-  return `
-  <div class="card hero"><span class="emoji">🧪</span>
+  const modos = `<div class="seg" style="margin:0 0 12px">${[['geral','📈 Visão geral'],['mes','📅 Por mês']].map(([v,l])=>`<button class="${(st.simModo||'geral')===v?'on':''}" onclick="st.simModo='${v}';render()">${l}</button>`).join('')}</div>`;
+  const hero = `<div class="card hero"><span class="emoji">🧪</span>
     <div class="label">Simulador</div>
     <h2 style="font-size:20px;margin:2px 0 6px">E se eu não pagar ou parcelar uma conta?</h2>
-    <p class="sub" style="margin:0">Escolha o que fazer com cada conta e veja como ficam os próximos meses. <b>Nada aqui muda seus dados.</b></p>
-  </div>
+    <p class="sub" style="margin:0">Escolha o que fazer com cada conta e veja como fica. <b>Nada aqui muda seus dados.</b></p>
+  </div>${modos}`;
+  if(porMes){
+    const M = MS, nome = mLabel(M,{month:'long'}), N = addM(M,1);
+    const fb = monthFlow(M), fa = withSim(simState,()=>monthFlow(M));
+    const nb = monthFlow(N), na = withSim(simState,()=>monthFlow(N));
+    const entra = f => r2(f.ins.filter(e=>!e.done).reduce((t,e)=>t+e.v,0));
+    const saldo = f => r2((f.start||0) + entra(f));
+    const contas = f => r2(f.aPagar + f.bud + f.outs.filter(e=>e.paid && !e.done).reduce((t,e)=>t-e.v,0));
+    const fimTxt = (v,b) => `<b class="${v<0?'neg':'pos'}">${v<0?'falta':'sobra'} ${brl(Math.abs(v))}</b>`;
+    const mud = mBills.filter(e=>simState[e.key]).length, mudOutros = Object.keys(simState).filter(k=>!mBills.some(e=>e.key===k)).length;
+    const temSplit = mBills.some(e=>simState[e.key]?.mode==='split');
+    const startLbl = fb.isBalMonth ? `na conta em ${dLabel(db.balance.date)}` : (!db.balance && M===THIS_MONTH) ? 'na conta hoje (não informado)' : `${(fa.start??0)<0?'que faltaram':'que sobraram'} de ${mLabel(addM(M,-1),{month:'long'})}`;
+    return hero + `
+    <div class="card"><div class="grouphead"><h2>📅 ${nome[0].toUpperCase()+nome.slice(1)}</h2>
+      <span><button class="chip" ${M<=THIS_MONTH?'disabled':''} onclick="st.simM=addM('${M}',-1);render()" aria-label="Mês anterior">◀</button> <button class="chip" onclick="st.simM=addM('${M}',1);render()" aria-label="Próximo mês">▶</button></span></div>
+      ${fb.start==null?`<p class="sub">Informe quanto tem na conta hoje para ver o saldo do mês.</p>`:`
+      <div class="need">
+        <div class="line big2"><span>💰 Vai ter em ${nome}</span><b>${brl(saldo(fa))}</b></div>
+        <div class="parts">${(fa.start??0)<0?'−':''}${brl(Math.abs(fa.start||0))} ${startLbl} + ${brl(entra(fa))} que vão entrar${saldo(fa)!==saldo(fb)?` · <span class="neg">sem simulação: ${brl(saldo(fb))}</span>`:''}</div>
+        <div class="line"><span>💳 Contas do mês${mud?' (simulado)':''}</span><b>− ${brl(contas(fa))}</b></div>
+        ${mud?`<div class="parts">Sem simulação: − ${brl(contas(fb))}</div>`:''}
+        <div class="line"><span>Como está, no fim de ${nome}</span>${fimTxt(fb.end)}</div>
+        ${mud||mudOutros?`<div class="line"><span><b>Simulado</b>, no fim de ${nome}</span>${fimTxt(fa.end)}</div>`:''}
+      </div>
+      ${mud||mudOutros?(fa.end<0?`<div class="result bad"><span>Mesmo assim, em ${nome} ainda vai faltar</span><b>${brl(-fa.end)}</b></div>`:`<div class="result good"><span>Com isso, ${nome} fecha no azul. Sobra</span><b>${brl(fa.end)}</b></div>`):''}
+      ${(mud||mudOutros)&&nb.end!=null?`<p class="hint" style="margin:8px 0 0">E ${mLabel(N,{month:'long'})}${temSplit?' (já com as parcelas)':''}: como está ${fimTxt(nb.end)} · simulado ${fimTxt(na.end)}. ${na.end<nb.end?'O que você deixa de pagar agora pesa no mês seguinte.':''}${mBills.some(e=>simState[e.key]?.mode==='skip')?' ⚠️ “Não pagar” tira a conta da simulação, mas a dívida continua existindo e cresce com multa e juros: ela vai voltar a ser cobrada.':''}</p>`:''}
+      ${mudOutros?`<p class="hint" style="margin:6px 0 0">Inclui ${mudOutros} mudança(s) feitas em outros meses.</p>`:''}
+      ${mud||mudOutros?`<button class="btn sec" style="margin-top:10px" onclick="simClear()">Limpar simulação</button>`:''}`}
+    </div>
+    <div class="card"><h2>📌 Contas de ${nome} em aberto</h2><p class="sub">Escolha: pagar, não pagar, parcelar ou pagar parte.</p>
+      ${mBills.length?mBills.map(billRow).join(''):'<div class="empty">Nenhuma conta em aberto neste mês 🎉</div>'}</div>`;
+  }
+  return hero + `
   <div class="card"><h2>Resultado ${active?`<span class="badge pink">${active} mudança${active>1?'s':''}</span>`:''}</h2>
     <p class="sub">Quanto sobra ou falta depois de cada pagamento</p>
     ${before.map((b,i)=>{ if(b.past) return ''; const a = after[i];
@@ -3123,7 +3159,7 @@ function metasView(){
 /* ---------- atualização do app ----------
    A cada versão publicada, aumente APP_VERSION (e a versão do cache no sw.js).
    O app compara com o index.html publicado e, se mudou, mostra a faixa "Atualizar agora". */
-const APP_VERSION = '34';
+const APP_VERSION = '35';
 let ultimaChecagem = 0;
 async function versaoPublicada(){
   const r = await fetch(`./index.html?checar=${Date.now()}`, {cache:'no-store'});

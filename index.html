@@ -749,7 +749,7 @@ function openTx(id,isFixed,preType,preFixed){
       <label class="f"><span>${isFixed?'Começa em':'Data'}</span><input id="tdate" type="date" value="${date}"></label>
     </div>
     <label class="f"><span>Categoria</span><select id="tcat"></select></label>
-    <div id="tpagWrap">${pagamentoSelect(x?.cartao||'', x?.parcelas, isFixed||preFixed)}</div>
+    <div id="tpagWrap">${pagamentoSelect(x?.beneficio?'ben:'+x.beneficio:(x?.cartao||''), x?.parcelas, isFixed||preFixed)}</div>
     <div id="tirbox">
       <label class="f"><span>Dedutível no Imposto de Renda?</span><select id="tded">
         <option value="">Não</option><option value="saude" ${x?.ded==='saude'?'selected':''}>Sim — saúde (psicólogo, médico, dentista, plano…)</option>
@@ -774,8 +774,9 @@ function saveTx(id,isFixed){
   const type = $('#ttype .on').dataset.t, desc=$('#tdesc').value.trim(), value=r2(parseMoney($('#tval').value)), date=$('#tdate').value, cat=$('#tcat').value;
   const fixed = isFixed || $('#tfixed').checked;
   const ded = type==='out' ? $('#tded').value : '', nf = ded ? $('#tnf').checked : false;
-  const cartao = type==='out' ? ($('#tpag')?.value||'') : '', parcelas = cartao && !fixed ? Math.min(48,Math.max(1,parseInt($('#tparc')?.value)||1)) : null;
-  const pag = cartao ? (fixed ? {cartao} : {cartao, parcelas}) : {};
+  const pagV = type==='out' ? ($('#tpag')?.value||'') : '', beneficio = pagV.startsWith('ben:') ? pagV.slice(4) : '';
+  const cartao = beneficio ? '' : pagV, parcelas = cartao && !fixed ? Math.min(48,Math.max(1,parseInt($('#tparc')?.value)||1)) : null;
+  const pag = beneficio ? {beneficio} : cartao ? (fixed ? {cartao} : {cartao, parcelas}) : {};
   if(!desc) return alert('Informe uma descrição.');
   if(!(value>0)) return alert('Informe um valor válido.');
   if(!date) return alert('Informe a data.');
@@ -976,11 +977,11 @@ function eventsRaw(M){ // tudo que entra e sai no mês M, com data e chave
   if(m.imv) ev.push({key:`imovel:${M}`,date:dt(db.imovel.day||20),label:db.imovel.nome||'Imóvel financiado',
     sub:m.imv.real?'valor real':m.imv.fase==='obra'?`fase de obra · ~${Math.round(m.imv.pct)}% da obra · estimativa`:`após as chaves (SAC) · estimativa`,
     v:-m.imv.value,icon:'🏢',tap:'openImovel()'});
-  m.fixed.filter(f=>!f.cartao).forEach(f=>ev.push({key:`fx:${f.id}:${M}`,date:dt(f.day),label:f.desc,v:f.type==='in'?f.value:-f.value,icon:f.type==='in'?'💰':'🏠',tap:`openTx('${f.id}',true)`}));
+  m.fixed.filter(f=>!f.cartao && !f.beneficio).forEach(f=>ev.push({key:`fx:${f.id}:${M}`,date:dt(f.day),label:f.desc,v:f.type==='in'?f.value:-f.value,icon:f.type==='in'?'💰':'🏠',tap:`openTx('${f.id}',true)`}));
   (db.cartoes||[]).forEach(cd=>{ const ft = faturaTotal(cd,M); if(ft.total>0) ev.push({key:`fat:${cd.id}:${M}`, date:faturaVence(cd,M),
     label:`Fatura ${cd.nome}`, sub: ft.real ? 'valor real da fatura' : `prevista · ${ft.itens.length} item(ns)`, v:-ft.total, icon:'💳',
     tap:`openCartao('${cd.id}','${M}')`, fatura:true, creditor:cd.nome, kind:'cartao'}); });
-  m.tx.filter(t=>!t.cartao).forEach(t=>ev.push({key:`tx:${t.id}`,date:t.date,label:t.desc,v:t.type==='in'?t.value:-t.value,icon:t.type==='in'?'💰':'🛍️',tap:`openTx('${t.id}')`,at:t.at}));
+  m.tx.filter(t=>!t.cartao && !t.beneficio).forEach(t=>ev.push({key:`tx:${t.id}`,date:t.date,label:t.desc,v:t.type==='in'?t.value:-t.value,icon:t.type==='in'?'💰':'🛍️',tap:`openTx('${t.id}')`,at:t.at}));
   m.inst.filter(d=>!dividaNoCartao(d)).forEach(d=>ev.push({key:`debt:${d.id}:${M}`,date:dt(d.day),label:d.desc,sub:`${d.creditor}${d.total>1?` · parcela ${d.n}/${d.total}`:''}`,v:-d.value,icon:'💳',tap:`openDebt('${d.id}')`,debtId:d.id,creditor:d.creditor,kind:d.kind,dtotal:d.total}));
   const pv = db.pagoValor||{}; // pagou outro valor: vale o real (e guarda o previsto)
   ev.forEach(e=>{ if(pv[e.key]!=null && e.v<0){ e.prev = -e.v; e.v = -pv[e.key]; } });
@@ -989,8 +990,8 @@ function eventsRaw(M){ // tudo que entra e sai no mês M, com data e chave
 function cycleEvents(id){
   const c = cycleInfo(id), b = db.balance, ev = [];
   [c.M, addM(c.M,1)].forEach(M=>events(M).forEach(e=>{ if(cycleOf(e.nominal||e.date)===id) ev.push(e) }));
-  if(db.budget>0){
-    let v = db.budget/2;
+  if(budgetEf(c.M)>0){
+    let v = budgetEf(c.M)/2;
     const ref = b ? b.date : TODAY;
     if(ref>=c.from && ref<=c.to) v = v*daysBetween(ref,c.to)/(daysBetween(c.from,c.to)+1);
     v = ceil2(v); // gasto: arredonda para mais
@@ -1139,15 +1140,18 @@ function simSet(key,field,value){
     if(value==='pay'){delete simState[key]}
     else {
       const e = SIM_BILLS[key];
-      simState[key] = {...(s||{}),mode:value,date:e.date,label:e.label,total:-e.v};
+      // juros estimados PARA CIMA (fatura: parcelado do cartão; cheque especial: taxa do cheque)
+      const tipo = e.fatura ? 'fatura' : isCheque(e) ? 'cheque' : 'outro';
+      simState[key] = {...(s||{}),mode:value,date:e.date,label:e.label,total:-e.v,tipo,creditor:e.creditor||'',
+        rate: tipo==='cheque' ? rateFor(e.creditor||'','cheque') : rateFor(e.creditor||'','parc')};
       const t = simState[key];
-      if(value==='split' && !t.n){t.n=6;t.val=Math.floor(t.total/6*100)/100}
+      if(value==='split' && !t.n){t.n=6;t.val=parcelamento(t.total,t.rate,6).pmt}
       if(value==='part' && t.part==null) t.part=r2(t.total/2);
     }
   } else if(s){
     const v = field==='n' ? Math.max(1,Math.min(48,parseInt(value)||1)) : r2(parseMoney(value)||0);
     s[field] = v;
-    if(field==='n') s.val = Math.floor(s.total/v*100)/100;
+    if(field==='n') s.val = parcelamento(s.total, s.rate??RATE_DEFAULT.parc, v).pmt;
   }
   render();
 }
@@ -1173,7 +1177,7 @@ VIEWS.sim = function(){
       <div class="seg small">${[['pay','Pagar'],['skip','Não pagar'],['split','Parcelar'],['part','Pagar parte']].map(([v,l])=>`<button class="${mode===v?'on':''}" onclick="simSet('${e.key}','mode','${v}')">${l}</button>`).join('')}</div>
       ${mode==='split'?`<div class="row"><label class="f"><span>Em quantas vezes</span><input inputmode="numeric" value="${s.n}" onchange="simSet('${e.key}','n',this.value)"></label>
         <label class="f"><span>Valor de cada parcela (R$)</span><input inputmode="decimal" value="${String(s.val).replace('.',',')}" onchange="simSet('${e.key}','val',this.value)"></label></div>
-        <div class="hint">Começa no mês seguinte. Coloque o valor que o banco oferecer: parcelamento de fatura costuma ter juros. ${s.n*s.val-s.total>0.05?`Total pago: ${brl(s.n*s.val)} (<b class="neg">+${brl(s.n*s.val-s.total)} de juros</b>).`:''}</div>`:''}
+        <div class="hint">Começa no mês seguinte. A parcela já vem com juros estimados para cima (~${String(s.rate??RATE_DEFAULT.parc).replace('.',',')}% ao mês + IOF); troque pelo valor que o banco oferecer. ${s.n*s.val-s.total>0.05?`Total pago: ${brl(s.n*s.val)} (<b class="neg">+${brl(s.n*s.val-s.total)} de juros</b>).`:''}</div>`:''}
       ${mode==='part'?`<label class="f"><span>Quanto vou pagar agora (R$)</span><input inputmode="decimal" value="${String(s.part).replace('.',',')}" onchange="simSet('${e.key}','part',this.value)"></label>
         <div class="hint">O restante (${brl(Math.max(0,s.total-s.part))}) fica em aberto e normalmente gera juros.</div>`:''}
       ${mode==='skip'?`<div class="hint">⚠️ Conta não paga costuma gerar multa e juros, e pode levar a negativação. No cartão, o rotativo tem juros altos.</div>`:''}
@@ -1198,6 +1202,7 @@ VIEWS.sim = function(){
     const fimTxt = (v,b) => `<b class="${v<0?'neg':'pos'}">${v<0?'falta':'sobra'} ${brl(Math.abs(v))}</b>`;
     const mud = mBills.filter(e=>simState[e.key]).length, mudOutros = Object.keys(simState).filter(k=>!mBills.some(e=>e.key===k)).length;
     const temSplit = mBills.some(e=>simState[e.key]?.mode==='split');
+    const simParc = fa.outs.filter(e=>String(e.key).startsWith('sim:')); // parcelas de parcelamentos simulados que caem neste mês
     const startLbl = fb.isBalMonth ? `na conta em ${dLabel(db.balance.date)}` : (!db.balance && M===THIS_MONTH) ? 'na conta hoje (não informado)' : `${(fa.start??0)<0?'que faltaram':'que sobraram'} de ${mLabel(addM(M,-1),{month:'long'})}`;
     return hero + `
     <div class="card"><div class="grouphead"><h2>📅 ${nome[0].toUpperCase()+nome.slice(1)}</h2>
@@ -1206,18 +1211,22 @@ VIEWS.sim = function(){
       <div class="need">
         <div class="line big2"><span>💰 Vai ter em ${nome}</span><b>${brl(saldo(fa))}</b></div>
         <div class="parts">${(fa.start??0)<0?'−':''}${brl(Math.abs(fa.start||0))} ${startLbl} + ${brl(entra(fa))} que vão entrar${saldo(fa)!==saldo(fb)?` · <span class="neg">sem simulação: ${brl(saldo(fb))}</span>`:''}</div>
-        <div class="line"><span>💳 Contas do mês${mud?' (simulado)':''}</span><b>− ${brl(contas(fa))}</b></div>
-        ${mud?`<div class="parts">Sem simulação: − ${brl(contas(fb))}</div>`:''}
+        <div class="line"><span>💳 Contas do mês${contas(fa)!==contas(fb)?' (simulado)':''}</span><b>− ${brl(contas(fa))}</b></div>
+        ${contas(fa)!==contas(fb)?`<div class="parts">Sem simulação: − ${brl(contas(fb))}${simParc.length?` · inclui ${brl(simParc.reduce((t,e)=>t-e.v,0))} de parcelas simuladas`:''}</div>`:''}
         <div class="line"><span>Como está, no fim de ${nome}</span>${fimTxt(fb.end)}</div>
         ${mud||mudOutros?`<div class="line"><span><b>Simulado</b>, no fim de ${nome}</span>${fimTxt(fa.end)}</div>`:''}
       </div>
-      ${mud||mudOutros?(fa.end<0?`<div class="result bad"><span>Mesmo assim, em ${nome} ainda vai faltar</span><b>${brl(-fa.end)}</b></div>`:`<div class="result good"><span>Com isso, ${nome} fecha no azul. Sobra</span><b>${brl(fa.end)}</b></div>`):''}
+      ${mud||mudOutros?(fa.end<0?`<div class="result bad"><span>Mesmo assim, em ${nome} ainda vai faltar</span><b>${brl(-fa.end)}</b></div>`:fa.end<folgaMin()?`<div class="result" style="background:var(--butter)"><span>Fecha no azul, mas abaixo da sua folga mínima (${brl(folgaMin())}). Sobra</span><b>${brl(fa.end)}</b></div>`
+        :`<div class="result good"><span>Com isso, ${nome} fecha com folga. Sobra</span><b>${brl(fa.end)}</b></div>`):''}
       ${(mud||mudOutros)&&nb.end!=null?`<p class="hint" style="margin:8px 0 0">E ${mLabel(N,{month:'long'})}${temSplit?' (já com as parcelas)':''}: como está ${fimTxt(nb.end)} · simulado ${fimTxt(na.end)}. ${na.end<nb.end?'O que você deixa de pagar agora pesa no mês seguinte.':''}${mBills.some(e=>simState[e.key]?.mode==='skip')?' ⚠️ “Não pagar” tira a conta da simulação, mas a dívida continua existindo e cresce com multa e juros: ela vai voltar a ser cobrada.':''}</p>`:''}
       ${mudOutros?`<p class="hint" style="margin:6px 0 0">Inclui ${mudOutros} mudança(s) feitas em outros meses.</p>`:''}
       ${mud||mudOutros?`<button class="btn sec" style="margin-top:10px" onclick="simClear()">Limpar simulação</button>`:''}`}
     </div>
+    ${simConselho()}
     <div class="card"><h2>📌 Contas de ${nome} em aberto</h2><p class="sub">Escolha: pagar, não pagar, parcelar ou pagar parte.</p>
-      ${mBills.length?mBills.map(billRow).join(''):'<div class="empty">Nenhuma conta em aberto neste mês 🎉</div>'}</div>`;
+      ${mBills.length?mBills.map(billRow).join(''):'<div class="empty">Nenhuma conta em aberto neste mês 🎉</div>'}
+      ${simParc.length?`<h2 style="margin-top:14px">🧪 Parcelas da simulação em ${nome}</h2><p class="sub">Vêm dos parcelamentos que você simulou em meses anteriores.</p>
+        <ul class="list">${simParc.map(e=>`<li><span class="dot">🧪</span><div class="dday sm">${e.date.slice(8)}<small>${wd(e.date)}</small></div><div class="main"><div class="t">${esc(e.label)}</div><div class="m">simulado</div></div><div class="amt">− ${brl(-e.v)}</div></li>`).join('')}</ul>`:''}</div>`;
   }
   return hero + `
   <div class="card"><h2>Resultado ${active?`<span class="badge pink">${active} mudança${active>1?'s':''}</span>`:''}</h2>
@@ -1252,9 +1261,107 @@ VIEWS.sim = function(){
     ${active?`<p class="hint" style="margin:6px 0 0">Diferença até ${dLabel(lastB.c.to)}: ${diff<0?'−':'+'} ${brl(Math.abs(diff))} em relação a hoje.</p>
       <button class="btn sec" onclick="simClear()">Limpar simulação</button>`:''}
   </div>
+  ${simConselho()}
   ${groups.map(g=>`<div class="card"><h2>📌 Contas até ${dLabel(g.s.c.to)}</h2><p class="sub">Pagamento do dia ${+g.s.c.pay.slice(8)} · vencem de ${dLabel(g.s.c.from)} a ${dLabel(g.s.c.to)}</p>${g.bills.map(billRow).join('')}</div>`).join('')
     || '<div class="card"><div class="empty">Nenhuma conta em aberto nos próximos meses.</div></div>'}`;
 };
+
+/* ---------- folga mínima: o que sempre tem que sobrar na conta (emergência) ----------
+   Nenhuma dica do app pode usar 100% do dinheiro. Sugestão: 10% do que entra num mês normal, arredondado
+   para cima em R$ 50, no mínimo R$ 300. A pessoa pode trocar. */
+function folgaSugerida(){
+  const M = addM(THIS_MONTH,1), s = SIM; SIM = null;
+  let ent = 0; try{ ent = eventsRaw(M).filter(e=>e.v>0 && !/13º/.test(e.label)).reduce((t,e)=>t+e.v,0); } finally { SIM = s; }
+  return Math.max(300, Math.ceil(ent*0.10/50)*50);
+}
+const folgaMin = () => db.folga?.valor ?? folgaSugerida();
+function openFolga(){
+  const sug = folgaSugerida(), cur = db.folga?.valor;
+  openSheet(`<h3>🛟 Folga mínima <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub">É o dinheiro que <b>sempre</b> tem que sobrar na conta, para imprevistos (remédio, conserto, um gasto que você esqueceu). As dicas do Cofrivo nunca usam esse valor: um mês só conta como “resolvido” se sobrar pelo menos isso.</p>
+    <div class="need"><div class="line"><span>Sugestão do Cofrivo</span><b>${brl(sug)}</b></div>
+      <div class="parts">10% do que entra num mês normal (sem 13º), arredondado para cima. Mínimo de R$ 300.</div></div>
+    <label class="f"><span>Folga mínima (R$)</span><input id="fgVal" inputmode="decimal" value="${String(cur??sug).replace('.',',')}"></label>
+    <p class="hint">Isso é diferente da <b>reserva de emergência</b> (3 meses de contas guardados), que você vai juntando aos poucos na aba Guardar.</p>
+    <button class="btn" onclick="saveFolga(false)">Salvar</button>
+    ${cur!=null?`<button class="btn sec" onclick="saveFolga(true)">Usar a sugestão (${brl(sug)})</button>`:''}`);
+}
+function saveFolga(sug){
+  if(sug) delete db.folga;
+  else { const v = r2(parseMoney($('#fgVal').value)); if(!(v>=0)) return alert('Informe um valor.'); db.folga = {valor:v}; }
+  closeSheet(); save();
+}
+const folgaLinha = () => `<p class="hint" style="margin:6px 0 0">🛟 Considerando que sempre sobrem pelo menos <b>${brl(folgaMin())}</b> de folga${db.folga?'':' (sugestão do app)'}. <a href="#" onclick="openFolga();return false">Alterar</a></p>`;
+
+/* ---------- análise da simulação: só aceitar decisões que não virem bola de neve ----------
+   Olha mês a mês até depois da última parcela simulada. Se algum mês fica no vermelho, a decisão não resolve:
+   avisa e procura o menor número de parcelas (com juros estimados para cima) em que nenhum mês fica negativo. */
+function simCenario(sim, meses){
+  const old = MF_MEMO; MF_MEMO = {};
+  try{ return withSim(sim, ()=>meses.map(M=>({M, end:monthFlow(M).end}))); } finally { MF_MEMO = old; }
+}
+const mesesAte = (ini, fim) => { const L=[]; for(let m=ini; m<=fim && L.length<36; m=addM(m,1)) L.push(m); return L; };
+function custoAtraso(s, valor){ // 1 mês sem pagar: multa 2% + juros (rotativo no cartão, taxa do cheque, ou 1% a.m.)
+  const i = s.tipo==='fatura' ? rateFor(s.creditor,'rot') : s.tipo==='cheque' ? rateFor(s.creditor,'cheque') : 1;
+  return ceil2(valor*(0.02 + i/100));
+}
+function simConselho(){
+  const keys = Object.keys(simState); if(!keys.length) return '';
+  const ownEv = !EV_CACHE; if(ownEv) EV_CACHE = {};
+  try{
+    const mesSim = s => s.date.slice(0,7);
+    const ultimo = keys.map(k=>{const s=simState[k]; return addM(mesSim(s), (s.mode==='split'?s.n:0)+2)}).sort().pop();
+    const meses = mesesAte(THIS_MONTH, ultimo);
+    const antes = simCenario(null, meses), depois = simCenario(simState, meses);
+    if(antes[0].end==null) return '';
+    const nm = M => mLabel(M,{month:'long'}), nmY = M => mShortY(M);
+    const pior = L => L.reduce((a,x)=>x.end<a.end?x:a, L[0]);
+    const msgs = [], R = folgaMin();
+    const fica = v => v<0 ? `faltando <b>${brl(-v)}</b>` : `com só <b>${brl(v)}</b>, abaixo da sua folga de ${brl(R)}`;
+    keys.forEach(k=>{
+      const s = simState[k];
+      if(s.mode==='split'){
+        const juros = r2(s.n*s.val - s.total);
+        if(juros > s.total*0.4) msgs.push({tipo:'warn', txt:`<b>Juros altos:</b> em ${s.n}× você paga ~${brl(s.n*s.val)} por uma conta de ${brl(s.total)} (~${brl(juros)} só de juros, ${Math.round(juros/s.total*100)}% a mais). Parcelas longas aliviam o mês, mas custam caro: use o menor número de parcelas que couber.`});
+        const verm = depois.filter(x=>x.M>=mesSim(s) && x.end<R);
+        if(verm.length){
+          const p = pior(verm);
+          let ok = null, best = null; const tent = [];
+          const piorAtual = pior(depois.filter(x=>x.M>=mesSim(s))).end;
+          for(const n of [2,3,4,5,6,8,10,12,15,18,24]){
+            if(n===s.n) continue;
+            const val = parcelamento(s.total, s.rate??RATE_DEFAULT.parc, n).pmt;
+            const t = {...simState, [k]:{...s, n, val}};
+            const r = simCenario(t, mesesAte(THIS_MONTH, addM(mesSim(s), n+2))).filter(x=>x.M>=mesSim(s));
+            if(r.every(x=>x.end>=R)){ ok = {n, val, juros:r2(n*val-s.total)}; break; }
+            tent.push({n, val, w:pior(r).end, juros:r2(n*val-s.total)});
+          }
+          // sem solução completa: o MENOR número de parcelas que chega perto do melhor resultado (menos juros, menos bola de neve)
+          if(!ok && tent.length){ const W = Math.max(...tent.map(x=>x.w));
+            if(W > piorAtual + 50) best = tent.filter(x=>x.w >= W-150).sort((a,b)=>a.n-b.n)[0]; }
+          msgs.push({tipo:'bad', txt:`<b>Parcelar ${esc(s.label)} em ${s.n}× não é suficiente.</b> Com parcelas de ${brl(s.val)}, ${nm(p.M)} ainda fecha ${fica(p.end)}${verm.length>1?` e ${verm.length} meses ficam apertados`:''}. Faltar de novo leva a outro parcelamento — é assim que vira bola de neve.`,
+            extra: ok ? `💡 Em <b>${ok.n}×</b> (~${brl(ok.val)} por mês, ~${brl(ok.juros)} de juros no total) todo mês sobra pelo menos a sua folga de ${brl(R)}. <button class="chip" onclick="simSet('${k}','n',${ok.n})">Simular em ${ok.n}×</button>`
+              : (best ? `💡 Das opções de parcelamento, a que menos aperta é <b>${best.n}×</b> (~${brl(best.val)} por mês, ~${brl(best.juros)} de juros): o pior mês fica ${fica(best.w).replace(/<\/?b>/g,'')} em vez de ${fica(piorAtual).replace(/<\/?b>/g,'')}.${best.juros>s.total*0.4?` ⚠️ Mas os juros (${brl(best.juros)}) passam de 40% da conta: é caro.`:''} <button class="chip" onclick="simSet('${k}','n',${best.n})">Simular em ${best.n}×</button><br>`:'')
+              + `Nem em 24× todos os meses ficam com a folga: só parcelar isso não resolve. Combine com outras medidas (cortar gastos, renda extra, renegociar) — veja <a href="#" onclick="st.simTab='plano';render();return false">Sair do vermelho</a>.`});
+        } else msgs.push({tipo:'good', txt:`<b>Parcelar ${esc(s.label)} em ${s.n}× cabe no seu orçamento:</b> todo mês sobra pelo menos a folga de ${brl(R)} até ${nmY(meses[meses.length-1])}. Custo dos juros: ~${brl(juros)}.${s.n>=3?` Se der, prefira menos parcelas: menos juros.`:''}`});
+      }
+      if(s.mode==='skip') msgs.push({tipo:'bad', txt:`<b>Não pagar ${esc(s.label)} não faz a conta sumir.</b> Em 1 mês ela vira ~${brl(s.total+custoAtraso(s,s.total))} (multa e juros${s.tipo==='fatura'?' do rotativo, os mais caros do mercado':''}), além do risco de nome sujo. Use só se não houver nenhuma outra saída${s.tipo!=='outro'?' — parcelar sai bem mais barato':''}.`});
+      if(s.mode==='part'){ const resto = r2(Math.max(0, s.total-(s.part||0)));
+        if(resto>0) msgs.push({tipo:'warn', txt:`<b>Pagar só parte de ${esc(s.label)}:</b> os ${brl(resto)} que ficam vão custar ~${brl(custoAtraso(s,resto))} em 1 mês${s.tipo==='fatura'?' (rotativo do cartão)':''} e continuam sendo cobrados. ${s.tipo==='fatura'?'Em geral, parcelar a fatura inteira sai mais barato que o rotativo.':''}`}); }
+    });
+    const pa = pior(depois), pb = pior(antes), vermDep = depois.filter(x=>x.end<R);
+    let geral;
+    if(!vermDep.length) geral = {tipo:'good', txt:`✅ <b>Com essas escolhas, todos os meses até ${nmY(meses[meses.length-1])} fecham com a sua folga.</b> No pior mês sobram ${brl(pa.end)} (folga mínima: ${brl(R)}).`};
+    else if(pa.end < pb.end) geral = {tipo:'bad', txt:`⚠️ <b>Essa combinação piora a situação:</b> o pior mês passa a ser ${nm(pa.M)}, ${fica(pa.end)} (sem a simulação: ${fica(pb.end)}). O problema só foi empurrado para frente.`};
+    else geral = {tipo:'warn', txt:`<b>Melhora, mas ainda não resolve:</b> ${vermDep.length} ${vermDep.length===1?'mês fica':'meses ficam'} sem a folga mínima (o pior é ${nm(pa.M)}, ${fica(pa.end)}).`};
+    const cor = {good:'var(--mint)', warn:'var(--butter)', bad:'var(--pink)'};
+    return `<div class="card"><h2>🧠 O que o Cofrivo acha</h2>
+      <p class="sub">Analisei mês a mês até ${nmY(meses[meses.length-1])}, com juros estimados para cima.</p>
+      ${[geral,...msgs].map(m=>`<div style="background:${cor[m.tipo]};border-radius:14px;padding:10px 12px;margin:8px 0;line-height:1.4">${m.txt}${m.extra?`<div style="margin-top:6px">${m.extra}</div>`:''}</div>`).join('')}
+      ${folgaLinha()}
+    </div>`;
+  } finally { if(ownEv) EV_CACHE = null; }
+}
 
 /* ---------- plano de ação: não fechar no vermelho ----------
    Taxas mensais estimadas, sempre arredondadas PARA CIMA (o real tende a ser igual ou menor).
@@ -1300,13 +1407,13 @@ function simEntry(e,opt){return {mode:'split',n:opt.n,val:opt.pmt,date:e.date,la
 const NS = [2,3,4,5,6,8,10,12,18,24];
 function suggestPlan(){ EV_CACHE = {}; try { return suggestPlanInner(); } finally { EV_CACHE = null; } }
 function suggestPlanInner(){
-  const base = evalSim({});
-  if(worst(base).closing>=0) return {ok:true,steps:[],rows:base,base};
+  const base = evalSim({}), R = folgaMin(); // "resolvido" = sempre sobra pelo menos a folga mínima
+  if(worst(base).closing>=R) return {ok:true,steps:[],rows:base,base};
   const cands = candidates().sort((a,b)=>a.e.v-b.e.v).slice(0,6); // só as 6 maiores contas: mantém rápido no celular
   const cost = s => Object.values(s).reduce((t,x)=>t+(x.n*x.val-x.total),0);
   // nota: viável (nunca fica no vermelho) sempre vence; entre viáveis, menos juros;
   // entre não viáveis, a menor falta no pior momento.
-  const score = s => { const w = worst(evalSim(s)).closing; return w>=0 ? 1e9-cost(s) : w - cost(s)*1e-4; };
+  const score = s => { const w = worst(evalSim(s)).closing; return w>=R ? 1e9-cost(s) : w - cost(s)*1e-4; };
   const set = (s,c,n) => { const t={...s}; if(n) t[c.e.key]=simEntry(c.e,parcelamento(-c.e.v,c.rate,n)); else delete t[c.e.key]; return t; };
   const OPTS = [0,...NS];
   // 1) todas as combinações das 3 maiores contas
@@ -1329,7 +1436,7 @@ function suggestPlanInner(){
   }
   const steps = cands.filter(c=>best[c.e.key]).map(c=>{const x=best[c.e.key];return {e:c.e,rate:c.rate,opt:{n:x.n,pmt:x.val,total:r2(x.n*x.val),juros:r2(x.n*x.val-x.total)}}});
   const rows = evalSim(best);
-  return {ok:worst(rows).closing>=0, steps, rows, base, sim:best};
+  return {ok:worst(rows).closing>=R, steps, rows, base, sim:best};
 }
 const planCache = {key:null,val:null};
 function suggestPlanCached(){
@@ -1441,7 +1548,7 @@ function feriasCard(){
 }
 VIEWS.plano = function(){
   const p = suggestPlanCached(), base = p.base, w0 = worst(base);
-  const neg = base.filter(s=>s.closing<0);
+  const R = folgaMin(), neg = base.filter(s=>s.closing<R);
   const rowsCmp = p.rows;
   const jurosTot = r2(p.steps.reduce((t,s)=>t+s.opt.juros,0));
   const cands = candidates();
@@ -1451,18 +1558,18 @@ VIEWS.plano = function(){
   return `
   <div class="card hero"><span class="emoji">🧭</span>
     <div class="label">Plano de ação</div>
-    <h2 style="font-size:20px;margin:2px 0 6px">${neg.length?'Como não fechar no vermelho':'Você não fecha no vermelho 🎉'}</h2>
+    <h2 style="font-size:20px;margin:2px 0 6px">${neg.length?'Como não fechar no vermelho':'Sempre sobra a sua folga 🎉'}</h2>
     <p class="sub" style="margin:0">${neg.length
-      ? `Hoje, <b>${neg.length} de ${base.length}</b> pagamentos dos próximos 12 meses ficam no vermelho. O pior é em <b>${dLabel(w0.c.pay>=TODAY?w0.c.pay:TODAY)}</b>: <b class="neg">falta ${brl(-w0.closing)}</b>.`
-      : 'Em todos os pagamentos dos próximos meses sobra dinheiro.'}</p>
+      ? `Hoje, <b>${neg.length} de ${base.length}</b> pagamentos dos próximos 12 meses ficam no vermelho ou sem a folga mínima de ${brl(R)}. O pior é em <b>${dLabel(w0.c.pay>=TODAY?w0.c.pay:TODAY)}</b>: ${w0.closing<0?`<b class="neg">falta ${brl(-w0.closing)}</b>`:`sobram só <b>${brl(w0.closing)}</b>`}.`
+      : `Em todos os pagamentos dos próximos meses sobram pelo menos ${brl(R)} de folga.`}</p>
     ${!db.budget?`<p class="sub" style="margin:8px 0 0">⚠️ Os gastos do dia a dia (mercado, transporte…) ainda não estão na conta. Informe uma estimativa em <a href="#" onclick="openBalance();return false">Atualizar saldo</a> para o plano ficar realista.</p>`:''}
   </div>
 
   ${neg.length?`<div class="card"><h2>✨ Plano sugerido</h2>
-    <p class="sub">A combinação de parcelamentos com <b>menos juros no total</b> que deixa todos os pagamentos dos próximos 12 meses no azul.</p>
+    <p class="sub">A combinação de parcelamentos com <b>menos juros no total</b> que deixa todos os pagamentos dos próximos 12 meses no azul, <b>sempre com a folga de ${brl(R)}</b> sobrando.</p>
     ${p.steps.length?`<ol class="steps">${p.steps.map(s=>`<li><b>Parcelar ${esc(s.e.label)} (${esc(s.e.creditor)})</b> de ${brl(-s.e.v)} em <b>${s.opt.n}× de ${brl(s.opt.pmt)}</b>
       <small>juros estimados ${s.rate.toLocaleString('pt-BR')}% ao mês + IOF · total ${brl(s.opt.total)} (<span class="neg">+${brl(s.opt.juros)}</span>)</small></li>`).join('')}</ol>
-      <div class="result ${p.ok?'good':'bad'}"><span>${p.ok?'Com isso, nenhum pagamento fica no vermelho':'Ajuda, mas ainda falta'} · juros totais</span><b>${brl(jurosTot)}</b></div>`
+      <div class="result ${p.ok?'good':'bad'}"><span>${p.ok?'Com isso, todo pagamento fica com a folga':'Ajuda, mas ainda não resolve'} · juros totais</span><b>${brl(jurosTot)}</b></div>`
       :`<div class="empty">Parcelar faturas não é suficiente para resolver.</div>`}
     <div class="simrow" style="margin-top:10px"><div class="g" style="grid-template-columns:1.1fr 1fr 1fr">
       <div><small>Pagamento</small></div><div><small>Hoje</small></div><div><small>Com o plano</small></div>
@@ -1539,7 +1646,7 @@ function openBalance(){
     <label class="f"><span>Quanto tem na conta agora (R$)</span><input id="bval" inputmode="decimal" value="${db.balance?String(Math.abs(b.value)).replace('.',','):''}" placeholder="0,00"></label>
     <div class="hint">Tudo que venceu até hoje (${dLabel(TODAY)}) é considerado já pago e incluído nesse saldo.</div>
     <label class="f" style="margin-top:16px"><span>Gastos do dia a dia por mês (mercado, transporte, lazer…) — estimativa</span><input id="bbud" inputmode="decimal" value="${db.budget?String(db.budget).replace('.',','):''}" placeholder="Ex.: 1.200,00"></label>
-    <div class="hint">Deixa a previsão mais realista. Use 0 se preferir lançar cada gasto.</div>
+    <div class="hint">Deixa a previsão mais realista. Use 0 se preferir lançar cada gasto.${beneficios().length?` Inclua a comida: o app desconta o que o vale (${brl(benAbate())}/mês) paga.`:''}</div>
     <button class="btn" onclick="saveBalance()">Salvar</button>`);
   document.querySelectorAll('#bsign button').forEach(x=>x.onclick=()=>document.querySelectorAll('#bsign button').forEach(o=>o.classList.toggle('on',o===x)));
   if(!db.balance) setTimeout(()=>$('#bval')?.focus(),50);
@@ -1770,12 +1877,12 @@ function normalize(data){
   (data.tx||[]).forEach((t,i)=>{
     const value=num(t.value);
     if(!t.desc||!(value>0)||!/^\d{4}-\d{2}-\d{2}$/.test(t.date||'')) return errs.push(`lançamento ${i+1} (${t.desc||'?'})`);
-    out.tx.push({id:t.id||uid(),type:t.type==='in'?'in':'out',desc:t.desc,value,date:t.date,cat:t.cat||'Outros',ded:t.ded||'',nf:!!t.nf,...(t.at?{at:t.at}:{}),...(t.cartao?{cartao:t.cartao,parcelas:parseInt(t.parcelas)||1}:{})});
+    out.tx.push({id:t.id||uid(),type:t.type==='in'?'in':'out',desc:t.desc,value,date:t.date,cat:t.cat||'Outros',ded:t.ded||'',nf:!!t.nf,...(t.at?{at:t.at}:{}),...(t.cartao?{cartao:t.cartao,parcelas:parseInt(t.parcelas)||1}:{}),...(t.beneficio?{beneficio:t.beneficio}:{})});
   });
   (data.fixed||[]).forEach((f,i)=>{
     const value=num(f.value);
     if(!f.desc||!(value>0)||!/^\d{4}-\d{2}$/.test(f.start||'')) return errs.push(`fixo ${i+1} (${f.desc||'?'})`);
-    out.fixed.push({id:f.id||uid(),type:f.type==='in'?'in':'out',desc:f.desc,value,cat:f.cat||'Outros',start:f.start,day:f.day?+f.day:null,end:f.end||null,ded:f.ded||'',nf:!!f.nf,...(f.cartao?{cartao:f.cartao}:{})});
+    out.fixed.push({id:f.id||uid(),type:f.type==='in'?'in':'out',desc:f.desc,value,cat:f.cat||'Outros',start:f.start,day:f.day?+f.day:null,end:f.end||null,ded:f.ded||'',nf:!!f.nf,...(f.cartao?{cartao:f.cartao}:{}),...(f.beneficio?{beneficio:f.beneficio}:{})});
   });
   if(data.irDates && typeof data.irDates==='object') out.irDates = data.irDates;
   if(data.balance && /^\d{4}-\d{2}-\d{2}$/.test(data.balance.date||'') && isFinite(+data.balance.value)) out.balance = {value:+data.balance.value,date:data.balance.date,...(data.balance.at?{at:data.balance.at}:{})};
@@ -1787,6 +1894,8 @@ function normalize(data){
   if(data.freio && typeof data.freio==='object') out.freio = data.freio;
   if(Array.isArray(data.metas)) out.metas = data.metas;
   if(Array.isArray(data.cartoes)) out.cartoes = data.cartoes;
+  if(data.folga && isFinite(+data.folga.valor)) out.folga = {valor:+data.folga.valor};
+  if(Array.isArray(data.beneficios)) out.beneficios = data.beneficios.filter(b=>b&&b.id&&(+b.valor>0||+b.valorDia>0));
   if(data.perfil && ['f','m','n'].includes(data.perfil.genero)) out.perfil = {genero:data.perfil.genero, ...(data.perfil.modo?{modo:data.perfil.modo}:{})};
   if(Array.isArray(data.ferias)) out.ferias = data.ferias.filter(f=>/^\d{4}-\d{2}-\d{2}$/.test(f.start||'')&&f.dias>0).map(f=>({id:f.id||uid(),start:f.start,dias:+f.dias,abono:+f.abono||0}));
   if(data.salary && parseMoney(data.salary.gross)>0){
@@ -1808,6 +1917,8 @@ function merge(data,replace){
   if(out.paid) db.paid = replace ? out.paid : {...(db.paid||{}), ...out.paid};
   if(out.pagoValor) db.pagoValor = replace ? out.pagoValor : {...(db.pagoValor||{}), ...out.pagoValor};
   if(out.budget) db.budget = out.budget;
+  if(out.folga) db.folga = out.folga;
+  if(out.beneficios) db.beneficios = out.beneficios;
   if(out.rates) db.rates = {...(db.rates||{}),...out.rates};
   if(out.imovel) db.imovel = out.imovel;
   if(out.ferias) db.ferias = out.ferias;
@@ -1916,6 +2027,7 @@ VIEWS.lancar = function(){
     ${action('🧾','Chegou fatura ou dívida','cartão, empréstimo','openDebt()')}
     ${action('🔁','Nova conta fixa','repete todo mês',"openTx(null,false,'out',true)")}
     ${action('👛','Saldo da conta','quanto tem hoje','openBalance()')}
+    ${action('🍽️','Benefícios','VA, VR e outros',"beneficios().length?document.querySelector('#benCard')?.scrollIntoView({behavior:'smooth'}):openBeneficio()")}
   </div>
   <div class="card"><h2>✅ Paguei uma conta</h2>
     <p class="sub">Toque na bolinha das contas que você já pagou</p>
@@ -1924,6 +2036,7 @@ VIEWS.lancar = function(){
       <div class="main"><div class="t">${esc(e.label)}</div><div class="m">${e.sub?esc(e.sub)+' · ':''}${e.paid?'paga ✓':e.late?'<b class="neg">atrasada</b>':'vence '+dLabel(e.date)}</div></div>
       <div class="amt">${brl(-e.v)}</div></li>`).join('')}</ul>`:'<div class="empty">Nenhuma conta para os próximos dias 🎉</div>'}
   </div>
+  ${beneficiosCard(st.extM||THIS_MONTH)}
   ${extratoCard()}`;
 };
 
@@ -1936,10 +2049,10 @@ function extratoCard(){
   const itens = [
     ...reals.map(p=>({date:p.date, ent:true, v:p.value, t:p.label, m:'salário · valor real', ico:'💰', tap:'openRealPay()'})),
     ...db.tx.filter(t=>t.date.slice(0,7)===M).map(t=>({date:t.date, ent:t.type==='in', v:t.value, t:t.desc, at:t.at, cart:t.cartao, ico:catIcon(t.cat), tap:`openTx('${t.id}')`,
-      m:`${t.cat}${t.cartao?` · 💳 ${nomeCart(t.cartao)}${t.parcelas>1?` em ${t.parcelas}×`:''} · vai na fatura de ${mLabel(faturaDe(cartoes().find(c=>c.id===t.cartao)||{fecha:1,vence:1},t.date),{month:'short'})}`:''}`}))
+      ben:t.beneficio, m:`${t.cat}${t.beneficio?` · 🍽️ no vale ${beneficios().find(b=>b.id===t.beneficio)?.nome||''} · não sai da conta`:''}${t.cartao?` · 💳 ${nomeCart(t.cartao)}${t.parcelas>1?` em ${t.parcelas}×`:''} · vai na fatura de ${mLabel(faturaDe(cartoes().find(c=>c.id===t.cartao)||{fecha:1,vence:1},t.date),{month:'short'})}`:''}`}))
   ].sort((a,b)=>b.date.localeCompare(a.date) || String(b.at||'').localeCompare(String(a.at||'')));
   const ent = itens.filter(i=>i.ent), sai = itens.filter(i=>!i.ent);
-  const tEnt = r2(ent.reduce((s,i)=>s+i.v,0)), tSai = r2(sai.reduce((s,i)=>s+i.v,0)), tCart = r2(sai.filter(i=>i.cart).reduce((s,i)=>s+i.v,0));
+  const tEnt = r2(ent.reduce((s,i)=>s+i.v,0)), tSai = r2(sai.reduce((s,i)=>s+i.v,0)), tCart = r2(sai.filter(i=>i.cart).reduce((s,i)=>s+i.v,0)), tBen = r2(sai.filter(i=>i.ben).reduce((s,i)=>s+i.v,0));
   const res = r2(tEnt - tSai);
   const vis = F==='ent' ? ent : F==='sai' ? sai : itens;
   let dia = '';
@@ -1955,6 +2068,7 @@ function extratoCard(){
       <div class="line"><span>➕ Entradas (${ent.length})</span><b class="pos">+ ${brl(tEnt)}</b></div>
       <div class="line"><span>➖ Saídas (${sai.length})</span><b>− ${brl(tSai)}</b></div>
       ${tCart?`<div class="parts">Das saídas, ${brl(tCart)} foram no cartão: não saem da conta agora, entram na fatura.</div>`:''}
+      ${tBen?`<div class="parts">Das saídas, ${brl(tBen)} foram pagas no vale (VA/VR): não saem da conta.</div>`:''}
       <div class="line big2"><span>= ${res<0?'Saiu mais':'Sobrou'}</span><b class="${res<0?'neg':'pos'}">${brl(Math.abs(res))}</b></div>
       ${f&&f.end!=null?`<div class="parts">Com tudo isso, ${nome} termina com <b class="${f.end<0?'neg':'pos'}">${brl(f.end)}</b> (previsão atual).</div>`:''}
     </div>
@@ -1969,6 +2083,82 @@ function extratoCard(){
    Compra no cartão não sai da conta no dia: entra na fatura (pelo dia de fechamento) e sai no vencimento.
    Compra feita ANTES do dia de fechamento entra na fatura que fecha naquele mês; no dia do fechamento ou depois, vai para a próxima. */
 const cartoes = () => db.cartoes || [];
+/* ---------- benefícios (VA, VR…): dinheiro que cai num cartão próprio, fora da conta do banco ----------
+   Gasto pago no vale não sai da conta. O valor do vale abate a estimativa de gastos do dia a dia (comida),
+   então o planejamento conta com ele sem somar como dinheiro na conta. */
+const beneficios = () => db.beneficios || [];
+const BEN_TIPOS = {va:['🛒','Vale-alimentação'], vr:['🍽️','Vale-refeição'], outro:['🎁','Outro benefício']};
+// dias úteis do mês: seg a sex, sem feriados nacionais (inclui Carnaval, Sexta-feira Santa e Corpus Christi,
+// para o valor ficar PARA MENOS) e sem os dias de férias planejadas
+function pascoa(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1; return `${y}-${pad(mes)}-${pad(dia)}`; }
+function feriadosDoAno(y){ const p = pascoa(y); return new Set([...FERIADOS.map(d=>`${y}-${d}`), addDays(p,-48), addDays(p,-47), addDays(p,-2), addDays(p,60)]); }
+function diasUteis(M){
+  const fer = feriadosDoAno(+M.slice(0,4)), ferias = new Set();
+  (db.ferias||[]).forEach(f=>{ for(let k=0;k<f.dias;k++) ferias.add(addDays(f.start,k)); });
+  let n = 0; const dim = +lastDay(M).slice(8);
+  for(let d=1; d<=dim; d++){ const ds = `${M}-${pad(d)}`, wd_ = new Date(ds+'T12:00').getDay(); if(wd_>0 && wd_<6 && !fer.has(ds) && !ferias.has(ds)) n++; }
+  return n;
+}
+const benValor = (b, M=THIS_MONTH) => b.modo==='dia' ? Math.floor((+b.valorDia||0)*diasUteis(M)*100)/100 : (+b.valor||0);
+const benAbate = (M=THIS_MONTH) => r2(beneficios().filter(b=>b.abate!==false).reduce((t,b)=>t+benValor(b,M),0));
+const budgetEf = (M=THIS_MONTH) => db.budget>0 ? Math.max(0, r2(db.budget - benAbate(M))) : 0; // gastos do dia a dia que saem da CONTA
+function benUso(b, M){ const g = db.tx.filter(t=>t.beneficio===b.id && t.type==='out' && t.date.slice(0,7)===M).reduce((s,t)=>s+t.value,0); return {gasto:r2(g), saldo:r2(benValor(b,M)-g)}; }
+function openBeneficio(id){
+  const b = id ? beneficios().find(x=>x.id===id) : {tipo:'va', abate:true};
+  if(!b) return;
+  openSheet(`<h3>${id?'Editar benefício':'🍽️ Novo benefício'} <button onclick="closeSheet()">Fechar</button></h3>
+    <p class="sub">Vale-alimentação, vale-refeição ou outro benefício que cai num cartão próprio (não na sua conta).</p>
+    <label class="f"><span>Tipo</span><select id="bnTipo">${Object.entries(BEN_TIPOS).map(([k,[i,l]])=>`<option value="${k}" ${b.tipo===k?'selected':''}>${i} ${l}</option>`).join('')}</select></label>
+    <label class="f"><span>Nome (opcional)</span><input id="bnNome" value="${esc(b.nome||'')}" placeholder="Ex.: Alelo, Flash, VR"></label>
+    <div class="seg" id="bnModo"><button data-m="mes" class="${b.modo!=='dia'?'on':''}">Valor fixo por mês</button><button data-m="dia" class="${b.modo==='dia'?'on':''}">Valor por dia útil</button></div>
+    <label class="f" id="bnValBox"><span>Valor por mês (R$)</span><input id="bnVal" inputmode="decimal" value="${b.valor&&b.modo!=='dia'?String(b.valor).replace('.',','):''}" placeholder="0,00"></label>
+    <label class="f" id="bnDiaValBox"><span>Valor por dia útil (R$)</span><input id="bnValDia" inputmode="decimal" value="${b.valorDia?String(b.valorDia).replace('.',','):''}" placeholder="Ex.: 35,00"></label>
+    <div class="preview" id="bnPrev"></div>
+    <label class="f"><span>Dia em que o valor cai</span><input id="bnDia" inputmode="numeric" value="${b.dia||''}" placeholder="Ex.: 1"></label>
+    <label class="check"><input type="checkbox" id="bnAbate" ${b.abate!==false?'checked':''}> Usar para pagar parte dos gastos do dia a dia (mercado, comida) no planejamento</label>
+    <div class="hint">Com isso marcado, se você estima ${db.budget>0?brl(db.budget):'R$ X'} de gastos do dia a dia por mês, o app considera que o vale paga uma parte e só o resto sai da sua conta.</div>
+    <button class="btn" onclick="saveBeneficio('${id||''}')">Salvar</button>
+    ${id?`<button class="btn danger" onclick="delBeneficio('${id}')">Excluir</button>`:''}`);
+  const modo = () => $('#bnModo .on').dataset.m;
+  const upd = () => { const dia = modo()==='dia';
+    $('#bnValBox').style.display = dia ? 'none' : ''; $('#bnDiaValBox').style.display = dia ? '' : 'none';
+    const v = parseMoney($('#bnValDia').value);
+    $('#bnPrev').innerHTML = dia ? (v>0 ? [THIS_MONTH, addM(THIS_MONTH,1), addM(THIS_MONTH,2)].map(M=>{ const n = diasUteis(M);
+        return `${mLabel(M,{month:'long'})}: ${n} dias úteis × ${brl(v)} = <b>${brl(Math.floor(v*n*100)/100)}</b>`; }).join('<br>')
+        + '<br><small>Sem fins de semana, feriados nacionais (inclui Carnaval e Corpus Christi) e dias de férias planejadas.</small>'
+      : 'Informe o valor por dia para ver quanto cai em cada mês.') : '';
+    $('#bnPrev').style.display = dia ? '' : 'none'; };
+  document.querySelectorAll('#bnModo button').forEach(x=>x.onclick=()=>{ document.querySelectorAll('#bnModo button').forEach(o=>o.classList.toggle('on',o===x)); upd(); });
+  $('#bnValDia').addEventListener('input', upd); upd();
+}
+function saveBeneficio(id){
+  const tipo = $('#bnTipo').value, modo = $('#bnModo .on').dataset.m;
+  const valor = r2(parseMoney($('#bnVal').value)), valorDia = r2(parseMoney($('#bnValDia').value));
+  if(modo==='dia' ? !(valorDia>0) : !(valor>0)) return alert(modo==='dia' ? 'Informe o valor por dia útil.' : 'Informe o valor por mês.');
+  const rec = {id:id||uid(), tipo, nome:$('#bnNome').value.trim()||BEN_TIPOS[tipo][1], modo,
+    ...(modo==='dia' ? {valorDia, valor:benValor({modo:'dia',valorDia})} : {valor}), dia:Math.min(31,Math.max(1,parseInt($('#bnDia').value)||1)), abate:$('#bnAbate').checked};
+  db.beneficios = beneficios().filter(x=>x.id!==rec.id).concat(rec);
+  closeSheet(); save();
+}
+function delBeneficio(id){
+  const usados = db.tx.filter(t=>t.beneficio===id).length + db.fixed.filter(f=>f.beneficio===id).length;
+  if(!confirm(`Excluir este benefício?${usados?` Os ${usados} gastos feitos com ele passam a contar como débito/Pix.`:''}`)) return;
+  db.tx.forEach(t=>{ if(t.beneficio===id) delete t.beneficio; }); db.fixed.forEach(f=>{ if(f.beneficio===id) delete f.beneficio; });
+  db.beneficios = beneficios().filter(x=>x.id!==id); closeSheet(); save();
+}
+function beneficiosCard(M){
+  M = M || THIS_MONTH;
+  const L = beneficios();
+  return `<div class="card" id="benCard"><div class="grouphead"><h2>🍽️ Benefícios (VA, VR…)</h2>${L.length?`<span class="pos">${brl(L.reduce((t,b)=>t+benValor(b,M),0))} em ${mLabel(M,{month:'short'})}</span>`:''}</div>
+    ${L.length?`<p class="sub">Saldo de ${mLabel(M,{month:'long'})} · não é dinheiro da conta</p><ul class="list">${L.map(b=>{ const u = benUso(b,M), vM = benValor(b,M), pct = vM>0 ? Math.min(100, Math.round(u.gasto/vM*100)) : 0;
+      return `<li class="tap" onclick="openBeneficio('${b.id}')"><span class="dot">${BEN_TIPOS[b.tipo]?.[0]||'🎁'}</span><div class="main"><div class="t">${esc(b.nome)}</div>
+        <div class="m">cai dia ${b.dia}${b.modo==='dia'?` · ${diasUteis(M)} dias úteis × ${brl(b.valorDia)}`:''} · usado ${brl(u.gasto)} de ${brl(vM)}</div><div class="prog" style="margin-top:4px"><i style="width:${pct}%"></i></div></div>
+        <div class="amt ${u.saldo<0?'neg':'pos'}">${u.saldo<0?'passou '+brl(-u.saldo):brl(u.saldo)}</div></li>`; }).join('')}</ul>
+      ${benAbate(M)&&db.budget>0?`<p class="hint">No planejamento de ${mLabel(M,{month:'long'})}: dos ${brl(db.budget)} de gastos do dia a dia, ${brl(Math.min(db.budget,benAbate(M)))} vêm do vale e ${brl(budgetEf(M))} saem da conta.</p>`
+        :benAbate()?`<p class="hint">Dica: informe seus gastos do dia a dia (incluindo comida) em <a href="#" onclick="openBalance();return false">Saldo da conta</a>; o app desconta a parte que o vale paga.</p>`:''}`
+      :`<p class="sub">Cadastre seu vale-alimentação ou refeição. Ao lançar um gasto, escolha “pago no vale”: ele não sai da sua conta, e o planejamento conta com o vale para a comida.</p>`}
+    <button class="btn sec" onclick="openBeneficio()">+ Cadastrar benefício</button></div>`;
+}
 const dividaNoCartao = d => !!d.cartao && cartoes().some(c=>c.id===d.cartao); // parcela vai dentro da fatura, não como conta separada
 function faturaDe(card, date){ // em que mês vence a fatura de uma compra feita em "date"
   const d = +date.slice(8), M = date.slice(0,7);
@@ -2055,9 +2245,9 @@ function cartoesCard(){
         <div class="amt">${prox?brl(prox.total):'—'}</div></li>`;}).join('')}</ul>`:'<div class="empty" style="padding:10px">Nenhum cartão cadastrado.</div>'}
     <button class="btn sec" onclick="openCartao()">+ Cadastrar cartão</button></div>`;
 }
-const pagamentoSelect = (sel, parcelas, isFixed) => `<label class="f"><span>Como pagou?</span><select id="tpag" onchange="document.getElementById('tparcBox').style.display=this.value&&!${!!isFixed}?'':'none'">
-    <option value="">💵 Débito, Pix ou dinheiro</option>${cartoes().map(c=>`<option value="${c.id}" ${sel===c.id?'selected':''}>💳 ${esc(c.nome)}</option>`).join('')}</select></label>
-  <label class="f" id="tparcBox" style="${sel&&!isFixed?'':'display:none'}"><span>Em quantas vezes no cartão?</span><input id="tparc" inputmode="numeric" value="${parcelas||1}"></label>
+const pagamentoSelect = (sel, parcelas, isFixed) => `<label class="f"><span>Como pagou?</span><select id="tpag" onchange="document.getElementById('tparcBox').style.display=this.value&&!this.value.startsWith('ben:')&&!${!!isFixed}?'':'none'">
+    <option value="">💵 Débito, Pix ou dinheiro</option>${cartoes().map(c=>`<option value="${c.id}" ${sel===c.id?'selected':''}>💳 ${esc(c.nome)}</option>`).join('')}${beneficios().map(b=>`<option value="ben:${b.id}" ${sel==='ben:'+b.id?'selected':''}>${BEN_TIPOS[b.tipo]?.[0]||'🎁'} No vale: ${esc(b.nome)}</option>`).join('')}</select></label>
+  <label class="f" id="tparcBox" style="${sel&&!sel.startsWith('ben:')&&!isFixed?'':'display:none'}"><span>Em quantas vezes no cartão?</span><input id="tparc" inputmode="numeric" value="${parcelas||1}"></label>
   ${cartoes().length?'':'<div class="hint">Pagou no cartão de crédito? Cadastre o cartão em <b>Contas → Cartões</b> para a compra cair na fatura certa.</div>'}`;
 
 VIEWS.contas = function(){
@@ -2819,7 +3009,7 @@ function monthFlow(M, depth=0){
   const inTot = r2(ins.reduce((t,e)=>t+e.v,0)), outTot = r2(outs.reduce((t,e)=>t-e.v,0));
   const dim = +lastDay(M).slice(8);
   const refDia = b && M===bm ? +b.date.slice(8) : (!b && M===THIS_MONTH ? +TODAY.slice(8) : 0);
-  const bud = db.budget>0 ? ceil2(refDia ? db.budget*(dim-refDia)/dim : db.budget) : 0;
+  const bE = budgetEf(M), bud = bE>0 ? ceil2(refDia ? bE*(dim-refDia)/dim : bE) : 0;
   let start = null, end = null;
   if(b && M>=bm && depth<60){
     if(M===bm){ start = b.value; end = r2(start + ev.filter(e=>!e.done).reduce((t,e)=>t+e.v,0) - bud); }
@@ -2895,6 +3085,7 @@ function resumoMes(M){
   <div class="card"><div class="grouphead"><h2>💰 Entradas de ${nome}</h2>${passado?`<span class="pos">${brl(f.inTot)}</span>`:carry>0?`<span class="pos">${brl(saldoMes)}</span>`:inFut>0?`<span class="pos">a receber ${brl(inFut)}</span>`:f.inTot?`<span class="pos">✓ tudo recebido</span>`:''}</div>
     ${!passado&&carry>0?`<p class="sub">Saldo de ${nome}: ${brl(saldoMes)} = ${brl(carry)} ${f.isBalMonth?'na conta':`de ${mLabel(addM(M,-1),{month:'long'})}`} + ${brl(inFut)} a receber${inJa?` · já recebido ${brl(inJa)}`:''}</p>`
       : f.inTot&&!passado?`<p class="sub">Total do mês: ${brl(f.inTot)}${inJa?` · já recebido ${brl(inJa)}`:''}</p>`:''}
+    ${beneficios().length&&!passado?`<p class="sub">🍽️ Mais ${brl(beneficios().reduce((t,b)=>t+benValor(b,M),0))} em benefícios (${beneficios().map(b=>esc(b.nome)).join(', ')}), fora da conta${benAbate(M)&&db.budget>0?`: pagam ${brl(Math.min(db.budget,benAbate(M)))} dos gastos do dia a dia`:''}.</p>`:''}
     ${(f.ins.length||carry>0)?`<ul class="list">${carry>0?`<li><span class="dot">👛</span><div class="main"><div class="t">${f.isBalMonth?'Já na conta':`Sobra de ${mLabel(addM(M,-1),{month:'long'})}`}</div><div class="m">${f.isBalMonth?carryTxt:`o que sobrar de ${mLabel(addM(M,-1),{month:'long'})} · diminui a cada gasto lançado lá`}</div></div><div class="amt pos">+ ${brl(carry)}</div></li>`:''}${f.ins.map(linha).join('')}</ul>`:'<div class="empty">Nenhuma entrada prevista.</div>'}
   </div>
   <div class="card"><div class="grouphead"><h2>💳 Contas de ${nome}</h2>${passado?`<span>${brl(f.outTot)}</span>`:(f.aPagar+f.bud)>0?`<span class="neg">falta ${brl(f.aPagar+f.bud)}</span>`:f.outTot?`<span class="pos">✓ tudo pago</span>`:''}</div>
@@ -3159,7 +3350,7 @@ function metasView(){
 /* ---------- atualização do app ----------
    A cada versão publicada, aumente APP_VERSION (e a versão do cache no sw.js).
    O app compara com o index.html publicado e, se mudou, mostra a faixa "Atualizar agora". */
-const APP_VERSION = '35';
+const APP_VERSION = '38';
 let ultimaChecagem = 0;
 async function versaoPublicada(){
   const r = await fetch(`./index.html?checar=${Date.now()}`, {cache:'no-store'});
